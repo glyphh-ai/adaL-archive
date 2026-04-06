@@ -441,7 +441,7 @@ MODEL_CATALOG = [
 class ModelsPanel(_SafeStatic):
     """Two-section models view: installed table + available catalog."""
 
-    CATALOG_PAGE_SIZE = 6
+    CATALOG_PAGE_SIZE = 12
 
     def __init__(self, **kwargs) -> None:
         super().__init__("Loading...", **kwargs)
@@ -568,6 +568,7 @@ class ModelsPanel(_SafeStatic):
                 content.append("\n")
                 content.append(f"    {m['description']}\n", style=TEXT_DIM)
 
+        content.append("\n")
         self.update(content)
 
 
@@ -831,8 +832,12 @@ class AdaApp(App):
     def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
         if event.pane.id == "tab-models":
             panel = self.query_one(ModelsPanel)
-            if not panel._installed and not panel._loading and self._server_running:
-                self._fetch_models()
+            if self._server_running:
+                if not panel._installed and not panel._loading:
+                    self._fetch_models()
+            else:
+                panel.set_error("Server is not running. Use /start to launch, then /models refresh.")
+                panel._redraw()
         elif event.pane.id == "tab-runtimes":
             self.query_one(RuntimesPanel).refresh_data()
         elif event.pane.id == "tab-tokens":
