@@ -81,7 +81,7 @@ dev = [
 ]
 
 [project.urls]
-Repository = "https://github.com/ctimmerman-glyphh/ada"
+Repository = "https://github.com/timmetim/ada"
 
 [tool.setuptools.packages.find]
 # ada* — SDK + CLI + server entry point (ada/server.py)
