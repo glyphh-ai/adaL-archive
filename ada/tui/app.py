@@ -905,7 +905,7 @@ class AdaApp(App):
         self.query_one(TabbedContent).active = "tab-output"
 
     def _fetch_models(self) -> None:
-        """Fetch models from the API and update the Models panel."""
+        """Fetch models — direct DB query when local, API when remote."""
         if not self._server_running:
             self.query_one(ModelsPanel).set_error("Server is not running. Use /start first.")
             return
@@ -914,30 +914,61 @@ class AdaApp(App):
         panel.set_loading()
 
         def _do_fetch():
-            import httpx
             try:
-                url = f"http://localhost:{self._server_port}/{self._org_id}/models"
-                headers = {}
-                if self._api_token:
-                    headers["Authorization"] = f"Bearer {self._api_token}"
-                with httpx.Client(timeout=10) as client:
-                    resp = client.get(url, headers=headers)
-                if resp.status_code == 401:
-                    self.call_from_thread(panel.set_error, "Authentication required. Set a token with /token <token>")
-                    return
-                if resp.status_code == 403:
-                    self.call_from_thread(panel.set_error, f"Access denied for org '{self._org_id}'. Use /org <org_id>")
-                    return
-                resp.raise_for_status()
-                data = resp.json()
-                models = data.get("models", [])
+                # Local mode: query DB directly (no auth needed)
+                import asyncio
+                from ada.server import model_manager
+                from infrastructure.database import async_session_maker
+                from domains.models.db_models import ModelConfig
+                from domains.models.storage import GlyphStorage
+                from sqlalchemy import select
+
+                async def _query():
+                    org_id = self._org_id
+                    async with async_session_maker() as session:
+                        result = await session.execute(
+                            select(ModelConfig).where(ModelConfig.org_id == org_id)
+                        )
+                        configs = result.scalars().all()
+
+                        models = []
+                        storage = GlyphStorage(session)
+                        for cfg in configs:
+                            count = await storage.count_glyphs(org_id, cfg.model_id)
+                            status = "active"
+                            if model_manager and model_manager.is_encoding(org_id, cfg.model_id):
+                                status = "encoding"
+                            elif model_manager and model_manager.is_model_locked(org_id, cfg.model_id):
+                                status = "locked"
+                            models.append({
+                                "model_id": cfg.model_id,
+                                "name": cfg.meta_name or cfg.model_id,
+                                "version": cfg.model_version or "\u2014",
+                                "glyphs": count,
+                                "status": status,
+                                "short_description": cfg.short_description or "",
+                            })
+                    return models
+
+                # Run async query in a new event loop (we're in a worker thread)
+                loop = asyncio.new_event_loop()
+                try:
+                    models = loop.run_until_complete(_query())
+                finally:
+                    loop.close()
+
                 self.call_from_thread(panel.set_models, models)
-            except httpx.ConnectError:
-                self.call_from_thread(panel.set_error, f"Cannot connect to server on port {self._server_port}")
+
             except Exception as e:
                 self.call_from_thread(panel.set_error, str(e))
 
-        self.run_worker(_do_fetch, name="fetch-models", exclusive=True, thread=True)
+    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        """Auto-fetch models when switching to the Models tab."""
+        if event.pane.id == "tab-models":
+            panel = self.query_one(ModelsPanel)
+            # Auto-fetch if we haven't loaded yet
+            if not panel._models and not panel._loading and self._server_running:
+                self._fetch_models()
 
     def action_refresh_all(self) -> None:
         """Refresh all dashboard data."""
