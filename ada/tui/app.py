@@ -386,7 +386,7 @@ class ModelsPanel(Static):
     PAGE_SIZE = 6
 
     def __init__(self, **kwargs) -> None:
-        super().__init__("", **kwargs)
+        super().__init__(Text("Use /models to list deployed models.", style=TEXT_DIM), **kwargs)
         self._models: list[dict[str, Any]] = []
         self._filtered: list[dict[str, Any]] = []
         self._search: str = ""
@@ -394,9 +394,6 @@ class ModelsPanel(Static):
         self._loading: bool = False
         self._error: str = ""
         self._runtime_filter: str = ""  # "" = all runtimes
-
-    def on_mount(self) -> None:
-        self.update(Text("Use /models to list deployed models.", style=TEXT_DIM))
 
     def set_search(self, query: str) -> None:
         self._search = query.lower().strip()
@@ -511,10 +508,7 @@ class RuntimesPanel(Static):
     """Shows all configured runtimes with status."""
 
     def __init__(self, **kwargs) -> None:
-        super().__init__("", **kwargs)
-
-    def on_mount(self) -> None:
-        self.refresh_data()
+        super().__init__(Text("Loading runtimes...", style=TEXT_DIM), **kwargs)
 
     def refresh_data(self) -> None:
         rm = get_runtime_manager()
@@ -570,13 +564,10 @@ class TokensPanel(Static):
     """Shows API tokens for the active runtime."""
 
     def __init__(self, **kwargs) -> None:
-        super().__init__("", **kwargs)
+        super().__init__(Text("Use /tokens to list API tokens.", style=TEXT_DIM), **kwargs)
         self._tokens: list[dict[str, Any]] = []
         self._loading: bool = False
         self._error: str = ""
-
-    def on_mount(self) -> None:
-        self.update(Text("Use /tokens to list API tokens.", style=TEXT_DIM))
 
     def set_tokens(self, tokens: list[dict[str, Any]]) -> None:
         self._tokens = tokens
