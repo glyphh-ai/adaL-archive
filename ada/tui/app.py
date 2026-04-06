@@ -394,47 +394,67 @@ class _SafeStatic(Static):
         return result
 
 
+# ---------------------------------------------------------------------------
+# Model catalog — available models that can be installed
+# ---------------------------------------------------------------------------
+
+MODEL_CATALOG = [
+    {
+        "id": "faq",
+        "name": "FAQ Assistant",
+        "description": "General-purpose FAQ model. Encodes question/answer pairs for semantic retrieval.",
+        "version": "1.0.0",
+    },
+    {
+        "id": "code",
+        "name": "Code Navigator",
+        "description": "Code documentation and function lookup. Indexes source files for natural language search.",
+        "version": "1.0.0",
+    },
+    {
+        "id": "deals",
+        "name": "Deal Finder",
+        "description": "Sales pipeline model. Matches deal attributes and finds similar opportunities.",
+        "version": "1.0.0",
+    },
+    {
+        "id": "sentinel",
+        "name": "Sentinel",
+        "description": "Security event classification. Routes alerts to playbooks via intent matching.",
+        "version": "2.0.0",
+    },
+    {
+        "id": "churn",
+        "name": "Churn Predictor",
+        "description": "Customer churn risk model. Encodes behavioral signals for similarity-based prediction.",
+        "version": "1.0.0",
+    },
+    {
+        "id": "voice",
+        "name": "Voice Router",
+        "description": "Audio feature extraction and intent routing for voice-based interfaces.",
+        "version": "0.9.0",
+    },
+]
+
+
 class ModelsPanel(_SafeStatic):
-    PAGE_SIZE = 6
+    """Two-section models view: installed table + available catalog."""
+
+    CATALOG_PAGE_SIZE = 6
 
     def __init__(self, **kwargs) -> None:
-        super().__init__("Use /models to list deployed models.", **kwargs)
-        self._models: list[dict[str, Any]] = []
-        self._filtered: list[dict[str, Any]] = []
-        self._search: str = ""
-        self._page: int = 0
+        super().__init__("Loading...", **kwargs)
+        self._installed: list[dict[str, Any]] = []
         self._loading: bool = False
         self._error: str = ""
-        self._runtime_filter: str = ""  # "" = all runtimes
+        self._search: str = ""
+        self._catalog_page: int = 0
 
-    def set_search(self, query: str) -> None:
-        self._search = query.lower().strip()
-        self._page = 0
-        self._apply_filter()
-        self._redraw()
-
-    def set_runtime_filter(self, runtime: str) -> None:
-        self._runtime_filter = runtime
-        self._page = 0
-        self._apply_filter()
-        self._redraw()
-
-    def next_page(self) -> None:
-        mx = max(0, (len(self._filtered) - 1) // self.PAGE_SIZE)
-        if self._page < mx:
-            self._page += 1
-            self._redraw()
-
-    def prev_page(self) -> None:
-        if self._page > 0:
-            self._page -= 1
-            self._redraw()
-
-    def set_models(self, models: list[dict[str, Any]]) -> None:
-        self._models = models
+    def set_installed(self, models: list[dict[str, Any]]) -> None:
+        self._installed = models
         self._loading = False
         self._error = ""
-        self._apply_filter()
         self._redraw()
 
     def set_loading(self) -> None:
@@ -446,72 +466,107 @@ class ModelsPanel(_SafeStatic):
         self._loading = False
         self._redraw()
 
-    def _apply_filter(self) -> None:
-        filtered = self._models
-        if self._runtime_filter:
-            filtered = [m for m in filtered if m.get("runtime", "") == self._runtime_filter]
+    def set_search(self, query: str) -> None:
+        self._search = query.lower().strip()
+        self._catalog_page = 0
+        self._redraw()
+
+    def next_page(self) -> None:
+        filtered = self._get_filtered_catalog()
+        mx = max(0, (len(filtered) - 1) // self.CATALOG_PAGE_SIZE)
+        if self._catalog_page < mx:
+            self._catalog_page += 1
+            self._redraw()
+
+    def prev_page(self) -> None:
+        if self._catalog_page > 0:
+            self._catalog_page -= 1
+            self._redraw()
+
+    def _get_filtered_catalog(self) -> list[dict]:
+        catalog = MODEL_CATALOG
         if self._search:
             s = self._search
-            filtered = [m for m in filtered
-                if s in m.get("model_id", "").lower()
-                or s in m.get("name", "").lower()
-                or s in m.get("version", "").lower()
-                or s in m.get("status", "").lower()]
-        self._filtered = filtered
+            catalog = [m for m in catalog
+                if s in m["id"].lower()
+                or s in m["name"].lower()
+                or s in m.get("description", "").lower()]
+        return catalog
 
     def _redraw(self) -> None:
-        if self._loading:
-            self.update(Panel(Text("Loading models...", style=TEXT_DIM),
-                title="Models", title_align="left", border_style=Style(color="#333333")))
-            return
-        if self._error:
-            msg = Text()
-            msg.append("Error: ", style=f"bold {TEXT_ERROR}")
-            msg.append(self._error, style=TEXT_DIM)
-            self.update(Panel(msg, title="Models", title_align="left", border_style=Style(color="#333333")))
-            return
-        if not self._filtered:
-            hint = f'No models matching "{self._search}"' if self._search else "No models deployed."
-            self.update(Panel(Text(hint, style=TEXT_DIM),
-                title="Models", title_align="left", border_style=Style(color="#333333")))
-            return
-
-        total = len(self._filtered)
-        total_pages = max(1, (total + self.PAGE_SIZE - 1) // self.PAGE_SIZE)
-        start = self._page * self.PAGE_SIZE
-        page_models = self._filtered[start:start + self.PAGE_SIZE]
-
         content = Text()
-        content.append(f" {total} model{'s' if total != 1 else ''}", style=TEXT_PRIMARY)
-        if self._runtime_filter:
-            content.append(f"  @{self._runtime_filter}", style=ADA_PURPLE)
-        if self._search:
-            content.append(f'  filter: "{self._search}"', style=TEXT_DIM)
-        content.append(f"  page {self._page + 1}/{total_pages}", style=TEXT_DIM)
+
+        # ── Section 1: Installed Models ──
+        content.append(" Installed Models\n", style=f"bold {ADA_BLUE}")
+
+        if self._loading:
+            content.append("  Loading...\n", style=TEXT_DIM)
+        elif self._error:
+            content.append(f"  Error: {self._error}\n", style=TEXT_ERROR)
+        elif not self._installed:
+            content.append("  No models installed.\n", style=TEXT_DIM)
+        else:
+            # Build table as text (Rich Table doesn't work well inside Static.update)
+            content.append(f"  {'Model':<20} {'Name':<20} {'Glyphs':>8} {'Vectors':>8} {'Status':<10} {'Runtime':<10}\n",
+                style=f"bold {ADA_BLUE}")
+            content.append(f"  {'\u2500' * 78}\n", style="#333333")
+            for m in self._installed:
+                mid = m.get("model_id", "?")
+                name = m.get("name", mid)
+                glyphs = m.get("glyphs", 0)
+                vectors = m.get("vectors", glyphs)  # vectors default to glyph count
+                status = m.get("status", "unknown")
+                runtime = m.get("runtime", "local")
+
+                st_style = TEXT_SUCCESS if status == "active" else ADA_PURPLE if status == "encoding" else TEXT_ERROR
+                st_icon = "\u25cf" if status == "active" else "\u25cb"
+
+                content.append(f"  {mid:<20} ", style=TEXT_PRIMARY)
+                content.append(f"{name:<20} ", style=TEXT_DIM)
+                content.append(f"{glyphs:>8,} ", style=TEXT_PRIMARY)
+                content.append(f"{vectors:>8,} ", style=TEXT_PRIMARY)
+                content.append(f"{st_icon} ", style=st_style)
+                content.append(f"{status:<8} ", style=st_style)
+                content.append(f"{runtime}\n", style=ADA_PURPLE)
+
+        content.append("\n")
+
+        # ── Section 2: Available Models (catalog) ──
+        content.append(" Available Models", style=f"bold {ADA_BLUE}")
+        content.append("  /model install <id>", style=TEXT_DIM)
         content.append("\n\n")
 
-        for card in page_models:
-            rt_name = card.get("runtime", "")
-            status = card.get("status", "unknown")
-            st_style = TEXT_SUCCESS if status == "active" else ADA_PURPLE if status == "encoding" else ADA_PINK if status == "locked" else TEXT_ERROR
-            st_icon = "\u25cf" if status in ("active", "unknown") else "\u25cb"
-            name = card.get("name", card.get("model_id", "?"))
-            mid = card.get("model_id", "")
+        catalog = self._get_filtered_catalog()
+        installed_ids = {m.get("model_id") for m in self._installed}
 
-            content.append(f"  {st_icon} ", style=st_style)
-            content.append(name, style=f"bold {TEXT_PRIMARY}")
-            if name != mid:
-                content.append(f"  ({mid})", style=TEXT_DIM)
-            if rt_name:
-                content.append(f"  @{rt_name}", style=ADA_PURPLE)
+        if self._search and not catalog:
+            content.append(f'  No models matching "{self._search}"\n', style=TEXT_DIM)
+        else:
+            total_pages = max(1, (len(catalog) + self.CATALOG_PAGE_SIZE - 1) // self.CATALOG_PAGE_SIZE)
+            start = self._catalog_page * self.CATALOG_PAGE_SIZE
+            page = catalog[start:start + self.CATALOG_PAGE_SIZE]
+
+            if self._search:
+                content.append(f'  filter: "{self._search}"  ', style=TEXT_DIM)
+            if total_pages > 1:
+                content.append(f"  page {self._catalog_page + 1}/{total_pages}", style=TEXT_DIM)
+                content.append("  /models next | prev\n", style=ADA_BLUE)
             content.append("\n")
-            content.append(f"    v{card.get('version', '\u2014')}", style=ADA_BLUE)
-            content.append(f"  {status}", style=st_style)
-            content.append(f"  {card.get('glyphs', 0):,} glyphs", style=TEXT_DIM)
-            content.append("\n")
-            desc = card.get("short_description", "")
-            if desc:
-                content.append(f"    {desc[:80]}{'...' if len(desc) > 80 else ''}\n", style=TEXT_DIM)
+
+            for m in page:
+                is_installed = m["id"] in installed_ids
+                content.append("  ")
+                if is_installed:
+                    content.append("\u2713 ", style=f"bold {TEXT_SUCCESS}")
+                else:
+                    content.append("\u25cb ", style=TEXT_DIM)
+                content.append(m["name"], style=f"bold {TEXT_PRIMARY}")
+                content.append(f"  ({m['id']})", style=TEXT_DIM)
+                content.append(f"  v{m['version']}", style=ADA_BLUE)
+                if is_installed:
+                    content.append("  installed", style=TEXT_SUCCESS)
+                content.append("\n")
+                content.append(f"    {m['description']}\n", style=TEXT_DIM)
 
         self.update(content)
 
@@ -809,11 +864,40 @@ class AdaApp(App):
                         self._rm.update_status(rt.name, "connected")
                     except Exception as e:
                         self._rm.update_status(rt.name, "error", str(e))
-                self.call_from_thread(panel.set_models, all_models)
+                self.call_from_thread(panel.set_installed, all_models)
             except Exception as e:
                 self.call_from_thread(panel.set_error, str(e))
 
         self.run_worker(_do, name="fetch-models", exclusive=True, thread=True)
+
+    def _install_model(self, model_id: str, runtime_name: str | None = None) -> None:
+        """Install a model from the catalog onto a runtime."""
+        # Find in catalog (by id or name)
+        catalog_entry = None
+        for m in MODEL_CATALOG:
+            if m["id"] == model_id or m["name"].lower() == model_id.lower():
+                catalog_entry = m
+                break
+        if not catalog_entry:
+            self._msg(f"Model '{model_id}' not found in catalog. Use /models to see available.")
+            return
+
+        rt = self._rm.get(runtime_name) if runtime_name else self._rm.get_active()
+        if not rt:
+            self._msg(f"Runtime '{runtime_name}' not found.")
+            return
+
+        if not self._server_running and rt.is_local:
+            self._msg("Server is not running. Use /start first.")
+            return
+
+        self._msg(f"Installing {catalog_entry['name']} ({catalog_entry['id']}) on {rt.name}...")
+
+        # TODO: actual model deployment via ModelManager or API
+        # For now this is a placeholder — the deploy logic will use:
+        # - Local: model_manager.load_model_from_directory(model_dir, org_id, model_id)
+        # - Remote: POST /{org_id}/{model_id}/model/deploy with packaged .ada file
+        self._msg(f"Model install not yet wired to deployment pipeline. Coming soon.")
 
     def _fetch_tokens(self) -> None:
         panel = self.query_one(TokensPanel)
@@ -887,14 +971,21 @@ class AdaApp(App):
                     self.query_one(ModelsPanel).prev_page()
                 elif sub == "refresh":
                     self._fetch_models()
-                elif sub.startswith("@"):
-                    self.query_one(ModelsPanel).set_runtime_filter(sub[1:])
-                    self._fetch_models(sub[1:])
                 else:
                     self.query_one(ModelsPanel).set_search(" ".join(parts[1:]))
             else:
                 self._fetch_models()
             self.query_one(TabbedContent).active = "tab-models"
+        elif cmd == "/model":
+            if len(parts) >= 3 and parts[1].lower() == "install":
+                model_id = parts[2]
+                runtime_name = None
+                for i, a in enumerate(parts[3:], 3):
+                    if a.startswith("@"):
+                        runtime_name = a[1:]
+                self._install_model(model_id, runtime_name)
+            else:
+                self._msg("Usage: /model install <model_id> [@runtime]")
 
         # -- Tokens --
         elif cmd == "/tokens":
@@ -1134,10 +1225,10 @@ class AdaApp(App):
         h.append("  /runtime check <name>         \u2014 Health check\n", style=TEXT_PRIMARY)
         h.append(f"  /use <name>                   \u2014 Switch active (current: {active.name})\n", style=TEXT_PRIMARY)
         h.append("\nModels:\n", style=f"bold {TEXT_PRIMARY}")
-        h.append("  /models                       \u2014 List all models\n", style=TEXT_PRIMARY)
-        h.append("  /models @<runtime>            \u2014 Filter by runtime\n", style=TEXT_PRIMARY)
-        h.append("  /models <search>              \u2014 Search models\n", style=TEXT_PRIMARY)
-        h.append("  /models next | prev           \u2014 Paginate\n", style=TEXT_PRIMARY)
+        h.append("  /models                       \u2014 Models tab (installed + catalog)\n", style=TEXT_PRIMARY)
+        h.append("  /models <search>              \u2014 Search catalog\n", style=TEXT_PRIMARY)
+        h.append("  /models next | prev           \u2014 Paginate catalog\n", style=TEXT_PRIMARY)
+        h.append("  /model install <id> [@rt]     \u2014 Install a model\n", style=TEXT_PRIMARY)
         h.append("\nTokens:\n", style=f"bold {TEXT_PRIMARY}")
         h.append("  /tokens                       \u2014 List tokens\n", style=TEXT_PRIMARY)
         h.append("  /tokens create <name>         \u2014 Create token\n", style=TEXT_PRIMARY)
