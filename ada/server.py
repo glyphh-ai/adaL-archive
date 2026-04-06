@@ -94,10 +94,51 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     except Exception as e:
         logger.warning(f"Staged encoding resume failed: {e}")
 
+    # Start model stats sync task for TUI dashboard
+    import asyncio
+    from ada.tui.stats import get_stats, ModelStats as _ModelStats
+
+    async def _sync_model_stats():
+        """Periodically sync loaded model info to the stats collector."""
+        stats = get_stats()
+        while True:
+            try:
+                if model_manager and hasattr(model_manager, '_models'):
+                    for key, loaded in model_manager._models.items():
+                        tool_count = len(getattr(loaded, 'mcp_tools', None) or []) + 2  # +2 for nl_query, gql_query
+                        glyph_count = 0
+                        try:
+                            async with async_session_maker() as session:
+                                from sqlalchemy import func, select as _sel
+                                from domains.models.db_models import Glyph
+                                result = await session.execute(
+                                    _sel(func.count()).where(
+                                        Glyph.org_id == loaded.org_id,
+                                        Glyph.model_id == loaded.model_id,
+                                    )
+                                )
+                                glyph_count = result.scalar() or 0
+                        except Exception:
+                            pass
+                        stats.update_model(_ModelStats(
+                            model_id=loaded.model_id,
+                            org_id=loaded.org_id,
+                            glyph_count=glyph_count,
+                            tool_count=tool_count,
+                            status="loaded",
+                        ))
+            except Exception:
+                pass
+            await asyncio.sleep(10)
+
+    sync_task = asyncio.create_task(_sync_model_stats())
+
     # Start both MCP session manager lifecycles
     async with json_manager.run():
         async with sse_manager.run():
             yield
+
+    sync_task.cancel()
 
     # Graceful shutdown
     logger.info("Shutting down Ada Runtime...")

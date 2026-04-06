@@ -15,7 +15,7 @@ authors = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: Other/Proprietary License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -44,6 +44,8 @@ dependencies = [
     "email-validator>=2.0.0",
     "psutil>=5.9.0",
     "mcp>=1.26.0",
+    "textual>=0.50.0",
+    "rich>=13.0.0",
 ]
 
 [project.optional-dependencies]
@@ -79,6 +81,9 @@ dev = [
     "mypy>=1.5.0",
     "ruff>=0.0.285",
 ]
+
+[project.scripts]
+ada = "ada.tui.cli:main"
 
 [project.urls]
 Repository = "https://github.com/timmetim/ada"

@@ -300,6 +300,10 @@ class ToolHandler:
         arguments["org_id"] = org_id
         arguments["model_id"] = model_id
 
+        import time as _time
+        from ada.tui.stats import get_stats, RequestRecord
+
+        _t0 = _time.time()
         start_time = datetime.utcnow()
 
         try:
@@ -321,9 +325,13 @@ class ToolHandler:
             elapsed = (datetime.utcnow() - start_time).total_seconds() * 1000
             logger.info(f"MCP tool {tool_name} completed in {elapsed:.2f}ms")
 
+            # Record stats for dashboard
+            get_stats().record_request(RequestRecord(
+                timestamp=_t0, tool=tool_name, model_id=model_id,
+                org_id=org_id, duration_ms=elapsed, status="ok",
+            ))
+
             # Streamline fact_tree responses when detail=minimal.
-            # The model sets _detail="minimal" to signal the runtime should
-            # flatten the fact_tree into a compact matches list.
             result = _streamline_response(result)
 
             # Return as MCP-spec CallToolResult with JSON text content
@@ -336,12 +344,22 @@ class ToolHandler:
             )
 
         except (ModelNotFoundException, GlyphNotFoundException, ValidationException) as e:
+            elapsed = (_time.time() - _t0) * 1000
+            get_stats().record_request(RequestRecord(
+                timestamp=_t0, tool=tool_name, model_id=model_id,
+                org_id=org_id, duration_ms=elapsed, status="error",
+            ))
             logger.warning(f"MCP tool {tool_name} error: {e}")
             return CallToolResult(
                 content=[TextContent(type="text", text=str(e))],
                 isError=True,
             )
         except Exception as e:
+            elapsed = (_time.time() - _t0) * 1000
+            get_stats().record_request(RequestRecord(
+                timestamp=_t0, tool=tool_name, model_id=model_id,
+                org_id=org_id, duration_ms=elapsed, status="error",
+            ))
             logger.error(f"MCP tool {tool_name} error: {e}", exc_info=True)
             return CallToolResult(
                 content=[TextContent(type="text", text=f"Internal error: {e}")],
