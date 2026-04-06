@@ -383,12 +383,14 @@ class LogPanel(Static):
 
 
 class _SafeStatic(Static):
-    """Static that never returns None from render — fixes Textual 8.x crash."""
+    """Static that never returns None from _render — fixes Textual 8.x crash."""
 
-    def render(self):
-        result = super().render()
+    def _render(self):
+        from textual.visual import Visual
+        result = super()._render()
         if result is None:
-            return Text(" ")
+            from textual.content import Content
+            return Content(" ")
         return result
 
 
