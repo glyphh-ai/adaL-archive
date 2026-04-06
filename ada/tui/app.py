@@ -411,40 +411,40 @@ class ModelsPanel(_SafeStatic):
         self._search = query.lower().strip()
         self._page = 0
         self._apply_filter()
-        self._render()
+        self._redraw()
 
     def set_runtime_filter(self, runtime: str) -> None:
         self._runtime_filter = runtime
         self._page = 0
         self._apply_filter()
-        self._render()
+        self._redraw()
 
     def next_page(self) -> None:
         mx = max(0, (len(self._filtered) - 1) // self.PAGE_SIZE)
         if self._page < mx:
             self._page += 1
-            self._render()
+            self._redraw()
 
     def prev_page(self) -> None:
         if self._page > 0:
             self._page -= 1
-            self._render()
+            self._redraw()
 
     def set_models(self, models: list[dict[str, Any]]) -> None:
         self._models = models
         self._loading = False
         self._error = ""
         self._apply_filter()
-        self._render()
+        self._redraw()
 
     def set_loading(self) -> None:
         self._loading = True
-        self._render()
+        self._redraw()
 
     def set_error(self, error: str) -> None:
         self._error = error
         self._loading = False
-        self._render()
+        self._redraw()
 
     def _apply_filter(self) -> None:
         filtered = self._models
@@ -459,7 +459,7 @@ class ModelsPanel(_SafeStatic):
                 or s in m.get("status", "").lower()]
         self._filtered = filtered
 
-    def _render(self) -> None:
+    def _redraw(self) -> None:
         if self._loading:
             self.update(Panel(Text("Loading models...", style=TEXT_DIM),
                 title="Models", title_align="left", border_style=Style(color="#333333")))
@@ -585,18 +585,18 @@ class TokensPanel(_SafeStatic):
         self._tokens = tokens
         self._loading = False
         self._error = ""
-        self._render()
+        self._redraw()
 
     def set_loading(self) -> None:
         self._loading = True
-        self._render()
+        self._redraw()
 
     def set_error(self, error: str) -> None:
         self._error = error
         self._loading = False
-        self._render()
+        self._redraw()
 
-    def _render(self) -> None:
+    def _redraw(self) -> None:
         if self._loading:
             self.update(Text("Loading tokens...", style=TEXT_DIM))
             return
