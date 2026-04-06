@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import time
 import threading
+from collections import deque
 
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, VerticalScroll
-from textual.widgets import Static, Input, Footer, Header
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.widgets import Static, Input, Footer, Header, TabbedContent, TabPane
 from textual.binding import Binding
 from textual.timer import Timer
 from rich.text import Text
@@ -28,6 +31,40 @@ TEXT_DIM = "#888888"
 TEXT_SUCCESS = "#66cc88"
 TEXT_ERROR = "#ff5555"
 
+
+# ---------------------------------------------------------------------------
+# Log capture — routes Python logging into the TUI
+# ---------------------------------------------------------------------------
+
+class TUILogHandler(logging.Handler):
+    """Captures log records into a deque for the TUI to display."""
+
+    def __init__(self, maxlen: int = 500):
+        super().__init__()
+        self.records: deque[logging.LogRecord] = deque(maxlen=maxlen)
+        self._lock = threading.Lock()
+
+    def emit(self, record: logging.LogRecord) -> None:
+        with self._lock:
+            self.records.append(record)
+
+    def get_recent(self, limit: int = 50) -> list[logging.LogRecord]:
+        with self._lock:
+            items = list(self.records)
+            return items[-limit:]
+
+    def clear(self) -> None:
+        with self._lock:
+            self.records.clear()
+
+
+# Global log handler — attached during app startup
+_tui_log_handler = TUILogHandler()
+
+
+# ---------------------------------------------------------------------------
+# Widgets
+# ---------------------------------------------------------------------------
 
 class BannerWidget(Static):
     """Displays the Ada braille banner."""
@@ -187,7 +224,6 @@ class ModelsTable(Static):
         table.add_column("Last Query", justify="right", style=TEXT_DIM)
 
         for m in sorted(models, key=lambda x: x.model_id):
-            # Status indicator
             if m.status == "loaded":
                 status = Text("\u25cf", style=TEXT_SUCCESS)
             elif m.status == "loading":
@@ -195,7 +231,6 @@ class ModelsTable(Static):
             else:
                 status = Text("\u25cf", style=TEXT_ERROR)
 
-            # Last query relative time
             if m.last_query_at:
                 ago = time.time() - m.last_query_at
                 if ago < 60:
@@ -261,6 +296,47 @@ class RecentRequests(Static):
         self.update(table)
 
 
+class LogPanel(Static):
+    """Displays captured log output."""
+
+    def refresh_data(self) -> None:
+        records = _tui_log_handler.get_recent(limit=30)
+        if not records:
+            self.update(Text("No log output yet.", style=TEXT_DIM))
+            return
+
+        text = Text()
+        for rec in records:
+            # Timestamp
+            ts = time.strftime("%H:%M:%S", time.localtime(rec.created))
+            text.append(f"{ts} ", style="#555555")
+
+            # Level
+            if rec.levelno >= logging.ERROR:
+                text.append(f"{rec.levelname:<5} ", style=f"bold {TEXT_ERROR}")
+            elif rec.levelno >= logging.WARNING:
+                text.append(f"{rec.levelname:<5} ", style=f"bold {ADA_PINK}")
+            else:
+                text.append(f"{rec.levelname:<5} ", style=TEXT_DIM)
+
+            # Logger name (shortened)
+            name = rec.name
+            if name.startswith("ada."):
+                name = name[4:]
+            elif name.startswith("domains."):
+                name = name[8:]
+            text.append(f"{name:<20} ", style=ADA_PURPLE)
+
+            # Message
+            text.append(f"{rec.getMessage()}\n", style=TEXT_PRIMARY)
+
+        self.update(text)
+
+
+# ---------------------------------------------------------------------------
+# Main App
+# ---------------------------------------------------------------------------
+
 class AdaApp(App):
     """Ada Runtime terminal dashboard."""
 
@@ -311,9 +387,31 @@ class AdaApp(App):
         padding: 0 2;
     }
 
-    #dashboard {
+    LogPanel {
+        height: auto;
+        min-height: 8;
+        padding: 0 2;
+    }
+
+    #tabs {
         height: 1fr;
-        padding: 0 0;
+    }
+
+    TabPane {
+        padding: 0;
+    }
+
+    #dashboard-scroll {
+        height: 1fr;
+    }
+
+    #logs-scroll {
+        height: 1fr;
+    }
+
+    #messages-scroll {
+        height: 1fr;
+        padding: 0 2;
     }
 
     Header {
@@ -346,7 +444,7 @@ class AdaApp(App):
 
     BINDINGS = [
         Binding("ctrl+c", "quit", "Quit", show=True),
-        Binding("ctrl+l", "clear", "Clear", show=True),
+        Binding("ctrl+l", "refresh_all", "Refresh", show=True),
     ]
 
     def __init__(self, server_started: bool = False) -> None:
@@ -356,29 +454,43 @@ class AdaApp(App):
         self._server_thread: threading.Thread | None = None
         self._uvicorn_server = None
         self._refresh_timer: Timer | None = None
+        self._server_port: int = 8002
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         yield BannerWidget()
         yield ServerStatus()
         yield SummaryBar()
-        with VerticalScroll(id="dashboard"):
-            with Horizontal(id="graphs"):
-                yield RateGraph()
-                yield LatencyGraph()
-            yield ModelsTable()
-            yield RecentRequests()
+        with TabbedContent(id="tabs"):
+            with TabPane("Dashboard", id="tab-dashboard"):
+                with VerticalScroll(id="dashboard-scroll"):
+                    with Horizontal(id="graphs"):
+                        yield RateGraph()
+                        yield LatencyGraph()
+                    yield ModelsTable()
+                    yield RecentRequests()
+            with TabPane("Logs", id="tab-logs"):
+                with VerticalScroll(id="logs-scroll"):
+                    yield LogPanel()
+            with TabPane("Output", id="tab-output"):
+                yield VerticalScroll(id="messages-scroll")
         yield Input(placeholder="Type a command... (/help)", id="prompt-input")
         yield Footer()
 
     def on_mount(self) -> None:
         self.query_one(Input).focus()
 
+        # Attach log handler to root logger to capture everything
+        root_logger = logging.getLogger()
+        root_logger.addHandler(_tui_log_handler)
+        _tui_log_handler.setLevel(logging.DEBUG)
+
         # Show initial server status
         status_widget = self.query_one(ServerStatus)
         if self._server_started:
             from infrastructure.config import get_settings
-            status_widget.set_running(get_settings().port)
+            self._server_port = get_settings().port
+            status_widget.set_running(self._server_port)
         else:
             status_widget.set_stopped()
 
@@ -394,7 +506,7 @@ class AdaApp(App):
         from infrastructure.config import get_settings
 
         settings = get_settings()
-        actual_port = port or settings.port
+        self._server_port = port or settings.port
 
         status_widget = self.query_one(ServerStatus)
         status_widget.set_starting()
@@ -402,45 +514,57 @@ class AdaApp(App):
         config = uvicorn.Config(
             "ada.server:app",
             host=settings.host,
-            port=actual_port,
-            log_level="warning",
+            port=self._server_port,
+            log_level="info",
         )
         self._uvicorn_server = uvicorn.Server(config)
 
         def _run():
+            # uvicorn.Server.run() creates its own event loop
             try:
                 self._server_running = True
-                self.call_from_thread(status_widget.set_running, actual_port)
+                self.call_from_thread(status_widget.set_running, self._server_port)
                 self._uvicorn_server.run()
+            except OSError as e:
+                error_msg = str(e)
+                if "address already in use" in error_msg.lower():
+                    error_msg = f"Port {self._server_port} already in use"
+                self.call_from_thread(status_widget.set_error, error_msg)
+                self.call_from_thread(
+                    self._show_message, "system",
+                    f"Failed to start: {error_msg}. Try /start <different-port>"
+                )
             except Exception as e:
                 self.call_from_thread(status_widget.set_error, str(e))
             finally:
                 self._server_running = False
-                self.call_from_thread(status_widget.set_stopped)
+                self._uvicorn_server = None
+                try:
+                    self.call_from_thread(status_widget.set_stopped)
+                except Exception:
+                    pass
 
-        self._server_thread = threading.Thread(target=_run, daemon=True)
+        self._server_thread = threading.Thread(target=_run, daemon=True, name="ada-server")
         self._server_thread.start()
 
     def _stop_server(self) -> None:
         """Stop the running server."""
         if not self._server_running or not self._uvicorn_server:
             return
-
         self._uvicorn_server.should_exit = True
-        self._server_running = False
 
     def _refresh_dashboard(self) -> None:
         """Update all dashboard widgets with latest data."""
-        if not self._server_running:
-            return
         try:
-            self.query_one(SummaryBar).refresh_data()
-            self.query_one(RateGraph).refresh_data()
-            self.query_one(LatencyGraph).refresh_data()
-            self.query_one(ModelsTable).refresh_data()
-            self.query_one(RecentRequests).refresh_data()
+            if self._server_running:
+                self.query_one(SummaryBar).refresh_data()
+                self.query_one(RateGraph).refresh_data()
+                self.query_one(LatencyGraph).refresh_data()
+                self.query_one(ModelsTable).refresh_data()
+                self.query_one(RecentRequests).refresh_data()
+            self.query_one(LogPanel).refresh_data()
         except Exception:
-            pass  # Widget not mounted yet
+            pass
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         message = event.value.strip()
@@ -456,7 +580,7 @@ class AdaApp(App):
         elif cmd == "/start":
             port = int(parts[1]) if len(parts) > 1 else None
             if self._server_running:
-                self._show_message("system", "Server is already running.")
+                self._show_message("system", f"Server is already running on port {self._server_port}.")
             else:
                 self._start_server(port)
         elif cmd == "/stop":
@@ -467,42 +591,66 @@ class AdaApp(App):
                 self._show_message("system", "Server stopping...")
         elif cmd == "/status":
             if self._server_running:
-                self._show_message("system", "Server is running.")
+                self._show_message("system", f"Server running on port {self._server_port}.")
             else:
                 self._show_message("system", "Server is stopped.")
+        elif cmd == "/logs":
+            # Switch to logs tab
+            self.query_one(TabbedContent).active = "tab-logs"
+        elif cmd == "/clear":
+            if len(parts) > 1 and parts[1] == "logs":
+                _tui_log_handler.clear()
+                self._show_message("system", "Logs cleared.")
+            else:
+                self._show_message("system", "Usage: /clear logs")
         else:
             self._show_message("system", f"Unknown command: {cmd}. Try /help")
 
     def _show_message(self, role: str, content: str) -> None:
-        """Show a message in the dashboard area."""
-        log = self.query_one("#dashboard", VerticalScroll)
+        """Show a message in the Output tab."""
+        try:
+            log = self.query_one("#messages-scroll", VerticalScroll)
+        except Exception:
+            return
         msg = Text()
+        ts = time.strftime("%H:%M:%S")
+        msg.append(f"{ts} ", style="#555555")
         if role == "system":
             msg.append("\u2022 ", style=f"bold {ADA_PURPLE}")
             msg.append(content, style=TEXT_DIM)
         else:
             msg.append(content, style=TEXT_PRIMARY)
         log.mount(Static(msg))
+        # Switch to output tab to show the message
+        self.query_one(TabbedContent).active = "tab-output"
 
     def _show_help(self) -> None:
-        log = self.query_one("#dashboard", VerticalScroll)
+        try:
+            log = self.query_one("#messages-scroll", VerticalScroll)
+        except Exception:
+            return
         help_text = Text()
-        help_text.append("Commands:\n", style=f"bold {TEXT_PRIMARY}")
+        help_text.append("Server:\n", style=f"bold {TEXT_PRIMARY}")
         help_text.append("  /start", style=f"bold {ADA_BLUE}")
         help_text.append(" [port]              \u2014 Start the server\n", style=TEXT_PRIMARY)
         help_text.append("  /stop", style=f"bold {ADA_BLUE}")
         help_text.append("                      \u2014 Stop the server\n", style=TEXT_PRIMARY)
         help_text.append("  /status", style=f"bold {ADA_BLUE}")
-        help_text.append("                    \u2014 Show server status\n", style=TEXT_PRIMARY)
-        help_text.append("  /help", style=f"bold {ADA_BLUE}")
-        help_text.append("                      \u2014 Show this help\n", style=TEXT_PRIMARY)
+        help_text.append("                    \u2014 Server status\n", style=TEXT_PRIMARY)
+        help_text.append("\nViews:\n", style=f"bold {TEXT_PRIMARY}")
+        help_text.append("  /logs", style=f"bold {ADA_BLUE}")
+        help_text.append("                      \u2014 Switch to logs tab\n", style=TEXT_PRIMARY)
+        help_text.append("  /clear logs", style=f"bold {ADA_BLUE}")
+        help_text.append("                \u2014 Clear log output\n", style=TEXT_PRIMARY)
+        help_text.append("\nKeys:\n", style=f"bold {TEXT_PRIMARY}")
         help_text.append("  Ctrl+L", style=f"bold {ADA_BLUE}")
         help_text.append("                     \u2014 Refresh dashboard\n", style=TEXT_PRIMARY)
         help_text.append("  Ctrl+C", style=f"bold {ADA_BLUE}")
         help_text.append("                     \u2014 Quit", style=TEXT_PRIMARY)
         log.mount(Static(help_text))
+        self.query_one(TabbedContent).active = "tab-output"
 
-    def action_clear(self) -> None:
+    def action_refresh_all(self) -> None:
         """Refresh all dashboard data."""
         self._refresh_dashboard()
 
