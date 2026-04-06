@@ -20,10 +20,10 @@ def main() -> None:
 
 
 def _dashboard() -> None:
-    """Launch the TUI dashboard with embedded server."""
+    """Launch the TUI dashboard."""
     from ada.tui.app import AdaApp
 
-    app = AdaApp(server_started=False)
+    app = AdaApp()
     app.run()
 
 

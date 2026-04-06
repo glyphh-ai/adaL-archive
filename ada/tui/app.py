@@ -156,6 +156,75 @@ def _fetch_tokens_remote(rt: RuntimeConnection) -> list[dict[str, Any]]:
     return resp.json().get("tokens", [])
 
 
+def _create_token_local(org_id: str, name: str, permissions: list[str] | None = None) -> dict[str, Any]:
+    """Create a token directly in the DB (local runtime)."""
+    import hashlib
+    import secrets
+    from datetime import datetime, timedelta
+    from infrastructure.database import async_session_maker
+    from domains.models.db_models import Token
+
+    raw_token = f"ada_{secrets.token_urlsafe(32)}"
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+    token_prefix = raw_token[:12]
+    perms = permissions or ["read", "write"]
+    expires_at = datetime.utcnow() + timedelta(days=365)
+
+    async def _create():
+        async with async_session_maker() as session:
+            db_token = Token(
+                name=name,
+                token_hash=token_hash,
+                token_prefix=token_prefix,
+                org_id=org_id,
+                permissions=perms,
+                expires_at=expires_at,
+            )
+            session.add(db_token)
+            await session.commit()
+            return {
+                "id": str(db_token.id),
+                "name": name,
+                "token": raw_token,
+                "token_prefix": token_prefix,
+                "org_id": org_id,
+                "permissions": perms,
+            }
+
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(_create())
+    finally:
+        loop.close()
+
+
+def _revoke_token_local(org_id: str, token_id: str) -> bool:
+    """Revoke a token directly in the DB (local runtime)."""
+    from datetime import datetime
+    from infrastructure.database import async_session_maker
+    from domains.models.db_models import Token
+    from sqlalchemy import select
+
+    async def _revoke():
+        async with async_session_maker() as session:
+            result = await session.execute(
+                select(Token).where(Token.id == token_id, Token.org_id == org_id, Token.status == "active")
+            )
+            db_token = result.scalar_one_or_none()
+            if not db_token:
+                return False
+            db_token.status = "revoked"
+            db_token.revoked_at = datetime.utcnow()
+            await session.commit()
+            return True
+
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(_revoke())
+    finally:
+        loop.close()
+
+
 def _check_runtime_health(rt: RuntimeConnection) -> dict[str, Any]:
     """Check a remote runtime's health."""
     import httpx
@@ -317,7 +386,7 @@ class ModelsPanel(Static):
     PAGE_SIZE = 6
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__("", **kwargs)
         self._models: list[dict[str, Any]] = []
         self._filtered: list[dict[str, Any]] = []
         self._search: str = ""
@@ -325,6 +394,9 @@ class ModelsPanel(Static):
         self._loading: bool = False
         self._error: str = ""
         self._runtime_filter: str = ""  # "" = all runtimes
+
+    def on_mount(self) -> None:
+        self.update(Text("Use /models to list deployed models.", style=TEXT_DIM))
 
     def set_search(self, query: str) -> None:
         self._search = query.lower().strip()
@@ -438,6 +510,12 @@ class ModelsPanel(Static):
 class RuntimesPanel(Static):
     """Shows all configured runtimes with status."""
 
+    def __init__(self, **kwargs) -> None:
+        super().__init__("", **kwargs)
+
+    def on_mount(self) -> None:
+        self.refresh_data()
+
     def refresh_data(self) -> None:
         rm = get_runtime_manager()
         runtimes = rm.list_all()
@@ -492,10 +570,13 @@ class TokensPanel(Static):
     """Shows API tokens for the active runtime."""
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__("", **kwargs)
         self._tokens: list[dict[str, Any]] = []
         self._loading: bool = False
         self._error: str = ""
+
+    def on_mount(self) -> None:
+        self.update(Text("Use /tokens to list API tokens.", style=TEXT_DIM))
 
     def set_tokens(self, tokens: list[dict[str, Any]]) -> None:
         self._tokens = tokens
@@ -814,8 +895,22 @@ class AdaApp(App):
 
         # -- Tokens --
         elif cmd == "/tokens":
-            self._fetch_tokens()
-            self.query_one(TabbedContent).active = "tab-tokens"
+            if len(parts) > 1:
+                sub = parts[1].lower()
+                if sub == "create" and len(parts) >= 3:
+                    self._create_token(parts[2], parts[3:])
+                elif sub == "revoke" and len(parts) >= 3:
+                    self._revoke_token(parts[2])
+                elif sub == "refresh":
+                    self._fetch_tokens()
+                    self.query_one(TabbedContent).active = "tab-tokens"
+                else:
+                    self._msg("Usage: /tokens create <name> [--perms read,write,admin]")
+                    self._msg("       /tokens revoke <token_id>")
+                    self._msg("       /tokens refresh")
+            else:
+                self._fetch_tokens()
+                self.query_one(TabbedContent).active = "tab-tokens"
 
         # -- Views --
         elif cmd == "/logs":
@@ -949,6 +1044,60 @@ class AdaApp(App):
         except Exception as e:
             self._msg(f"  Warning: could not apply {key} live: {e}")
 
+    # -- Token management --
+
+    def _create_token(self, name: str, extra_args: list[str]) -> None:
+        if not self._server_running:
+            self._msg("Server is not running. Use /start first.")
+            return
+        rt = self._rm.get_active()
+
+        # Parse --perms flag
+        perms = None
+        for i, a in enumerate(extra_args):
+            if a in ("--perms", "-p") and i + 1 < len(extra_args):
+                perms = extra_args[i + 1].split(",")
+
+        def _do():
+            try:
+                if rt.is_local:
+                    result = _create_token_local(rt.org_id, name, perms)
+                else:
+                    self.call_from_thread(self._msg, "Remote token creation not yet supported. Use the API directly.")
+                    return
+                self.call_from_thread(self._msg, f"Token created: {result['name']}")
+                self.call_from_thread(self._msg, f"  Token: {result['token']}")
+                self.call_from_thread(self._msg, f"  Prefix: {result['token_prefix']}")
+                self.call_from_thread(self._msg, "  Store this token securely — it won't be shown again.")
+                self.call_from_thread(self._fetch_tokens)
+            except Exception as e:
+                self.call_from_thread(self._msg, f"Error creating token: {e}")
+
+        self.run_worker(_do, name="create-token", thread=True)
+
+    def _revoke_token(self, token_id: str) -> None:
+        if not self._server_running:
+            self._msg("Server is not running. Use /start first.")
+            return
+        rt = self._rm.get_active()
+
+        def _do():
+            try:
+                if rt.is_local:
+                    ok = _revoke_token_local(rt.org_id, token_id)
+                else:
+                    self.call_from_thread(self._msg, "Remote token revocation not yet supported.")
+                    return
+                if ok:
+                    self.call_from_thread(self._msg, f"Token {token_id} revoked.")
+                    self.call_from_thread(self._fetch_tokens)
+                else:
+                    self.call_from_thread(self._msg, f"Token {token_id} not found or already revoked.")
+            except Exception as e:
+                self.call_from_thread(self._msg, f"Error revoking token: {e}")
+
+        self.run_worker(_do, name="revoke-token", thread=True)
+
     # -- UI helpers --
 
     def _msg(self, content: str) -> None:
@@ -988,6 +1137,9 @@ class AdaApp(App):
         h.append("  /models next | prev           \u2014 Paginate\n", style=TEXT_PRIMARY)
         h.append("\nTokens:\n", style=f"bold {TEXT_PRIMARY}")
         h.append("  /tokens                       \u2014 List tokens\n", style=TEXT_PRIMARY)
+        h.append("  /tokens create <name>         \u2014 Create token\n", style=TEXT_PRIMARY)
+        h.append("    [--perms read,write,admin]\n", style=TEXT_DIM)
+        h.append("  /tokens revoke <id>           \u2014 Revoke token\n", style=TEXT_PRIMARY)
         h.append("\nConfig:\n", style=f"bold {TEXT_PRIMARY}")
         h.append("  /config                       \u2014 Show config\n", style=TEXT_PRIMARY)
         h.append("  /config <key> <value>         \u2014 Set config value\n", style=TEXT_PRIMARY)
