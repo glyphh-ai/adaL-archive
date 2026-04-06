@@ -7,6 +7,7 @@ import logging
 import time
 import threading
 from collections import deque
+from typing import Any
 
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -17,6 +18,7 @@ from rich.text import Text
 from rich.table import Table
 from rich.style import Style
 from rich.panel import Panel
+from rich.columns import Columns
 
 from ada.tui.banner import get_banner
 from ada.tui.graph import render_graph
@@ -334,6 +336,184 @@ class LogPanel(Static):
 
 
 # ---------------------------------------------------------------------------
+# Models Panel — card-based model browser
+# ---------------------------------------------------------------------------
+
+class ModelsPanel(Static):
+    """Card-based model browser with search and pagination."""
+
+    PAGE_SIZE = 6  # models per page (2 rows x 3 cards)
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._models: list[dict[str, Any]] = []
+        self._filtered: list[dict[str, Any]] = []
+        self._search: str = ""
+        self._page: int = 0
+        self._loading: bool = False
+        self._error: str = ""
+
+    def set_search(self, query: str) -> None:
+        self._search = query.lower().strip()
+        self._page = 0
+        self._apply_filter()
+        self._render()
+
+    def next_page(self) -> None:
+        max_page = max(0, (len(self._filtered) - 1) // self.PAGE_SIZE)
+        if self._page < max_page:
+            self._page += 1
+            self._render()
+
+    def prev_page(self) -> None:
+        if self._page > 0:
+            self._page -= 1
+            self._render()
+
+    def set_models(self, models: list[dict[str, Any]]) -> None:
+        self._models = models
+        self._loading = False
+        self._error = ""
+        self._apply_filter()
+        self._render()
+
+    def set_loading(self) -> None:
+        self._loading = True
+        self._render()
+
+    def set_error(self, error: str) -> None:
+        self._error = error
+        self._loading = False
+        self._render()
+
+    def _apply_filter(self) -> None:
+        if not self._search:
+            self._filtered = list(self._models)
+        else:
+            self._filtered = [
+                m for m in self._models
+                if self._search in m.get("model_id", "").lower()
+                or self._search in m.get("name", "").lower()
+                or self._search in m.get("version", "").lower()
+                or self._search in m.get("status", "").lower()
+            ]
+
+    def _render(self) -> None:
+        if self._loading:
+            self.update(Panel(
+                Text("Loading models...", style=TEXT_DIM),
+                title="Models",
+                title_align="left",
+                border_style=Style(color="#333333"),
+            ))
+            return
+
+        if self._error:
+            msg = Text()
+            msg.append("Error: ", style=f"bold {TEXT_ERROR}")
+            msg.append(self._error, style=TEXT_DIM)
+            self.update(Panel(
+                msg,
+                title="Models",
+                title_align="left",
+                border_style=Style(color="#333333"),
+            ))
+            return
+
+        if not self._filtered:
+            if self._search:
+                msg = Text(f'No models matching "{self._search}"', style=TEXT_DIM)
+            elif not self._models:
+                msg = Text("No models deployed. Use /deploy <path> to deploy a model.", style=TEXT_DIM)
+            else:
+                msg = Text("No models found.", style=TEXT_DIM)
+            self.update(Panel(
+                msg,
+                title="Models",
+                title_align="left",
+                border_style=Style(color="#333333"),
+            ))
+            return
+
+        # Pagination
+        total = len(self._filtered)
+        total_pages = max(1, (total + self.PAGE_SIZE - 1) // self.PAGE_SIZE)
+        start = self._page * self.PAGE_SIZE
+        end = min(start + self.PAGE_SIZE, total)
+        page_models = self._filtered[start:end]
+
+        # Build card panels
+        cards = []
+        for m in page_models:
+            cards.append(self._render_card(m))
+
+        # Header with search info and pagination
+        header = Text()
+        header.append(f" {total} model{'s' if total != 1 else ''}", style=TEXT_PRIMARY)
+        if self._search:
+            header.append(f'  (filter: "{self._search}")', style=TEXT_DIM)
+        header.append(f"  page {self._page + 1}/{total_pages}", style=TEXT_DIM)
+        if total_pages > 1:
+            header.append("  /models next | /models prev", style=f" {ADA_BLUE}")
+
+        # Render cards in rows of 3
+        content = Text()
+        content.append(header)
+        content.append("\n\n")
+
+        # Build each card as a panel string and lay them out
+        for i, card in enumerate(cards):
+            content.append(card)
+            if i < len(cards) - 1:
+                content.append("\n")
+
+        self.update(content)
+
+    def _render_card(self, m: dict[str, Any]) -> Text:
+        """Render a single model as a styled card."""
+        model_id = m.get("model_id", "unknown")
+        name = m.get("name", model_id)
+        version = m.get("version", "\u2014")
+        glyphs = m.get("glyphs", 0)
+        status = m.get("status", "unknown")
+        short_desc = m.get("short_description", "")
+
+        # Status color
+        if status == "active":
+            status_style = TEXT_SUCCESS
+            status_icon = "\u25cf"
+        elif status == "encoding":
+            status_style = ADA_PURPLE
+            status_icon = "\u25cb"
+        elif status == "locked":
+            status_style = ADA_PINK
+            status_icon = "\u25cb"
+        else:
+            status_style = TEXT_ERROR
+            status_icon = "\u25cf"
+
+        card = Text()
+        # Title line
+        card.append(f"  {status_icon} ", style=status_style)
+        card.append(f"{name}", style=f"bold {TEXT_PRIMARY}")
+        if name != model_id:
+            card.append(f"  ({model_id})", style=TEXT_DIM)
+        card.append("\n")
+        # Version + status
+        card.append(f"    v{version}", style=ADA_BLUE)
+        card.append(f"  {status}", style=status_style)
+        card.append(f"  {glyphs:,} glyphs", style=TEXT_DIM)
+        card.append("\n")
+        # Description
+        if short_desc:
+            desc = short_desc[:80] + ("..." if len(short_desc) > 80 else "")
+            card.append(f"    {desc}", style=TEXT_DIM)
+            card.append("\n")
+
+        return card
+
+
+# ---------------------------------------------------------------------------
 # Main App
 # ---------------------------------------------------------------------------
 
@@ -385,6 +565,15 @@ class AdaApp(App):
     RecentRequests {
         height: auto;
         padding: 0 2;
+    }
+
+    ModelsPanel {
+        height: auto;
+        padding: 0 2;
+    }
+
+    #models-scroll {
+        height: 1fr;
     }
 
     LogPanel {
@@ -447,7 +636,7 @@ class AdaApp(App):
         Binding("ctrl+l", "refresh_all", "Refresh", show=True),
     ]
 
-    def __init__(self, server_started: bool = False) -> None:
+    def __init__(self, server_started: bool = False, org_id: str = "default") -> None:
         super().__init__()
         self._server_started = server_started
         self._server_running = server_started
@@ -455,6 +644,8 @@ class AdaApp(App):
         self._uvicorn_server = None
         self._refresh_timer: Timer | None = None
         self._server_port: int = 8002
+        self._org_id: str = org_id
+        self._api_token: str | None = None
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -469,6 +660,9 @@ class AdaApp(App):
                         yield LatencyGraph()
                     yield ModelsTable()
                     yield RecentRequests()
+            with TabPane("Models", id="tab-models"):
+                with VerticalScroll(id="models-scroll"):
+                    yield ModelsPanel()
             with TabPane("Logs", id="tab-logs"):
                 with VerticalScroll(id="logs-scroll"):
                     yield LogPanel()
@@ -608,6 +802,39 @@ class AdaApp(App):
                 except Exception:
                     pass
                 self.query_one(TabbedContent).active = "tab-dashboard"
+        elif cmd == "/org":
+            if len(parts) > 1:
+                self._org_id = parts[1]
+                self._show_message("system", f"Org set to: {self._org_id}")
+            else:
+                self._show_message("system", f"Current org: {self._org_id}")
+        elif cmd == "/token":
+            if len(parts) > 1:
+                self._api_token = parts[1]
+                self._show_message("system", "API token set.")
+            else:
+                if self._api_token:
+                    self._show_message("system", f"Token set: {self._api_token[:8]}...")
+                else:
+                    self._show_message("system", "No API token set. Use /token <token>")
+        elif cmd == "/models":
+            if len(parts) > 1:
+                subcmd = parts[1].lower()
+                if subcmd == "next":
+                    self.query_one(ModelsPanel).next_page()
+                elif subcmd == "prev":
+                    self.query_one(ModelsPanel).prev_page()
+                elif subcmd == "search":
+                    query = " ".join(parts[2:]) if len(parts) > 2 else ""
+                    self.query_one(ModelsPanel).set_search(query)
+                elif subcmd == "refresh":
+                    self._fetch_models()
+                else:
+                    # Treat as search
+                    self.query_one(ModelsPanel).set_search(" ".join(parts[1:]))
+            else:
+                self._fetch_models()
+            self.query_one(TabbedContent).active = "tab-models"
         elif cmd in ("/exit", "/quit"):
             self.exit()
         else:
@@ -644,6 +871,22 @@ class AdaApp(App):
         help_text.append("                      \u2014 Stop the server\n", style=TEXT_PRIMARY)
         help_text.append("  /status", style=f"bold {ADA_BLUE}")
         help_text.append("                    \u2014 Server status\n", style=TEXT_PRIMARY)
+        help_text.append("\nModels:\n", style=f"bold {TEXT_PRIMARY}")
+        help_text.append("  /models", style=f"bold {ADA_BLUE}")
+        help_text.append("                    \u2014 List deployed models\n", style=TEXT_PRIMARY)
+        help_text.append("  /models", style=f"bold {ADA_BLUE}")
+        help_text.append(" <search>            \u2014 Filter models by name\n", style=TEXT_PRIMARY)
+        help_text.append("  /models next", style=f"bold {ADA_BLUE}")
+        help_text.append("               \u2014 Next page\n", style=TEXT_PRIMARY)
+        help_text.append("  /models prev", style=f"bold {ADA_BLUE}")
+        help_text.append("               \u2014 Previous page\n", style=TEXT_PRIMARY)
+        help_text.append("  /models refresh", style=f"bold {ADA_BLUE}")
+        help_text.append("            \u2014 Refresh model list\n", style=TEXT_PRIMARY)
+        help_text.append("\nConfig:\n", style=f"bold {TEXT_PRIMARY}")
+        help_text.append("  /org", style=f"bold {ADA_BLUE}")
+        help_text.append(f" <id>                 \u2014 Set org (current: {self._org_id})\n", style=TEXT_PRIMARY)
+        help_text.append("  /token", style=f"bold {ADA_BLUE}")
+        help_text.append(" <token>             \u2014 Set API token\n", style=TEXT_PRIMARY)
         help_text.append("\nViews:\n", style=f"bold {TEXT_PRIMARY}")
         help_text.append("  /logs", style=f"bold {ADA_BLUE}")
         help_text.append("                      \u2014 Switch to logs tab\n", style=TEXT_PRIMARY)
@@ -660,6 +903,41 @@ class AdaApp(App):
         help_text.append("                     \u2014 Quit", style=TEXT_PRIMARY)
         log.mount(Static(help_text))
         self.query_one(TabbedContent).active = "tab-output"
+
+    def _fetch_models(self) -> None:
+        """Fetch models from the API and update the Models panel."""
+        if not self._server_running:
+            self.query_one(ModelsPanel).set_error("Server is not running. Use /start first.")
+            return
+
+        panel = self.query_one(ModelsPanel)
+        panel.set_loading()
+
+        def _do_fetch():
+            import httpx
+            try:
+                url = f"http://localhost:{self._server_port}/{self._org_id}/models"
+                headers = {}
+                if self._api_token:
+                    headers["Authorization"] = f"Bearer {self._api_token}"
+                with httpx.Client(timeout=10) as client:
+                    resp = client.get(url, headers=headers)
+                if resp.status_code == 401:
+                    self.call_from_thread(panel.set_error, "Authentication required. Set a token with /token <token>")
+                    return
+                if resp.status_code == 403:
+                    self.call_from_thread(panel.set_error, f"Access denied for org '{self._org_id}'. Use /org <org_id>")
+                    return
+                resp.raise_for_status()
+                data = resp.json()
+                models = data.get("models", [])
+                self.call_from_thread(panel.set_models, models)
+            except httpx.ConnectError:
+                self.call_from_thread(panel.set_error, f"Cannot connect to server on port {self._server_port}")
+            except Exception as e:
+                self.call_from_thread(panel.set_error, str(e))
+
+        self.run_worker(_do_fetch, name="fetch-models", exclusive=True, thread=True)
 
     def action_refresh_all(self) -> None:
         """Refresh all dashboard data."""

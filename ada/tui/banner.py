@@ -6,7 +6,7 @@ from rich.style import Style
 # "ada" rendered in braille block characters
 # Extracted from adaL banner3 figlet font, doubled vertically
 BANNER_LINES = [
-    "⠀⣼⢻⡄⠀⣿⠛⠛⢻⡄⠀⣼⢻⡄",
+    "⣼⢻⡄⠀⣿⠛⠛⢻⡄⠀⣼⢻⡄",
     "⣼⠃⠀⢻⡄⣿⠀⠀⢸⡇⣼⠃⠀⢻⡄",
     "⣿⠛⠛⢻⡇⣿⠀⠀⢸⡇⣿⠛⠛⢻⡇",
     "⠛⠀⠀⠘⠃⠛⠛⠛⠛⠀⠛⠀⠀⠘⠃",
