@@ -831,7 +831,7 @@ class AdaApp(App):
     def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
         if event.pane.id == "tab-models":
             panel = self.query_one(ModelsPanel)
-            if not panel._models and not panel._loading and self._server_running:
+            if not panel._installed and not panel._loading and self._server_running:
                 self._fetch_models()
         elif event.pane.id == "tab-runtimes":
             self.query_one(RuntimesPanel).refresh_data()
