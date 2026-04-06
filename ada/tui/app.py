@@ -595,14 +595,21 @@ class AdaApp(App):
             else:
                 self._show_message("system", "Server is stopped.")
         elif cmd == "/logs":
-            # Switch to logs tab
             self.query_one(TabbedContent).active = "tab-logs"
         elif cmd == "/clear":
             if len(parts) > 1 and parts[1] == "logs":
                 _tui_log_handler.clear()
                 self._show_message("system", "Logs cleared.")
             else:
-                self._show_message("system", "Usage: /clear logs")
+                # Clear output messages and switch to dashboard
+                try:
+                    scroll = self.query_one("#messages-scroll", VerticalScroll)
+                    scroll.remove_children()
+                except Exception:
+                    pass
+                self.query_one(TabbedContent).active = "tab-dashboard"
+        elif cmd in ("/exit", "/quit"):
+            self.exit()
         else:
             self._show_message("system", f"Unknown command: {cmd}. Try /help")
 
@@ -640,9 +647,13 @@ class AdaApp(App):
         help_text.append("\nViews:\n", style=f"bold {TEXT_PRIMARY}")
         help_text.append("  /logs", style=f"bold {ADA_BLUE}")
         help_text.append("                      \u2014 Switch to logs tab\n", style=TEXT_PRIMARY)
+        help_text.append("  /clear", style=f"bold {ADA_BLUE}")
+        help_text.append("                     \u2014 Clear output, back to dashboard\n", style=TEXT_PRIMARY)
         help_text.append("  /clear logs", style=f"bold {ADA_BLUE}")
         help_text.append("                \u2014 Clear log output\n", style=TEXT_PRIMARY)
-        help_text.append("\nKeys:\n", style=f"bold {TEXT_PRIMARY}")
+        help_text.append("\nGeneral:\n", style=f"bold {TEXT_PRIMARY}")
+        help_text.append("  /exit", style=f"bold {ADA_BLUE}")
+        help_text.append("                      \u2014 Quit Ada\n", style=TEXT_PRIMARY)
         help_text.append("  Ctrl+L", style=f"bold {ADA_BLUE}")
         help_text.append("                     \u2014 Refresh dashboard\n", style=TEXT_PRIMARY)
         help_text.append("  Ctrl+C", style=f"bold {ADA_BLUE}")
