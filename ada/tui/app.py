@@ -395,47 +395,44 @@ class _SafeStatic(Static):
 
 
 # ---------------------------------------------------------------------------
-# Model catalog — available models that can be installed
+# Model catalog — loaded from models/ manifest files shipped with the runtime
 # ---------------------------------------------------------------------------
 
-MODEL_CATALOG = [
-    {
-        "id": "faq",
-        "name": "FAQ Assistant",
-        "description": "General-purpose FAQ model. Encodes question/answer pairs for semantic retrieval.",
-        "version": "1.0.0",
-    },
-    {
-        "id": "code",
-        "name": "Code Navigator",
-        "description": "Code documentation and function lookup. Indexes source files for natural language search.",
-        "version": "1.0.0",
-    },
-    {
-        "id": "deals",
-        "name": "Deal Finder",
-        "description": "Sales pipeline model. Matches deal attributes and finds similar opportunities.",
-        "version": "1.0.0",
-    },
-    {
-        "id": "sentinel",
-        "name": "Sentinel",
-        "description": "Security event classification. Routes alerts to playbooks via intent matching.",
-        "version": "2.0.0",
-    },
-    {
-        "id": "churn",
-        "name": "Churn Predictor",
-        "description": "Customer churn risk model. Encodes behavioral signals for similarity-based prediction.",
-        "version": "1.0.0",
-    },
-    {
-        "id": "voice",
-        "name": "Voice Router",
-        "description": "Audio feature extraction and intent routing for voice-based interfaces.",
-        "version": "0.9.0",
-    },
-]
+def _load_model_catalog() -> list[dict[str, Any]]:
+    """Scan models/ directory for manifest.yaml files and build the catalog."""
+    import yaml
+    from pathlib import Path
+
+    catalog = []
+    # Look for models/ relative to the repo root (next to ada/ package)
+    models_dir = Path(__file__).parent.parent.parent / "models"
+    if not models_dir.is_dir():
+        return catalog
+
+    for model_dir in sorted(models_dir.iterdir()):
+        if not model_dir.is_dir():
+            continue
+        manifest_path = model_dir / "manifest.yaml"
+        if not manifest_path.exists():
+            continue
+        try:
+            manifest = yaml.safe_load(manifest_path.read_text()) or {}
+            catalog.append({
+                "id": model_dir.name,
+                "name": manifest.get("name", model_dir.name),
+                "description": manifest.get("description", ""),
+                "version": manifest.get("version", "0.1.0"),
+                "icon": manifest.get("icon", ""),
+                "category": manifest.get("category", ""),
+                "tags": manifest.get("tags", []),
+                "path": str(model_dir),
+            })
+        except Exception:
+            continue
+    return catalog
+
+
+MODEL_CATALOG = _load_model_catalog()
 
 
 class ModelsPanel(_SafeStatic):
@@ -555,18 +552,26 @@ class ModelsPanel(_SafeStatic):
 
             for m in page:
                 is_installed = m["id"] in installed_ids
+                icon = m.get("icon", "")
                 content.append("  ")
                 if is_installed:
                     content.append("\u2713 ", style=f"bold {TEXT_SUCCESS}")
                 else:
                     content.append("\u25cb ", style=TEXT_DIM)
+                if icon:
+                    content.append(f"{icon} ")
                 content.append(m["name"], style=f"bold {TEXT_PRIMARY}")
                 content.append(f"  ({m['id']})", style=TEXT_DIM)
                 content.append(f"  v{m['version']}", style=ADA_BLUE)
+                cat = m.get("category", "")
+                if cat:
+                    content.append(f"  [{cat}]", style=ADA_PURPLE)
                 if is_installed:
                     content.append("  installed", style=TEXT_SUCCESS)
                 content.append("\n")
-                content.append(f"    {m['description']}\n", style=TEXT_DIM)
+                desc = m.get("description", "")
+                if desc:
+                    content.append(f"    {desc[:100]}{'...' if len(desc) > 100 else ''}\n", style=TEXT_DIM)
 
         content.append("\n")
         self.update(content)
@@ -896,13 +901,41 @@ class AdaApp(App):
             self._msg("Server is not running. Use /start first.")
             return
 
+        model_path = catalog_entry.get("path")
+        if not model_path:
+            self._msg(f"No model path for '{model_id}'.")
+            return
+
         self._msg(f"Installing {catalog_entry['name']} ({catalog_entry['id']}) on {rt.name}...")
 
-        # TODO: actual model deployment via ModelManager or API
-        # For now this is a placeholder — the deploy logic will use:
-        # - Local: model_manager.load_model_from_directory(model_dir, org_id, model_id)
-        # - Remote: POST /{org_id}/{model_id}/model/deploy with packaged .ada file
-        self._msg(f"Model install not yet wired to deployment pipeline. Coming soon.")
+        def _do_install():
+            try:
+                if rt.is_local:
+                    # Local: load directly from the bundled model directory
+                    from ada.server import model_manager
+                    loop = asyncio.new_event_loop()
+                    try:
+                        result = loop.run_until_complete(
+                            model_manager.load_model_from_directory(
+                                model_dir=model_path,
+                                org_id=rt.org_id,
+                                model_id=catalog_entry["id"],
+                            )
+                        )
+                        self.call_from_thread(self._msg,
+                            f"\u2713 {catalog_entry['name']} installed on {rt.name}")
+                        self.call_from_thread(self._fetch_models)
+                    finally:
+                        loop.close()
+                else:
+                    # Remote: package and upload via API
+                    # TODO: package model dir -> .ada file, POST to runtime
+                    self.call_from_thread(self._msg,
+                        f"Remote model install not yet implemented. Deploy manually via API.")
+            except Exception as e:
+                self.call_from_thread(self._msg, f"Install failed: {e}")
+
+        self.run_worker(_do_install, name="install-model", thread=True)
 
     def _fetch_tokens(self) -> None:
         panel = self.query_one(TokensPanel)
