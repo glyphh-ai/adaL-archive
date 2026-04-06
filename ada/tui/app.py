@@ -382,11 +382,21 @@ class LogPanel(Static):
         self.update(text)
 
 
-class ModelsPanel(Static):
+class _SafeStatic(Static):
+    """Static that never returns None from render — fixes Textual 8.x crash."""
+
+    def render(self):
+        result = super().render()
+        if result is None:
+            return Text(" ")
+        return result
+
+
+class ModelsPanel(_SafeStatic):
     PAGE_SIZE = 6
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(Text("Use /models to list deployed models.", style=TEXT_DIM), **kwargs)
+        super().__init__("Use /models to list deployed models.", **kwargs)
         self._models: list[dict[str, Any]] = []
         self._filtered: list[dict[str, Any]] = []
         self._search: str = ""
@@ -504,11 +514,11 @@ class ModelsPanel(Static):
         self.update(content)
 
 
-class RuntimesPanel(Static):
+class RuntimesPanel(_SafeStatic):
     """Shows all configured runtimes with status."""
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(Text("Loading runtimes...", style=TEXT_DIM), **kwargs)
+        super().__init__("Loading runtimes...", **kwargs)
 
     def refresh_data(self) -> None:
         rm = get_runtime_manager()
@@ -560,11 +570,11 @@ class RuntimesPanel(Static):
         self.update(content)
 
 
-class TokensPanel(Static):
+class TokensPanel(_SafeStatic):
     """Shows API tokens for the active runtime."""
 
     def __init__(self, **kwargs) -> None:
-        super().__init__(Text("Use /tokens to list API tokens.", style=TEXT_DIM), **kwargs)
+        super().__init__("Use /tokens to list API tokens.", **kwargs)
         self._tokens: list[dict[str, Any]] = []
         self._loading: bool = False
         self._error: str = ""
@@ -635,9 +645,9 @@ class AdaApp(App):
     LatencyGraph { width: 1fr; }
     ModelsTable { height: auto; padding: 0 2; }
     RecentRequests { height: auto; padding: 0 2; }
-    ModelsPanel { height: auto; padding: 0 2; }
-    RuntimesPanel { height: auto; padding: 0 2; }
-    TokensPanel { height: auto; padding: 0 2; }
+    ModelsPanel { min-height: 3; padding: 0 2; }
+    RuntimesPanel { min-height: 3; padding: 0 2; }
+    TokensPanel { min-height: 3; padding: 0 2; }
     LogPanel { height: auto; min-height: 8; padding: 0 2; }
     #tabs { height: 1fr; }
     TabPane { padding: 0; }
