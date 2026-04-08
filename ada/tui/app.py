@@ -394,62 +394,18 @@ class _SafeStatic(Static):
         return result
 
 
-# ---------------------------------------------------------------------------
-# Model catalog — loaded from models/ manifest files shipped with the runtime
-# ---------------------------------------------------------------------------
-
-def _load_model_catalog() -> list[dict[str, Any]]:
-    """Scan models/ directory for manifest.yaml files and build the catalog."""
-    import yaml
-    from pathlib import Path
-
-    catalog = []
-    # Look for models/ relative to the repo root (next to ada/ package)
-    models_dir = Path(__file__).parent.parent.parent / "models"
-    if not models_dir.is_dir():
-        return catalog
-
-    for model_dir in sorted(models_dir.iterdir()):
-        if not model_dir.is_dir():
-            continue
-        manifest_path = model_dir / "manifest.yaml"
-        if not manifest_path.exists():
-            continue
-        try:
-            manifest = yaml.safe_load(manifest_path.read_text()) or {}
-            catalog.append({
-                "id": model_dir.name,
-                "name": manifest.get("name", model_dir.name),
-                "description": manifest.get("description", ""),
-                "version": manifest.get("version", "0.1.0"),
-                "icon": manifest.get("icon", ""),
-                "category": manifest.get("category", ""),
-                "tags": manifest.get("tags", []),
-                "path": str(model_dir),
-            })
-        except Exception:
-            continue
-    return catalog
-
-
-MODEL_CATALOG = _load_model_catalog()
-
-
 class ModelsPanel(_SafeStatic):
-    """Two-section models view: installed table + available catalog."""
-
-    CATALOG_PAGE_SIZE = 12
+    """Deployed models view — shows what's running on each runtime."""
 
     def __init__(self, **kwargs) -> None:
-        super().__init__("Loading...", **kwargs)
-        self._installed: list[dict[str, Any]] = []
+        super().__init__("Use /models to view deployed models.", **kwargs)
+        self._models: list[dict[str, Any]] = []
         self._loading: bool = False
         self._error: str = ""
         self._search: str = ""
-        self._catalog_page: int = 0
 
-    def set_installed(self, models: list[dict[str, Any]]) -> None:
-        self._installed = models
+    def set_models(self, models: list[dict[str, Any]]) -> None:
+        self._models = models
         self._loading = False
         self._error = ""
         self._redraw()
@@ -465,115 +421,66 @@ class ModelsPanel(_SafeStatic):
 
     def set_search(self, query: str) -> None:
         self._search = query.lower().strip()
-        self._catalog_page = 0
         self._redraw()
-
-    def next_page(self) -> None:
-        filtered = self._get_filtered_catalog()
-        mx = max(0, (len(filtered) - 1) // self.CATALOG_PAGE_SIZE)
-        if self._catalog_page < mx:
-            self._catalog_page += 1
-            self._redraw()
-
-    def prev_page(self) -> None:
-        if self._catalog_page > 0:
-            self._catalog_page -= 1
-            self._redraw()
-
-    def _get_filtered_catalog(self) -> list[dict]:
-        catalog = MODEL_CATALOG
-        if self._search:
-            s = self._search
-            catalog = [m for m in catalog
-                if s in m["id"].lower()
-                or s in m["name"].lower()
-                or s in m.get("description", "").lower()]
-        return catalog
 
     def _redraw(self) -> None:
         content = Text()
-
-        # ── Section 1: Installed Models ──
-        content.append(" Installed Models\n", style=f"bold {ADA_BLUE}")
+        content.append(" Deployed Models\n", style=f"bold {ADA_BLUE}")
 
         if self._loading:
             content.append("  Loading...\n", style=TEXT_DIM)
         elif self._error:
             content.append(f"  Error: {self._error}\n", style=TEXT_ERROR)
-        elif not self._installed:
-            content.append("  No models installed.\n", style=TEXT_DIM)
+        elif not self._models:
+            content.append("  No models deployed.\n", style=TEXT_DIM)
+            content.append("  Deploy a .ada file: /deploy <path> [org_id] [model_id]\n", style=TEXT_DIM)
         else:
-            # Build table as text (Rich Table doesn't work well inside Static.update)
-            content.append(f"  {'Model':<20} {'Name':<20} {'Glyphs':>8} {'Vectors':>8} {'Status':<10} {'Runtime':<10}\n",
+            models = self._models
+            if self._search:
+                s = self._search
+                models = [m for m in models
+                    if s in m.get("model_id", "").lower()
+                    or s in m.get("name", "").lower()
+                    or s in m.get("status", "").lower()
+                    or s in m.get("runtime", "").lower()]
+
+            content.append(f"  {'Model':<18} {'Name':<18} {'Glyphs':>8} {'Status':<10} {'Runtime':<10}\n",
                 style=f"bold {ADA_BLUE}")
-            content.append(f"  {'\u2500' * 78}\n", style="#333333")
-            for m in self._installed:
+            content.append(f"  {'\u2500' * 68}\n", style="#333333")
+
+            for m in models:
                 mid = m.get("model_id", "?")
                 name = m.get("name", mid)
                 glyphs = m.get("glyphs", 0)
-                vectors = m.get("vectors", glyphs)  # vectors default to glyph count
                 status = m.get("status", "unknown")
                 runtime = m.get("runtime", "local")
 
-                st_style = TEXT_SUCCESS if status == "active" else ADA_PURPLE if status == "encoding" else TEXT_ERROR
+                st_style = TEXT_SUCCESS if status == "active" else ADA_PURPLE if status == "encoding" else ADA_PINK if status == "locked" else TEXT_ERROR
                 st_icon = "\u25cf" if status == "active" else "\u25cb"
 
-                content.append(f"  {mid:<20} ", style=TEXT_PRIMARY)
-                content.append(f"{name:<20} ", style=TEXT_DIM)
+                content.append(f"  {mid:<18} ", style=TEXT_PRIMARY)
+                content.append(f"{name:<18} ", style=TEXT_DIM)
                 content.append(f"{glyphs:>8,} ", style=TEXT_PRIMARY)
-                content.append(f"{vectors:>8,} ", style=TEXT_PRIMARY)
                 content.append(f"{st_icon} ", style=st_style)
                 content.append(f"{status:<8} ", style=st_style)
                 content.append(f"{runtime}\n", style=ADA_PURPLE)
 
-        content.append("\n")
-
-        # ── Section 2: Available Models (catalog) ──
-        content.append(" Available Models", style=f"bold {ADA_BLUE}")
-        content.append("  /model install <id>", style=TEXT_DIM)
-        content.append("\n\n")
-
-        catalog = self._get_filtered_catalog()
-        installed_ids = {m.get("model_id") for m in self._installed}
-
-        if self._search and not catalog:
-            content.append(f'  No models matching "{self._search}"\n', style=TEXT_DIM)
-        else:
-            total_pages = max(1, (len(catalog) + self.CATALOG_PAGE_SIZE - 1) // self.CATALOG_PAGE_SIZE)
-            start = self._catalog_page * self.CATALOG_PAGE_SIZE
-            page = catalog[start:start + self.CATALOG_PAGE_SIZE]
-
             if self._search:
-                content.append(f'  filter: "{self._search}"  ', style=TEXT_DIM)
-            if total_pages > 1:
-                content.append(f"  page {self._catalog_page + 1}/{total_pages}", style=TEXT_DIM)
-                content.append("  /models next | prev\n", style=ADA_BLUE)
-            content.append("\n")
-
-            for m in page:
-                is_installed = m["id"] in installed_ids
-                icon = m.get("icon", "")
-                content.append("  ")
-                if is_installed:
-                    content.append("\u2713 ", style=f"bold {TEXT_SUCCESS}")
-                else:
-                    content.append("\u25cb ", style=TEXT_DIM)
-                if icon:
-                    content.append(f"{icon} ")
-                content.append(m["name"], style=f"bold {TEXT_PRIMARY}")
-                content.append(f"  ({m['id']})", style=TEXT_DIM)
-                content.append(f"  v{m['version']}", style=ADA_BLUE)
-                cat = m.get("category", "")
-                if cat:
-                    content.append(f"  [{cat}]", style=ADA_PURPLE)
-                if is_installed:
-                    content.append("  installed", style=TEXT_SUCCESS)
-                content.append("\n")
-                desc = m.get("description", "")
-                if desc:
-                    content.append(f"    {desc[:100]}{'...' if len(desc) > 100 else ''}\n", style=TEXT_DIM)
+                content.append(f'\n  filter: "{self._search}"  ({len(models)} of {len(self._models)})\n', style=TEXT_DIM)
 
         content.append("\n")
+        content.append(" Commands\n", style=f"bold {ADA_BLUE}")
+        content.append("  /models", style=f"bold {ADA_BLUE}")
+        content.append("             \u2014 Refresh model list\n", style=TEXT_DIM)
+        content.append("  /models", style=f"bold {ADA_BLUE}")
+        content.append(" <search>    \u2014 Filter models\n", style=TEXT_DIM)
+        content.append("  /deploy", style=f"bold {ADA_BLUE}")
+        content.append(" <path>      \u2014 Deploy .ada file\n", style=TEXT_DIM)
+        content.append("  /undeploy", style=f"bold {ADA_BLUE}")
+        content.append(" <model_id> \u2014 Undeploy model\n", style=TEXT_DIM)
+        content.append("  /status", style=f"bold {ADA_BLUE}")
+        content.append(" <model_id>  \u2014 Model status\n", style=TEXT_DIM)
+
         self.update(content)
 
 
@@ -838,7 +745,7 @@ class AdaApp(App):
         if event.pane.id == "tab-models":
             panel = self.query_one(ModelsPanel)
             if self._server_running:
-                if not panel._installed and not panel._loading:
+                if not panel._models and not panel._loading:
                     self._fetch_models()
             else:
                 panel.set_error("Server is not running. Use /start to launch, then /models refresh.")
@@ -874,68 +781,108 @@ class AdaApp(App):
                         self._rm.update_status(rt.name, "connected")
                     except Exception as e:
                         self._rm.update_status(rt.name, "error", str(e))
-                self.call_from_thread(panel.set_installed, all_models)
+                self.call_from_thread(panel.set_models, all_models)
             except Exception as e:
                 self.call_from_thread(panel.set_error, str(e))
 
         self.run_worker(_do, name="fetch-models", exclusive=True, thread=True)
 
-    def _install_model(self, model_id: str, runtime_name: str | None = None) -> None:
-        """Install a model from the catalog onto a runtime."""
-        # Find in catalog (by id or name)
-        catalog_entry = None
-        for m in MODEL_CATALOG:
-            if m["id"] == model_id or m["name"].lower() == model_id.lower():
-                catalog_entry = m
-                break
-        if not catalog_entry:
-            self._msg(f"Model '{model_id}' not found in catalog. Use /models to see available.")
+    def _deploy_model(self, path: str, org_id: str, model_id: str | None = None) -> None:
+        """Deploy a .ada file or model directory to a runtime."""
+        from pathlib import Path
+        model_path = Path(path)
+        if not model_path.exists():
+            self._msg(f"Path not found: {path}")
             return
 
-        rt = self._rm.get(runtime_name) if runtime_name else self._rm.get_active()
-        if not rt:
-            self._msg(f"Runtime '{runtime_name}' not found.")
-            return
+        if model_id is None:
+            model_id = model_path.stem  # filename without extension
 
+        rt = self._rm.get_active()
         if not self._server_running and rt.is_local:
             self._msg("Server is not running. Use /start first.")
             return
 
-        model_path = catalog_entry.get("path")
-        if not model_path:
-            self._msg(f"No model path for '{model_id}'.")
-            return
+        self._msg(f"Deploying {model_id} from {path}...")
 
-        self._msg(f"Installing {catalog_entry['name']} ({catalog_entry['id']}) on {rt.name}...")
-
-        def _do_install():
+        def _do():
             try:
                 if rt.is_local:
-                    # Local: load directly from the bundled model directory
                     from ada.server import model_manager
                     loop = asyncio.new_event_loop()
                     try:
-                        result = loop.run_until_complete(
-                            model_manager.load_model_from_directory(
-                                model_dir=model_path,
-                                org_id=rt.org_id,
-                                model_id=catalog_entry["id"],
+                        if model_path.is_dir():
+                            loop.run_until_complete(
+                                model_manager.load_model_from_directory(
+                                    model_dir=str(model_path),
+                                    org_id=org_id,
+                                    model_id=model_id,
+                                )
                             )
-                        )
-                        self.call_from_thread(self._msg,
-                            f"\u2713 {catalog_entry['name']} installed on {rt.name}")
+                        else:
+                            loop.run_until_complete(
+                                model_manager.load_model(
+                                    model_path=str(model_path),
+                                    org_id=org_id,
+                                    model_id=model_id,
+                                )
+                            )
+                        self.call_from_thread(self._msg, f"\u2713 {model_id} deployed")
                         self.call_from_thread(self._fetch_models)
                     finally:
                         loop.close()
                 else:
-                    # Remote: package and upload via API
-                    # TODO: package model dir -> .ada file, POST to runtime
-                    self.call_from_thread(self._msg,
-                        f"Remote model install not yet implemented. Deploy manually via API.")
+                    # Remote: upload via API
+                    import httpx
+                    url = rt.api_url(f"{org_id}/{model_id}/model/deploy")
+                    with open(str(model_path), "rb") as f:
+                        resp = httpx.post(url, headers=rt.headers(),
+                            files={"file": (model_path.name, f)}, timeout=120)
+                    if resp.status_code == 200:
+                        self.call_from_thread(self._msg, f"\u2713 {model_id} deployed to {rt.name}")
+                        self.call_from_thread(self._fetch_models)
+                    else:
+                        self.call_from_thread(self._msg, f"Deploy failed: {resp.status_code} {resp.text[:200]}")
             except Exception as e:
-                self.call_from_thread(self._msg, f"Install failed: {e}")
+                self.call_from_thread(self._msg, f"Deploy failed: {e}")
 
-        self.run_worker(_do_install, name="install-model", thread=True)
+        self.run_worker(_do, name="deploy-model", thread=True)
+
+    def _undeploy_model(self, org_id: str, model_id: str) -> None:
+        """Undeploy a model from a runtime."""
+        rt = self._rm.get_active()
+        if not self._server_running and rt.is_local:
+            self._msg("Server is not running.")
+            return
+
+        self._msg(f"Undeploying {model_id}...")
+
+        def _do():
+            try:
+                if rt.is_local:
+                    from ada.server import model_manager
+                    loop = asyncio.new_event_loop()
+                    try:
+                        loop.run_until_complete(
+                            model_manager.unload_model(org_id, model_id)
+                        )
+                        self.call_from_thread(self._msg, f"\u2713 {model_id} undeployed")
+                        self.call_from_thread(self._fetch_models)
+                    finally:
+                        loop.close()
+                else:
+                    import httpx
+                    url = rt.api_url(f"{org_id}/{model_id}/model/undeploy")
+                    resp = httpx.post(url, headers=rt.headers(), json={}, timeout=30)
+                    if resp.status_code == 200:
+                        self.call_from_thread(self._msg, f"\u2713 {model_id} undeployed from {rt.name}")
+                        self.call_from_thread(self._fetch_models)
+                    else:
+                        self.call_from_thread(self._msg, f"Undeploy failed: {resp.status_code}")
+            except Exception as e:
+                self.call_from_thread(self._msg, f"Undeploy failed: {e}")
+
+        self.run_worker(_do, name="undeploy-model", thread=True)
 
     def _fetch_tokens(self) -> None:
         panel = self.query_one(TokensPanel)
@@ -1003,27 +950,28 @@ class AdaApp(App):
         elif cmd == "/models":
             if len(parts) > 1:
                 sub = parts[1].lower()
-                if sub == "next":
-                    self.query_one(ModelsPanel).next_page()
-                elif sub == "prev":
-                    self.query_one(ModelsPanel).prev_page()
-                elif sub == "refresh":
+                if sub == "refresh":
                     self._fetch_models()
                 else:
                     self.query_one(ModelsPanel).set_search(" ".join(parts[1:]))
             else:
                 self._fetch_models()
             self.query_one(TabbedContent).active = "tab-models"
-        elif cmd == "/model":
-            if len(parts) >= 3 and parts[1].lower() == "install":
-                model_id = parts[2]
-                runtime_name = None
-                for i, a in enumerate(parts[3:], 3):
-                    if a.startswith("@"):
-                        runtime_name = a[1:]
-                self._install_model(model_id, runtime_name)
+        elif cmd == "/deploy":
+            if len(parts) >= 2:
+                path = parts[1]
+                org = parts[2] if len(parts) > 2 else self._rm.get_active().org_id
+                model = parts[3] if len(parts) > 3 else None
+                self._deploy_model(path, org, model)
             else:
-                self._msg("Usage: /model install <model_id> [@runtime]")
+                self._msg("Usage: /deploy <path_to_.ada_file> [org_id] [model_id]")
+        elif cmd == "/undeploy":
+            if len(parts) >= 2:
+                model_id = parts[1]
+                org = parts[2] if len(parts) > 2 else self._rm.get_active().org_id
+                self._undeploy_model(org, model_id)
+            else:
+                self._msg("Usage: /undeploy <model_id> [org_id]")
 
         # -- Tokens --
         elif cmd == "/tokens":
@@ -1263,10 +1211,10 @@ class AdaApp(App):
         h.append("  /runtime check <name>         \u2014 Health check\n", style=TEXT_PRIMARY)
         h.append(f"  /use <name>                   \u2014 Switch active (current: {active.name})\n", style=TEXT_PRIMARY)
         h.append("\nModels:\n", style=f"bold {TEXT_PRIMARY}")
-        h.append("  /models                       \u2014 Models tab (installed + catalog)\n", style=TEXT_PRIMARY)
-        h.append("  /models <search>              \u2014 Search catalog\n", style=TEXT_PRIMARY)
-        h.append("  /models next | prev           \u2014 Paginate catalog\n", style=TEXT_PRIMARY)
-        h.append("  /model install <id> [@rt]     \u2014 Install a model\n", style=TEXT_PRIMARY)
+        h.append("  /models                       \u2014 List deployed models\n", style=TEXT_PRIMARY)
+        h.append("  /models <search>              \u2014 Filter deployed models\n", style=TEXT_PRIMARY)
+        h.append("  /deploy <path> [org] [model]  \u2014 Deploy .ada file or directory\n", style=TEXT_PRIMARY)
+        h.append("  /undeploy <model_id> [org]    \u2014 Undeploy a model\n", style=TEXT_PRIMARY)
         h.append("\nTokens:\n", style=f"bold {TEXT_PRIMARY}")
         h.append("  /tokens                       \u2014 List tokens\n", style=TEXT_PRIMARY)
         h.append("  /tokens create <name>         \u2014 Create token\n", style=TEXT_PRIMARY)

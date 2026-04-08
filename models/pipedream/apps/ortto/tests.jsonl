@@ -1,3 +1,0 @@
-{"query":"Opt Out of SMS on Ortto","expected_action_key":"ortto-opt-out-sms","expected_app_slug":"ortto","app_name":"Ortto","test_type":"action_name"}
-{"query":"Opt Out of SMS in Ortto","expected_action_key":"ortto-opt-out-sms","expected_app_slug":"ortto","app_name":"Ortto","test_type":"action_name"}
-{"query":"Ortto opt out of sms","expected_action_key":"ortto-opt-out-sms","expected_app_slug":"ortto","app_name":"Ortto","test_type":"action_name"}

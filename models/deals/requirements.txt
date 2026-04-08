@@ -1,2 +1,0 @@
-# No special dependencies — pure HDC encoding
-# Requires: pip install ada (or ada[runtime] for server deployment)

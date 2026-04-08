@@ -91,7 +91,7 @@ Repository = "https://github.com/timmetim/ada"
 [tool.setuptools.packages.find]
 # ada* — SDK + CLI + server entry point (ada/server.py)
 # The remaining packages are the server-side runtime bundled for `ada dev`
-include = ["ada*", "domains*", "api*", "infrastructure*", "shared*", "scripts*", "models*"]
+include = ["ada*", "domains*", "api*", "infrastructure*", "shared*", "scripts*"]
 
 [tool.setuptools.package-data]
 "ada" = []
