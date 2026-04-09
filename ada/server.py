@@ -1,14 +1,17 @@
 """
-Ada Runtime Server — single FastAPI application definition.
+Ada — a self-evolving cognitive brain for LLMs.
 
-Importable as ``ada.server:app`` for both pip-installed CLI usage and
-Docker/production deployments.  The repo-root ``main.py`` is a thin shim
-that re-exports this app.
+Single FastAPI server exposing one MCP endpoint (/mcp) with one tool (think).
+Ada loads her innate capabilities at startup, owns her own LLM (Haiku),
+and grows new capabilities over time via the dream loop.
+
+Importable as ``ada.server:app``.
 """
 
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
 from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, Request
@@ -23,7 +26,6 @@ from shared.middleware import (
     LoggingMiddleware,
 )
 from domains.models.manager import ModelManager
-from domains.resources.manager import ResourceManager
 
 # Configure structured logging
 logging.basicConfig(
@@ -35,124 +37,110 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 _start_time = datetime.utcnow()
 
-# Global model manager instance
+# ── Global brain state ───────────────────────────────────────────────────────
+
 model_manager: Optional[ModelManager] = None
-resource_manager: Optional[ResourceManager] = None
+brain: Optional[object] = None  # domains.brain.think.Brain — set in lifespan
 
 
 def get_model_manager() -> ModelManager:
-    """Dependency for getting model manager"""
     return model_manager
 
 
-def get_resource_manager() -> ResourceManager:
-    """Dependency for getting resource manager"""
-    return resource_manager
+def get_brain():
+    return brain
+
+
+# ── Capabilities directory ───────────────────────────────────────────────────
+
+CAPABILITIES_DIR = Path(__file__).resolve().parent.parent / "capabilities"
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Application lifespan management"""
-    global model_manager, resource_manager
+    """Boot Ada's brain."""
+    global model_manager, brain
 
-    # Startup
-    logger.info("Starting Ada Runtime...")
+    logger.info("Waking up...")
 
-    # Validate configuration
+    # Validate config
     try:
         validate_settings()
-        logger.info("Configuration validated")
     except ValueError as e:
         logger.error(f"Configuration error: {e}")
         raise
 
+    # Database
     await init_db()
-    logger.info("Database initialized")
+    logger.info("Memory banks online")
 
-    # Initialize model manager
+    # Model manager (internal — used by capabilities for DB persistence)
     model_manager = ModelManager(async_session_maker)
-    logger.info("Model manager initialized")
 
-    # Initialize resource manager
-    resource_manager = ResourceManager(async_session_maker)
-    logger.info("Resource manager initialized")
+    # ── Load innate capabilities ─────────────────────────────────────────
+    from domains.brain.loader import CapabilityLoader, register_capabilities_in_db
 
-    # Initialize MCP session managers
+    brain_state = CapabilityLoader.boot(CAPABILITIES_DIR)
+    app.state.brain_state = brain_state
+
+    # Register capabilities in DB (loads exemplars, creates encoders)
+    await register_capabilities_in_db(brain_state, model_manager)
+
+    # ── Initialize Ada's LLM ────────────────────────────────────────────
+    from domains.brain.llm import AdaLLM
+
+    llm = AdaLLM()
+    app.state.llm = llm
+
+    # ── Initialize the think pipeline ───────────────────────────────────
+    from domains.brain.think import Brain
+
+    brain = Brain(
+        brain_state=brain_state,
+        model_manager=model_manager,
+        llm=llm,
+        session_factory=async_session_maker,
+    )
+    app.state.brain = brain
+    logger.info("Think pipeline online")
+
+    # ── Initialize MCP ──────────────────────────────────────────────────
     from domains.auth.service import AuthService
-    from domains.query.service import QueryService
     from domains.mcp.app import create_mcp_session_managers
 
-    query_service = QueryService(model_manager, async_session_maker)
     auth_service = AuthService()
-    json_manager, sse_manager = create_mcp_session_managers(query_service, auth_service)
+    json_manager, sse_manager = create_mcp_session_managers(brain, auth_service)
     app.state.mcp_session_managers = (json_manager, sse_manager)
-    logger.info("MCP Streamable HTTP server initialized (JSON + SSE)")
+    logger.info("MCP endpoint online at /mcp")
 
-    # Resume any incomplete staged exemplar encoding from a previous run
+    # ── Resume staged encoding ──────────────────────────────────────────
     try:
         await model_manager.resume_staged_encoding()
     except Exception as e:
-        logger.warning(f"Staged encoding resume failed: {e}")
+        logger.warning(f"Staged encoding resume: {e}")
 
-    # Start model stats sync task for TUI dashboard
-    import asyncio
-    from ada.tui.stats import get_stats, ModelStats as _ModelStats
+    # ── Start dream loop ────────────────────────────────────────────────
+    brain.start_dreaming()
+    logger.info("Dream loop active")
 
-    async def _sync_model_stats():
-        """Periodically sync loaded model info to the stats collector."""
-        stats = get_stats()
-        while True:
-            try:
-                if model_manager and hasattr(model_manager, '_models'):
-                    for key, loaded in model_manager._models.items():
-                        tool_count = len(getattr(loaded, 'mcp_tools', None) or []) + 2  # +2 for nl_query, gql_query
-                        glyph_count = 0
-                        try:
-                            async with async_session_maker() as session:
-                                from sqlalchemy import func, select as _sel
-                                from domains.models.db_models import Glyph
-                                result = await session.execute(
-                                    _sel(func.count()).where(
-                                        Glyph.org_id == loaded.org_id,
-                                        Glyph.model_id == loaded.model_id,
-                                    )
-                                )
-                                glyph_count = result.scalar() or 0
-                        except Exception:
-                            pass
-                        stats.update_model(_ModelStats(
-                            model_id=loaded.model_id,
-                            org_id=loaded.org_id,
-                            glyph_count=glyph_count,
-                            tool_count=tool_count,
-                            status="loaded",
-                        ))
-            except Exception:
-                pass
-            await asyncio.sleep(10)
+    logger.info("Ada is awake.")
 
-    sync_task = asyncio.create_task(_sync_model_stats())
-
-    # Start both MCP session manager lifecycles
+    # Run MCP session managers
     async with json_manager.run():
         async with sse_manager.run():
             yield
 
-    sync_task.cancel()
-
-    # Graceful shutdown
-    logger.info("Shutting down Ada Runtime...")
-    logger.info("Draining connections...")
+    # ── Shutdown ─────────────────────────────────────────────────────────
+    logger.info("Going to sleep...")
+    brain.stop_dreaming()
     await close_db()
-    logger.info("Database connections closed")
-    logging.shutdown()
-    logger.info("Shutdown complete")
+    logger.info("Ada is asleep.")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="Ada Runtime",
-    description="Execution environment for directory-based models",
+    title="Ada",
+    description="A self-evolving cognitive brain for LLMs",
     version="0.1.0",
     docs_url="/docs" if settings.enable_docs else None,
     redoc_url="/redoc" if settings.enable_docs else None,
@@ -243,25 +231,14 @@ def _is_allowed_origin(origin: str) -> bool:
 
 
 # Import and include routers
-from api.routes import (
-    health_router,
-    org_scoped_router,
-    org_level_router,
-    listeners_router,
-    tokens_router,
-)
+from api.routes import health_router, tokens_router
 
 app.include_router(health_router)
 app.include_router(tokens_router)
-# listeners_router must come before org_scoped_router (more specific prefix)
-app.include_router(listeners_router)
-# org_level_router (/{org_id}/models) before org_scoped_router (/{org_id}/{model_id}/...)
-app.include_router(org_level_router)
-app.include_router(org_scoped_router)
 
 
-# MCP routing middleware — wraps the ASGI app to intercept /{org_id}/{model_id}/mcp
-# requests and forward them to the MCP SDK's Streamable HTTP handler.
+# MCP routing middleware — intercepts /mcp requests and forwards to the
+# MCP SDK's Streamable HTTP handler. Single endpoint, no org/model.
 from domains.mcp.app import MCPRoutingMiddleware
 
 app.add_middleware(MCPRoutingMiddleware, mcp_app_getter=lambda: getattr(app.state, "mcp_session_managers", None))
