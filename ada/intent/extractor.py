@@ -611,11 +611,11 @@ class IntentExtractor:
 _default_extractor: IntentExtractor | None = None
 
 
-def get_extractor(packs: list[str] | None = None) -> IntentExtractor:
-    """Get an IntentExtractor instance.
+_pack_extractors: dict[tuple, IntentExtractor] = {}
 
-    Returns a cached singleton when no packs are specified.
-    Creates a new instance when packs are requested (not cached).
+
+def get_extractor(packs: list[str] | None = None) -> IntentExtractor:
+    """Get an IntentExtractor instance (cached by pack combination).
 
     Args:
         packs: Optional domain pack names (e.g., ["filesystem", "trading"]).
@@ -627,11 +627,15 @@ def get_extractor(packs: list[str] | None = None) -> IntentExtractor:
         fs_extractor = get_extractor(packs=["filesystem"])  # + filesystem pack
     """
     global _default_extractor
-    if packs:
-        return IntentExtractor(packs=packs)
-    if _default_extractor is None:
-        _default_extractor = IntentExtractor()
-    return _default_extractor
+    if not packs:
+        if _default_extractor is None:
+            _default_extractor = IntentExtractor()
+        return _default_extractor
+
+    key = tuple(sorted(packs))
+    if key not in _pack_extractors:
+        _pack_extractors[key] = IntentExtractor(packs=packs)
+    return _pack_extractors[key]
 
 
 def extract_intent(query: str) -> dict:
