@@ -73,6 +73,8 @@ def _require_api_key() -> bool:
 
 def _print_help() -> None:
     print(f"""
+  {D}Just type anything to talk to Ada.{R}
+
   {BOLD}Commands{R}
 
   {B}help{R}           Show this message
@@ -409,7 +411,27 @@ def _shell(host: str, port: int) -> None:
         elif cmd == "config":
             _print_config(host, port)
         else:
-            print(f"  {D}Unknown command: {cmd}. Type{R} help{D} for options.{R}")
+            # Everything else goes to Ada's brain
+            brain = _get_brain()
+            if not brain:
+                print(f"  {D}Brain not ready yet.{R}")
+                continue
+
+            import asyncio
+            try:
+                result = asyncio.run(brain.think(line))
+                print(f"  {CYAN}{result.response}{R}")
+                tags = []
+                if result.capability:
+                    tags.append(f"{result.capability}")
+                    tags.append(f"{result.confidence:.0%}")
+                if result.llm_fallback:
+                    tags.append("llm")
+                tags.append(f"{result.elapsed_ms:.0f}ms")
+                print(f"  {D}[{' · '.join(tags)}]{R}")
+            except Exception as e:
+                print(f"  {PINK}Error: {e}{R}")
+            print()
 
     print(f"  {D}Goodbye.{R}")
 
