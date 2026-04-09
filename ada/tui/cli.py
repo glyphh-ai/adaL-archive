@@ -27,7 +27,7 @@ CYAN = "\033[38;5;116m"
 # Banner gradient
 _GRAD = ["\033[38;5;204m", "\033[38;5;177m", "\033[38;5;141m", "\033[38;5;111m"]
 _BANNER = [
-    "⣼⢻⡄ ⣿⠛⠛⢻⡄ ⣼⢻⡄",
+    " ⣼⢻⡄ ⣿⠛⠛⢻⡄ ⣼⢻⡄",
     "⣼⠃ ⢻⡄⣿  ⢸⡇⣼⠃ ⢻⡄",
     "⣿⠛⠛⢻⡇⣿  ⢸⡇⣿⠛⠛⢻⡇",
     "⠛  ⠘⠃⠛⠛⠛⠛ ⠛  ⠘⠃",
@@ -35,10 +35,13 @@ _BANNER = [
 
 
 def _print_banner(version: str = "0.2.0") -> None:
+    width = max(len(line) for line in _BANNER)
     for i, line in enumerate(_BANNER):
         c = _GRAD[i] if i < len(_GRAD) else _GRAD[-1]
         print(f"  {c}{BOLD}{line}{R}")
-    print(f"  {D}v{version}{R}")
+    ver = f"v{version}"
+    padding = width - len(ver)
+    print(f"  {' ' * padding}{D}{ver}{R}")
     print()
 
 
