@@ -122,6 +122,9 @@ def _print_help() -> None:
   {B}setup claude{R}   Auto-configure Claude Code
   {B}setup key{R}      Set Anthropic API key
   {B}setup model{R}    Change Ada's internal LLM model
+  {B}setup pipedream{R} Connect to Pipedream (3000+ APIs)
+  {B}connect{R} <app>   Authenticate an app (slack, gmail, etc.)
+  {B}connect{R}         List connected apps
   {B}status{R}         Show brain status
   {B}config{R}         Show current configuration
   {B}exit{R}           Quit
@@ -306,6 +309,99 @@ def _setup_model() -> None:
     print(f"  {D}Restart Ada to activate.{R}\n")
 
 
+def _setup_pipedream() -> None:
+    """Set up Pipedream Connect credentials."""
+    import os
+
+    env_path = _get_env_path()
+
+    print(f"\n  {P}{BOLD}Pipedream Connect{R}")
+    print(f"  {D}This connects Ada to 3,000+ APIs.{R}")
+    print(f"  {D}Get your project credentials at:{R} {B}https://pipedream.com/connect{R}\n")
+
+    try:
+        client_id = input(f"  {P}Client ID{D}>{R} ").strip()
+        client_secret = input(f"  {P}Client Secret{D}>{R} ").strip()
+        project_id = input(f"  {P}Project ID{D}>{R} ").strip()
+    except (EOFError, KeyboardInterrupt):
+        print()
+        return
+
+    if not all([client_id, client_secret, project_id]):
+        print(f"  {PINK}All three values required.{R}\n")
+        return
+
+    # Write to ~/.ada/env
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            lines = [
+                l for l in f.readlines()
+                if not l.strip().startswith(("PIPEDREAM_CLIENT_ID=", "PIPEDREAM_CLIENT_SECRET=", "PIPEDREAM_PROJECT_ID="))
+            ]
+
+    lines.append(f"PIPEDREAM_CLIENT_ID={client_id}\n")
+    lines.append(f"PIPEDREAM_CLIENT_SECRET={client_secret}\n")
+    lines.append(f"PIPEDREAM_PROJECT_ID={project_id}\n")
+
+    with open(env_path, "w") as f:
+        f.writelines(lines)
+    os.chmod(env_path, 0o600)
+
+    os.environ["PIPEDREAM_CLIENT_ID"] = client_id
+    os.environ["PIPEDREAM_CLIENT_SECRET"] = client_secret
+    os.environ["PIPEDREAM_PROJECT_ID"] = project_id
+
+    print(f"  {G}Pipedream credentials saved.{R}")
+    print(f"  {D}Now run{R} connect slack {D}to authenticate your first app.{R}\n")
+
+
+def _connect_app(app_slug: str) -> None:
+    """Generate a Pipedream Connect URL for the user to authenticate an app."""
+    from domains.brain.skills.pipedream_connect import PipedreamConnect
+
+    pd = PipedreamConnect()
+    if not pd.configured:
+        print(f"\n  {PINK}Pipedream not configured.{R} Run: {W}setup pipedream{R}\n")
+        return
+
+    url = pd.get_connect_url(app_slug)
+    if url:
+        print(f"\n  {D}Open this URL to connect {B}{app_slug}{D}:{R}")
+        print(f"  {W}{url}{R}")
+        print(f"\n  {D}After authenticating, {app_slug} is ready to use.{R}\n")
+
+        # Try to open in browser
+        try:
+            import webbrowser
+            webbrowser.open(url)
+            print(f"  {D}(Opened in your browser){R}\n")
+        except Exception:
+            pass
+    else:
+        print(f"\n  {PINK}Failed to generate connect URL.{R}\n")
+
+
+def _list_connected_apps() -> None:
+    """List apps the user has connected via Pipedream."""
+    from domains.brain.skills.pipedream_connect import PipedreamConnect
+
+    pd = PipedreamConnect()
+    if not pd.configured:
+        print(f"\n  {PINK}Pipedream not configured.{R} Run: {W}setup pipedream{R}\n")
+        return
+
+    apps = pd.list_connected_apps()
+    if apps:
+        print(f"\n  {BOLD}Connected apps{R}")
+        for app in apps:
+            name = app.get("name", app.get("app_slug", "unknown"))
+            print(f"  {G}●{R} {name}")
+        print()
+    else:
+        print(f"\n  {D}No apps connected yet.{R} Run: {W}connect slack{R}\n")
+
+
 def _setup_claude_code(port: int) -> None:
     import subprocess
     import shutil
@@ -443,8 +539,16 @@ def _shell(host: str, port: int) -> None:
                 _setup_key()
             elif len(parts) > 1 and parts[1] == "model":
                 _setup_model()
+            elif len(parts) > 1 and parts[1] == "pipedream":
+                _setup_pipedream()
             else:
                 _print_setup(port)
+        elif cmd == "connect":
+            # connect <app> — authenticate an app via Pipedream
+            if len(parts) > 1:
+                _connect_app(parts[1])
+            else:
+                _list_connected_apps()
         elif cmd == "status":
             brain = _get_brain()
             _print_status(brain)
