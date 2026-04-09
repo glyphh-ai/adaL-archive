@@ -89,6 +89,9 @@ class Brain:
         ("I can identify speakers by their voice.", "ada"),
         ("I remember conversations and learn from them.", "ada"),
         ("I grow new capabilities from patterns I observe.", "ada"),
+        ("I can build new capabilities when asked. Say: build a capability for X.", "ada"),
+        ("I can index codebases and search them semantically.", "ada"),
+        ("I can connect to 3000 APIs through Pipedream.", "ada"),
         # Personality
         ("I am concise and direct.", "ada"),
         ("I respond in one or two sentences.", "ada"),
@@ -128,8 +131,20 @@ class Brain:
                 elapsed_ms=elapsed,
             )
 
+        # ── 0.5. SKILL CHECK — is this a capability build request? ──────
+        build_result = await self._check_build_request(input_text)
+        if build_result:
+            elapsed = (time.monotonic() - start) * 1000
+            self._record_observation(input_text, "builder", 1.0, build_result, False, elapsed)
+            return ThinkResult(
+                response=build_result,
+                capability="builder",
+                confidence=1.0,
+                gate="DONE",
+                elapsed_ms=elapsed,
+            )
+
         # ── 1. CLASSIFY — what kind of input is this? ───────────────────
-        # Use cognitive routing but don't absorb yet (avoid self-echo on recall)
         state = self._cognitive.cognitive.process(input_text)
         state_name = state.action.name if state else "UNKNOWN"
 
@@ -315,6 +330,95 @@ class Brain:
 
     def drain_insights(self):
         return self._cognitive.drain_insights()
+
+    # ── Capability building ────────────────────────────────────────────────
+
+    _BUILD_PATTERNS = [
+        r"build (?:a |an )?capability (?:for |to |that )?(.+)",
+        r"create (?:a |an )?capability (?:for |to |that )?(.+)",
+        r"make (?:a |an )?(?:new )?capability (?:for |to |that )?(.+)",
+        r"add (?:a |an )?capability (?:for |to |that )?(.+)",
+        r"learn (?:about |how to )(.+)",
+        r"build (?:a |an )?(?:new )?(?:model|encoder) (?:for |to )?(.+)",
+    ]
+
+    async def _check_build_request(self, input_text: str) -> Optional[str]:
+        """Detect and handle capability build requests.
+
+        Returns a response string if this is a build request, None otherwise.
+        """
+        import re
+
+        text_lower = input_text.lower().strip()
+
+        # Pattern match for build requests
+        description = None
+        for pattern in self._BUILD_PATTERNS:
+            match = re.search(pattern, text_lower)
+            if match:
+                description = match.group(1).strip()
+                break
+
+        if not description:
+            return None
+
+        # Derive a name from the description
+        name = re.sub(r'[^a-z0-9\s]', '', description.lower())
+        name = re.sub(r'\s+', '-', name.strip())[:30]
+
+        if not name:
+            return None
+
+        from domains.brain.skills.capability_builder import CapabilityBuilder
+
+        builder = CapabilityBuilder(
+            llm=self._llm,
+            model_manager=self._model_manager,
+            session_factory=self._session_factory,
+        )
+
+        result = await builder.build(
+            name=name,
+            description=description,
+        )
+
+        if result.success:
+            # Add routing exemplars for the new capability
+            await self._add_routing_exemplars(name, description)
+
+            return (
+                f"Built capability '{name}' with {result.exemplar_count} exemplars "
+                f"in {result.elapsed_s:.1f}s. It's loaded and ready."
+            )
+        else:
+            return f"Failed to build capability '{name}': {result.error}"
+
+    async def _add_routing_exemplars(self, name: str, description: str) -> None:
+        """Add routing exemplars to the cognitive router for a new capability."""
+        try:
+            # Generate a few routing queries via LLM
+            queries = await self._llm.generate_exemplars(
+                f"Queries that should route to a '{name}' capability: {description}",
+                count=5,
+            )
+
+            # Append to cognitive router exemplars
+            exemplar_path = (
+                Path(__file__).resolve().parents[2]
+                / "capabilities" / "cognitive-router" / "data" / "exemplars.jsonl"
+            )
+            if exemplar_path.exists():
+                with open(exemplar_path, "a") as f:
+                    for q in queries:
+                        import json
+                        f.write(json.dumps({
+                            "text": q,
+                            "capability": name,
+                            "cognitive_action": "analyze",
+                            "capability_domain": "general",
+                        }) + "\n")
+        except Exception as e:
+            logger.warning(f"Failed to add routing exemplars for {name}: {e}")
 
     # ── Persistence ───────────────────────────────────────────────────────
 

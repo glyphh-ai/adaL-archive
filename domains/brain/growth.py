@@ -125,13 +125,12 @@ class GrowthEngine:
 
         return ready
 
-    async def mint_capability(self, cluster: PatternCluster) -> Optional[dict]:
+    async def mint_capability(self, cluster: PatternCluster, model_manager=None, session_factory=None) -> Optional[dict]:
         """Attempt to mint a new capability from a stable cluster.
 
-        Uses Haiku to:
-        1. Name the capability
-        2. Generate seed exemplar queries
-        3. Describe what it handles
+        Uses the CapabilityBuilder to create a full capability with
+        encoder, exemplars, and intent extraction — then loads it
+        into the runtime.
 
         Returns a dict describing the new capability, or None if minting fails.
         """
@@ -172,9 +171,32 @@ class GrowthEngine:
         cluster.minted = True
         self.stats.capabilities_minted += 1
 
+        desc = (description or "").strip()
+
+        # Use the CapabilityBuilder to create the full capability
+        if model_manager and session_factory:
+            try:
+                from domains.brain.skills.capability_builder import CapabilityBuilder
+                builder = CapabilityBuilder(self._llm, model_manager, session_factory)
+                build_result = await builder.build(
+                    name=name,
+                    description=desc,
+                    seed_queries=[o.input for o in cluster.observations[:10]],
+                    exemplar_count=max(20, cluster.size),
+                )
+                if build_result.success:
+                    logger.info(
+                        f"Dream loop built capability '{name}': "
+                        f"{build_result.exemplar_count} exemplars"
+                    )
+                else:
+                    logger.warning(f"Dream loop build failed for '{name}': {build_result.error}")
+            except Exception as e:
+                logger.warning(f"Dream loop build error for '{name}': {e}")
+
         result = {
             "name": name,
-            "description": (description or "").strip(),
+            "description": desc,
             "exemplars": exemplars,
             "observation_count": cluster.size,
             "stability": cluster.stability,
