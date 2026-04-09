@@ -66,7 +66,7 @@ def _require_api_key() -> bool:
 
     print(f"\n  {PINK}Ada needs an Anthropic API key to start.{R}")
     print(f"  {D}Get one at:{R} {B}https://console.anthropic.com/settings/keys{R}\n")
-    _setup_key()
+    _setup_key(quiet=True)
 
     return bool(os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -157,7 +157,7 @@ def _load_ada_env() -> None:
                 os.environ.setdefault(key.strip(), value.strip())
 
 
-def _setup_key() -> None:
+def _setup_key(quiet: bool = False) -> None:
     """Set or update the Anthropic API key."""
     import os
     import getpass
@@ -169,7 +169,7 @@ def _setup_key() -> None:
         masked = current[:8] + "..." + current[-4:]
         print(f"\n  {D}Current key:{R} {masked}")
         print(f"  {D}Enter new key or press Enter to keep:{R}")
-    else:
+    elif not quiet:
         print(f"\n  {D}No API key set. Ada needs this for her internal LLM.{R}")
         print(f"  {D}Get one at:{R} {B}https://console.anthropic.com/settings/keys{R}")
         print()
