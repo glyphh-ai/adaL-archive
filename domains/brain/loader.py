@@ -66,7 +66,7 @@ class BrainState:
 class CapabilityLoader:
     """Discovers and loads capabilities from the filesystem."""
 
-    ROUTER_NAME = "toolrouter"
+    ROUTER_NAMES = {"toolrouter", "cognitive-router"}
 
     @classmethod
     def boot(cls, capabilities_dir: Path) -> BrainState:
@@ -84,13 +84,13 @@ class CapabilityLoader:
 
         for lm in loader_models:
             cap = cls._to_capability(lm)
-            if cap.name == cls.ROUTER_NAME:
+            if cap.name in cls.ROUTER_NAMES:
                 cap.is_router = True
                 state.router = cap
-                logger.info(f"  [thalamus] {cap.name} — {cap.manifest.description}")
+                logger.info(f"  [router] {cap.name}")
             else:
                 state.capabilities[cap.name] = cap
-                logger.info(f"  [capability] {cap.name} — {cap.manifest.description}")
+                logger.info(f"  [capability] {cap.name}")
 
         total = len(state.capabilities) + (1 if state.router else 0)
         logger.info(

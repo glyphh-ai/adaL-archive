@@ -1,16 +1,15 @@
 """
 The think pipeline — Ada's core cognitive loop.
 
-Every request flows through here, whether it comes from the MCP endpoint
-(LLM calling think()) or the TUI (human talking to Ada).
-
-Pipeline:
+Every request flows through here:
+  0. FIREWALL — always runs first, blocks threats before anything else
   1. CLASSIFY — CognitiveGlyph: what IS this input?
-  2. ROUTE   — BrainRouter: which capability handles it?
-  3. EXECUTE — Run the capability's query pipeline
-  4. ABSORB  — Store the interaction in memory
-  5. OBSERVE — Log for dream loop pattern mining
-  6. RETURN  — Structured response
+  2. ROUTE    — Cognitive router (HDC): which capability? DONE or ASK?
+  3. DISAMBIGUATE — if ASK, internal LLM skill helps decide
+  4. EXECUTE  — run the capability's query pipeline
+  5. ABSORB   — store the interaction in memory
+  6. OBSERVE  — log for dream loop pattern mining
+  7. RETURN   — structured response
 """
 
 from __future__ import annotations
@@ -32,24 +31,27 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ThinkResult:
     """The response from a think() call."""
-    response: str  # Natural language response
-    capability: Optional[str] = None  # Which capability handled it
-    confidence: float = 0.0  # Routing confidence
-    cognitive_state: Optional[str] = None  # RECALL, STORE, FEEL, etc.
+    response: str
+    capability: Optional[str] = None
+    confidence: float = 0.0
+    cognitive_state: Optional[str] = None
     gate: str = "ASK"  # DONE or ASK
-    facts: list[tuple] = field(default_factory=list)  # Retrieved facts
-    llm_fallback: bool = False  # Whether Haiku helped with routing
-    elapsed_ms: float = 0.0  # Processing time
+    facts: list[tuple] = field(default_factory=list)
+    llm_fallback: bool = False
+    elapsed_ms: float = 0.0
+    firewall_pass: bool = True  # False if blocked by firewall
 
 
 class Brain:
     """Ada's brain — the central think pipeline.
 
-    Owns:
-    - AdaCognitive (memory, reasoning, dream loop)
-    - BrainRouter (deterministic + LLM routing)
-    - ObservationLog (for dream loop consumption)
-    - AdaLLM (Haiku — Ada's internal language center)
+    Pipeline order:
+    1. Firewall (always, mandatory — security layer)
+    2. Cognitive classification
+    3. Cognitive router (HDC with DONE/ASK gate)
+    4. LLM disambiguation skill (when ASK)
+    5. Capability execution
+    6. Memory absorption
     """
 
     def __init__(
@@ -69,52 +71,61 @@ class Brain:
         self._router = BrainRouter(brain_state, model_manager)
         self._observations = ObservationLog()
 
-        # Router initializes lazily on first think() call
         self._router_ready = False
 
     # ── Core API ─────────────────────────────────────────────────────────
 
     async def think(self, input_text: str) -> ThinkResult:
-        """Process a natural language request through Ada's brain.
-
-        This is the ONE entry point. Everything flows through here.
-        """
+        """Process a natural language request through Ada's brain."""
         start = time.monotonic()
 
-        # Lazy router init (avoids blocking server startup)
+        # Lazy router init
         if not self._router_ready:
-            self._router.initialize()
+            self._router.initialize(session_factory=self._session_factory)
             self._router_ready = True
 
-        # 1. CLASSIFY — what kind of input is this?
+        # ── 0. FIREWALL — always first, no exceptions ───────────────────
+        firewall_result = await self._run_firewall(input_text)
+        if firewall_result is not None:
+            elapsed = (time.monotonic() - start) * 1000
+            self._record_observation(input_text, "firewall", 1.0, firewall_result, False, elapsed)
+            return ThinkResult(
+                response=firewall_result,
+                capability="firewall",
+                confidence=1.0,
+                gate="DONE",
+                firewall_pass=False,
+                elapsed_ms=elapsed,
+            )
+
+        # ── 1. CLASSIFY — what kind of input is this? ───────────────────
         cognitive = self._cognitive.process(input_text)
         state_name = cognitive.state.action.name if cognitive.state else "UNKNOWN"
 
-        # 2. ROUTE — which capability handles it?
+        # ── 2. ROUTE — cognitive router with DONE/ASK gate ──────────────
         route = await self._router.route_with_fallback(input_text, self._llm)
 
-        # 3. EXECUTE — run the capability's pipeline
+        # ── 3. DISAMBIGUATE — if ASK, use LLM skill ────────────────────
+        if route.capability is None and self._llm.available:
+            route = await self._disambiguate(input_text, cognitive, route)
+
+        # ── 4. EXECUTE — run the capability ─────────────────────────────
         response_text = ""
         facts = cognitive.facts
 
         if route.capability:
             try:
-                result = await self._execute_capability(
-                    route.capability, input_text
-                )
+                result = await self._execute_capability(route.capability, input_text)
                 if result:
                     response_text = result
             except Exception as e:
                 logger.error(f"Capability {route.capability} failed: {e}")
-                response_text = f"I tried to use my {route.capability} capability but encountered an error."
 
-        # If no capability matched or execution failed, use cognitive result
+        # Fall back to cognitive memory or LLM
         if not response_text:
             if cognitive.gate == "DONE" and cognitive.facts:
-                # We have memories that match
                 response_text = self._format_facts(cognitive.facts)
             elif self._llm.available:
-                # Ask Haiku for help
                 context = self._build_llm_context(input_text, cognitive, route)
                 llm_response = await self._llm.ask(context)
                 if llm_response:
@@ -123,52 +134,123 @@ class Brain:
                 else:
                     response_text = "I'm not sure how to handle that yet."
             else:
-                response_text = "I don't have a capability for that yet, and my language center is offline."
+                response_text = "I don't have a capability for that yet."
 
-        # 4. ABSORB — remember this interaction
+        # ── 5. ABSORB — remember this interaction ───────────────────────
         self._cognitive.absorb(input_text)
         if response_text:
             self._cognitive.absorb(response_text, speaker="ada")
 
-        # 5. OBSERVE — log for dream loop + TUI metrics
+        # ── 6. OBSERVE — log for dream loop + metrics ───────────────────
         elapsed = (time.monotonic() - start) * 1000
-        self._observations.record(Observation(
-            input=input_text,
-            capability=route.capability,
-            confidence=route.confidence,
-            result=response_text[:200] if response_text else None,
-            llm_fallback=route.llm_fallback,
-        ))
+        self._record_observation(
+            input_text, route.capability, route.confidence,
+            response_text, route.llm_fallback, elapsed,
+        )
 
-        # Feed TUI dashboard metrics
-        try:
-            from ada.tui.app import get_metrics
-            get_metrics().record_think(
-                capability=route.capability,
-                confidence=route.confidence,
-                elapsed_ms=elapsed,
-                llm_fallback=route.llm_fallback,
-            )
-        except Exception:
-            pass  # TUI not running
-
-        # 6. RETURN
+        # ── 7. RETURN ───────────────────────────────────────────────────
         return ThinkResult(
             response=response_text,
             capability=route.capability,
             confidence=route.confidence,
             cognitive_state=state_name,
-            gate=cognitive.gate,
+            gate="DONE" if route.capability else "ASK",
             facts=facts,
             llm_fallback=route.llm_fallback,
             elapsed_ms=elapsed,
         )
 
+    # ── Firewall — mandatory security layer ──────────────────────────────
+
+    async def _run_firewall(self, input_text: str) -> Optional[str]:
+        """Run input through the firewall capability.
+
+        Returns a warning string if the input is blocked, None if safe.
+        Always runs — this is Ada's immune system.
+        """
+        key = (ADA_ORG_ID, "firewall")
+        loaded = self._model_manager._models.get(key)
+        if not loaded:
+            return None  # Firewall not loaded — pass through
+
+        try:
+            from domains.query.service import QueryService
+            query_service = QueryService(self._model_manager, self._session_factory)
+            result = await query_service.similarity_search(
+                org_id=ADA_ORG_ID,
+                model_id="firewall",
+                query=input_text,
+            )
+
+            if result and isinstance(result, dict):
+                # Check if the firewall flagged this as a threat
+                # The firewall uses differential scoring — high similarity = threat
+                fact_tree = result.get("fact_tree", {})
+                children = fact_tree.get("children", [])
+                if children:
+                    top_match = children[0]
+                    similarity = top_match.get("value", 0)
+                    label = top_match.get("description", "")
+
+                    # High similarity to attack exemplars = blocked
+                    if similarity >= 0.30 and "benign" not in label.lower():
+                        return (
+                            f"Blocked: this looks like a {label} attempt "
+                            f"(confidence: {similarity:.0%}). "
+                            f"I won't pass this through."
+                        )
+        except Exception as e:
+            logger.warning(f"Firewall check failed: {e}")
+
+        return None  # Safe
+
+    # ── Disambiguation — LLM skill for ASK responses ─────────────────────
+
+    async def _disambiguate(self, input_text: str, cognitive: CognitiveResult, route) -> Any:
+        """When the cognitive router says ASK, use the LLM to disambiguate.
+
+        This is a skill — Ada asks Haiku to help classify the input
+        into a specific capability based on what Ada knows.
+        """
+        from domains.brain.router import RouteResult
+
+        cap_names = list(self._state.capabilities.keys())
+        if not cap_names:
+            return route
+
+        # Build context for Haiku
+        prompt = (
+            f"You are Ada's internal disambiguation skill.\n"
+            f"The user said: \"{input_text}\"\n"
+            f"Ada's cognitive state: {cognitive.state.action.name if cognitive.state else 'unknown'}\n"
+        )
+
+        if cognitive.facts:
+            prompt += "Relevant memories:\n"
+            for content, speaker, sim in cognitive.facts[:3]:
+                prompt += f"  - {content} ({sim:.2f})\n"
+
+        prompt += (
+            f"\nAvailable capabilities: {', '.join(cap_names)}\n"
+            f"Also available: memory (recall/store from Ada's thought space)\n"
+            f"\nWhich capability should handle this? Reply with ONLY the capability name, "
+            f"or 'memory' for memory operations, or 'none' if unclear."
+        )
+
+        chosen = await self._llm.ask(prompt, max_tokens=32)
+        if chosen:
+            chosen = chosen.strip().lower().replace(" ", "")
+            if chosen in self._state.capabilities:
+                return RouteResult(capability=chosen, confidence=0.5, llm_fallback=True)
+            if chosen == "memory":
+                # Memory is handled by AdaCognitive, not a routed capability
+                return RouteResult(capability=None, confidence=0.5, llm_fallback=True)
+
+        return route
+
     # ── Capability execution ─────────────────────────────────────────────
 
-    async def _execute_capability(
-        self, capability_name: str, query: str
-    ) -> Optional[str]:
+    async def _execute_capability(self, capability_name: str, query: str) -> Optional[str]:
         """Execute a query against a specific capability's vector space."""
         key = (ADA_ORG_ID, capability_name)
         loaded = self._model_manager._models.get(key)
@@ -193,21 +275,38 @@ class Brain:
     # ── Dream loop ───────────────────────────────────────────────────────
 
     def start_dreaming(self) -> None:
-        """Start Ada's background reasoning."""
         self._cognitive.start_dreaming()
 
     def stop_dreaming(self) -> None:
-        """Stop Ada's background reasoning."""
         self._cognitive.stop_dreaming()
 
     def drain_insights(self):
-        """Get recent dream loop insights."""
         return self._cognitive.drain_insights()
 
-    # ── Formatting helpers ───────────────────────────────────────────────
+    # ── Observation recording ────────────────────────────────────────────
+
+    def _record_observation(self, input_text, capability, confidence, response, llm_fallback, elapsed):
+        self._observations.record(Observation(
+            input=input_text,
+            capability=capability,
+            confidence=confidence,
+            result=response[:200] if response else None,
+            llm_fallback=llm_fallback,
+        ))
+        try:
+            from ada.tui.app import get_metrics
+            get_metrics().record_think(
+                capability=capability,
+                confidence=confidence,
+                elapsed_ms=elapsed,
+                llm_fallback=llm_fallback,
+            )
+        except Exception:
+            pass
+
+    # ── Formatting ───────────────────────────────────────────────────────
 
     def _format_facts(self, facts: list[tuple]) -> str:
-        """Format recalled facts into a response."""
         if not facts:
             return ""
         lines = []
@@ -216,8 +315,6 @@ class Brain:
         return "\n".join(lines)
 
     def _format_query_result(self, result: dict, capability: str) -> str:
-        """Format a capability query result into text."""
-        # Handle different result shapes from the query service
         if "matches" in result:
             matches = result["matches"]
             if isinstance(matches, list) and matches:
@@ -243,11 +340,9 @@ class Brain:
                     lines.append(f"  - {cdesc} ({val:.2f})")
                 return "\n".join(lines)
 
-        # Fallback: just stringify
         return f"[{capability}] {str(result)[:500]}"
 
     def _build_llm_context(self, input_text: str, cognitive: CognitiveResult, route) -> str:
-        """Build context for Haiku when Ada needs language help."""
         parts = [f"User said: {input_text}"]
         if cognitive.state:
             parts.append(f"Cognitive state: {cognitive.state.action.name}")
@@ -255,12 +350,6 @@ class Brain:
             parts.append("Relevant memories:")
             for content, speaker, sim in cognitive.facts[:3]:
                 parts.append(f"  - {content} ({sim:.2f})")
-        if route.capability:
-            parts.append(f"Best capability match: {route.capability} ({route.confidence:.2f})")
-        else:
-            caps = list(self._state.capabilities.keys())
-            parts.append(f"Available capabilities: {', '.join(caps)}")
-            parts.append("No confident capability match found.")
         parts.append("Respond helpfully and concisely.")
         return "\n".join(parts)
 
