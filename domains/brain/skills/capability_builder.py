@@ -117,9 +117,21 @@ class CapabilityBuilder:
             self._write_encoder(cap_dir, name, description, encoder_design, keywords)
             self._write_exemplars(cap_dir, exemplars)
 
-            # 5. Load into runtime
+            # 5. Test in isolated subprocess
+            from domains.brain.skills.capability_tester import CapabilityTester
+
+            tester = CapabilityTester(llm=self._llm)
+            test_report = await tester.test(
+                capability_dir=cap_dir,
+                capability_name=name,
+                test_queries=seed_queries,
+            )
+
+            logger.info(f"Test: {test_report.summary}")
+
+            # 6. Promote to live runtime only if tests pass
             loaded = False
-            if self._model_manager:
+            if test_report.promoted and self._model_manager:
                 try:
                     from domains.brain.loader import ADA_ORG_ID
                     await self._model_manager.load_model_from_directory(
@@ -128,22 +140,31 @@ class CapabilityBuilder:
                         model_id=name,
                     )
                     loaded = True
-                    logger.info(f"Capability '{name}' loaded into runtime")
+                    logger.info(f"Capability '{name}' promoted to live runtime")
                 except Exception as e:
-                    logger.warning(f"Built but failed to load: {e}")
+                    logger.warning(f"Tested but failed to load: {e}")
+            elif not test_report.promoted:
+                logger.warning(
+                    f"Capability '{name}' failed testing "
+                    f"({test_report.pass_rate:.0%} pass rate, "
+                    f"need {CapabilityTester.MIN_PASS_RATE if hasattr(CapabilityTester, 'MIN_PASS_RATE') else '60%'}). "
+                    f"Files kept at {cap_dir} for debugging."
+                )
 
             elapsed = time.time() - start
             logger.info(
                 f"Built capability '{name}': {len(exemplars)} exemplars, "
-                f"{'loaded' if loaded else 'not loaded'}, {elapsed:.1f}s"
+                f"test {'PASS' if test_report.promoted else 'FAIL'}, "
+                f"{'live' if loaded else 'not promoted'}, {elapsed:.1f}s"
             )
 
             return BuildResult(
-                success=True,
+                success=test_report.promoted,
                 name=name,
                 path=cap_dir,
                 exemplar_count=len(exemplars),
                 elapsed_s=elapsed,
+                error=None if test_report.promoted else f"Tests failed ({test_report.pass_rate:.0%} pass rate)",
             )
 
         except Exception as e:
