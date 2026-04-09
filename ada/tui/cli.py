@@ -436,17 +436,24 @@ def _setup_claude_code(port: int) -> None:
 # Server management
 # ---------------------------------------------------------------------------
 
+_server_error: str | None = None
+
+
 def _start_server_background(host: str, port: int) -> threading.Thread:
     """Start Ada's server in a background thread."""
     import uvicorn
 
     def _run():
-        uvicorn.run(
-            "ada.server:app",
-            host=host,
-            port=port,
-            log_level="error",
-        )
+        global _server_error
+        try:
+            uvicorn.run(
+                "ada.server:app",
+                host=host,
+                port=port,
+                log_level="error",
+            )
+        except Exception as e:
+            _server_error = str(e)
 
     t = threading.Thread(target=_run, daemon=True, name="ada-server")
     t.start()
@@ -497,9 +504,11 @@ def _shell(host: str, port: int) -> None:
         print(f"  {D}Cannot start without an API key.{R}\n")
         return
 
-    # Suppress all logging — this is a clean REPL
+    # Suppress Ada's logging — keep uvicorn functional
     import logging
-    logging.disable(logging.CRITICAL)
+    for name in ["ada", "domains", "infrastructure", "shared", "api", "mcp"]:
+        logging.getLogger(name).setLevel(logging.CRITICAL)
+    # Suppress root handler output (structured JSON logs)
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
     logging.root.addHandler(logging.NullHandler())
@@ -511,6 +520,10 @@ def _shell(host: str, port: int) -> None:
         print(f"\r  {G}● Online{R}   ")
     else:
         print(f"\r  {PINK}● Failed to start{R}   ")
+        if _server_error:
+            print(f"  {PINK}{_server_error}{R}")
+        else:
+            print(f"  {D}Try: ada serve (to see full error output){R}")
         return
 
     _print_config(host, port)
