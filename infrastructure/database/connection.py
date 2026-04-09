@@ -90,7 +90,7 @@ async def init_db() -> None:
 
     # ── SQLite: set pragmas and create tables directly, skip Alembic ──────────
     if _is_sqlite:
-        from domains.models.db_models import Glyph, GlyphVector, Edge, ModelConfig, Token  # noqa: F401
+        from domains.models.db_models import Glyph, GlyphVector, Edge, ModelConfig, Token, AdaThought  # noqa: F401
         try:
             from domains.procedures.models import StoredProcedureModel  # noqa: F401
         except ImportError:
@@ -134,7 +134,7 @@ async def init_db() -> None:
     # Fallback: create tables directly if migrations didn't run
     if not migrations_applied:
         logger.info("Falling back to Base.metadata.create_all()")
-        from domains.models.db_models import Glyph, GlyphVector, Edge, ModelConfig, Token  # noqa: F401
+        from domains.models.db_models import Glyph, GlyphVector, Edge, ModelConfig, Token, AdaThought  # noqa: F401
         try:
             from domains.procedures.models import StoredProcedureModel  # noqa: F401
         except ImportError:
