@@ -189,8 +189,29 @@ def _get_env_path() -> str:
 
 
 def _load_ada_env() -> None:
-    """Load Ada's stored env vars from ~/.ada/env into os.environ."""
+    """Load Ada's secrets from vault + env file into os.environ."""
     import os
+
+    # Load vault secrets first
+    try:
+        from domains.brain.skills.vault import get_vault
+        vault = get_vault()
+
+        # Map vault keys to env vars
+        _VAULT_TO_ENV = {
+            "anthropic_api_key": "ANTHROPIC_API_KEY",
+            "pipedream_client_id": "PIPEDREAM_CLIENT_ID",
+            "pipedream_client_secret": "PIPEDREAM_CLIENT_SECRET",
+            "pipedream_project_id": "PIPEDREAM_PROJECT_ID",
+        }
+        for vault_key, env_key in _VAULT_TO_ENV.items():
+            val = vault.get(vault_key)
+            if val:
+                os.environ.setdefault(env_key, val)
+    except Exception:
+        pass
+
+    # Then load ~/.ada/env (lower priority — vault wins)
     env_path = _get_env_path()
     if not os.path.exists(env_path):
         return
@@ -206,9 +227,10 @@ def _setup_key(quiet: bool = False) -> None:
     """Set or update the Anthropic API key."""
     import os
     import getpass
+    from domains.brain.skills.vault import get_vault
 
-    env_path = _get_env_path()
-    current = os.environ.get("ANTHROPIC_API_KEY", "")
+    vault = get_vault()
+    current = os.environ.get("ANTHROPIC_API_KEY") or vault.get("anthropic_api_key") or ""
 
     if current:
         masked = current[:8] + "..." + current[-4:]
@@ -236,19 +258,10 @@ def _setup_key(quiet: bool = False) -> None:
         print(f"  {PINK}Doesn't look like an Anthropic key (should start with sk-){R}\n")
         return
 
-    # Write to ~/.ada/env
-    lines = []
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            lines = [l for l in f.readlines() if not l.strip().startswith("ANTHROPIC_API_KEY=")]
-
-    lines.append(f"ANTHROPIC_API_KEY={key}\n")
-    with open(env_path, "w") as f:
-        f.writelines(lines)
-    os.chmod(env_path, 0o600)  # Owner-only read/write
-
+    # Store encrypted in vault + set in env for current session
+    vault.set("anthropic_api_key", key)
     os.environ["ANTHROPIC_API_KEY"] = key
-    print(f"  {G}Key saved to ~/.ada/env{R}")
+    print(f"  {G}Key encrypted and saved.{R}")
     print(f"  {D}Restart Ada to activate.{R}\n")
 
 
@@ -311,13 +324,16 @@ def _setup_model() -> None:
 
 def _setup_pipedream() -> None:
     """Set up Pipedream Connect credentials."""
-    import os
+    from domains.brain.skills.vault import get_vault
 
-    env_path = _get_env_path()
+    vault = get_vault()
 
     print(f"\n  {P}{BOLD}Pipedream Connect{R}")
     print(f"  {D}This connects Ada to 3,000+ APIs.{R}")
     print(f"  {D}Get your project credentials at:{R} {B}https://pipedream.com/connect{R}\n")
+
+    if vault.has("pipedream_project_id"):
+        print(f"  {D}Already configured. Enter new values to update, or press Enter to keep.{R}\n")
 
     try:
         client_id = input(f"  {P}Client ID{D}>{R} ").strip()
@@ -328,31 +344,18 @@ def _setup_pipedream() -> None:
         return
 
     if not all([client_id, client_secret, project_id]):
+        if vault.has("pipedream_project_id"):
+            print(f"  {D}Keeping existing config.{R}\n")
+            return
         print(f"  {PINK}All three values required.{R}\n")
         return
 
-    # Write to ~/.ada/env
-    lines = []
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            lines = [
-                l for l in f.readlines()
-                if not l.strip().startswith(("PIPEDREAM_CLIENT_ID=", "PIPEDREAM_CLIENT_SECRET=", "PIPEDREAM_PROJECT_ID="))
-            ]
+    # Store encrypted in vault
+    vault.set("pipedream_client_id", client_id)
+    vault.set("pipedream_client_secret", client_secret)
+    vault.set("pipedream_project_id", project_id)
 
-    lines.append(f"PIPEDREAM_CLIENT_ID={client_id}\n")
-    lines.append(f"PIPEDREAM_CLIENT_SECRET={client_secret}\n")
-    lines.append(f"PIPEDREAM_PROJECT_ID={project_id}\n")
-
-    with open(env_path, "w") as f:
-        f.writelines(lines)
-    os.chmod(env_path, 0o600)
-
-    os.environ["PIPEDREAM_CLIENT_ID"] = client_id
-    os.environ["PIPEDREAM_CLIENT_SECRET"] = client_secret
-    os.environ["PIPEDREAM_PROJECT_ID"] = project_id
-
-    print(f"  {G}Pipedream credentials saved.{R}")
+    print(f"  {G}Pipedream credentials encrypted and saved.{R}")
     print(f"  {D}Now run{R} connect slack {D}to authenticate your first app.{R}\n")
 
 

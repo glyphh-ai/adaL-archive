@@ -40,10 +40,14 @@ class PipedreamConnect:
     """Manages Pipedream Connect integration for Ada."""
 
     def __init__(self):
-        self.client_id = os.environ.get("PIPEDREAM_CLIENT_ID")
-        self.client_secret = os.environ.get("PIPEDREAM_CLIENT_SECRET")
-        self.project_id = os.environ.get("PIPEDREAM_PROJECT_ID")
-        self.environment = os.environ.get("PIPEDREAM_ENVIRONMENT", "development")
+        from domains.brain.skills.vault import get_vault
+        vault = get_vault()
+
+        # Vault first, env fallback
+        self.client_id = vault.get("pipedream_client_id") or os.environ.get("PIPEDREAM_CLIENT_ID")
+        self.client_secret = vault.get("pipedream_client_secret") or os.environ.get("PIPEDREAM_CLIENT_SECRET")
+        self.project_id = vault.get("pipedream_project_id") or os.environ.get("PIPEDREAM_PROJECT_ID")
+        self.environment = os.environ.get("PIPEDREAM_ENVIRONMENT", "production")
         self.user_id = os.environ.get("ADA_USER_ID", "default")
 
     @property
