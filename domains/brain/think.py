@@ -157,7 +157,7 @@ class Brain:
         # Fall back to cognitive memory or LLM
         if not response_text:
             if gate == "DONE" and facts:
-                response_text = self._format_facts(cognitive.facts)
+                response_text = self._format_facts(facts)
             elif self._llm.available:
                 context = self._build_llm_context(input_text, state_name, facts, route)
                 llm_response = await self._llm.ask(context)
