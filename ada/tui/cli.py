@@ -49,10 +49,16 @@ class _BrailleSpinner:
     """Braille dot spinner: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"""
     _FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
-    def __init__(self, message: str = "thinking"):
+    def __init__(self, message: str = "thinking..."):
         self._message = message
         self._running = False
         self._thread = None
+        # Grab a direct handle to the terminal — survives logging shenanigans
+        import io, os
+        self._tty = io.TextIOWrapper(
+            io.FileIO(os.dup(sys.stderr.fileno()), mode="w"),
+            encoding="utf-8",
+        )
 
     def start(self):
         self._running = True
@@ -63,16 +69,15 @@ class _BrailleSpinner:
         self._running = False
         if self._thread:
             self._thread.join(timeout=1)
-        # Clear the spinner line
-        sys.stdout.write(f"\r\033[2K")
-        sys.stdout.flush()
+        self._tty.write("\r\033[2K")
+        self._tty.flush()
 
     def _spin(self):
         i = 0
         while self._running:
             frame = self._FRAMES[i % len(self._FRAMES)]
-            sys.stdout.write(f"\r  {P}{frame}{R} {D}{self._message}{R}")
-            sys.stdout.flush()
+            self._tty.write(f"\r  \033[38;5;141m{frame}\033[0m \033[38;5;244m{self._message}\033[0m")
+            self._tty.flush()
             i += 1
             time.sleep(0.08)
 
@@ -452,7 +457,7 @@ def _shell(host: str, port: int) -> None:
                 print(f"  {D}Brain not ready yet.{R}")
                 continue
 
-            spinner = _BrailleSpinner("thinking")
+            spinner = _BrailleSpinner()
             spinner.start()
             try:
                 # Run think() in a new thread since the server owns the event loop
