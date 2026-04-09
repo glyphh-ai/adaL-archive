@@ -58,19 +58,17 @@ def _print_config(host: str, port: int) -> None:
     print()
 
 
-def _print_capabilities(brain) -> None:
-    if not brain:
-        return
-    caps = brain.capabilities
-    router_name = None
-    if brain._state.router:
-        router_name = brain._state.router.name
+def _require_api_key() -> bool:
+    """Check for API key. If missing, prompt to set it. Returns True if key is set."""
+    import os
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return True
 
-    if router_name:
-        print(f"  {D}router{R} {G}{router_name}{R}")
-    for name in caps:
-        print(f"  {D}  ├─{R}   {P}{name}{R}")
-    print()
+    print(f"\n  {PINK}Ada needs an Anthropic API key to start.{R}")
+    print(f"  {D}Get one at:{R} {B}https://console.anthropic.com/settings/keys{R}\n")
+    _setup_key()
+
+    return bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 
 def _print_help() -> None:
@@ -353,10 +351,14 @@ def _shell(host: str, port: int) -> None:
     """Interactive Ada shell."""
     _print_banner()
 
+    # Require API key before starting
+    if not _require_api_key():
+        print(f"  {D}Cannot start without an API key.{R}\n")
+        return
+
     # Suppress all logging — this is a clean REPL
     import logging
     logging.disable(logging.CRITICAL)
-    # Also kill any existing handlers
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
     logging.root.addHandler(logging.NullHandler())
@@ -371,9 +373,6 @@ def _shell(host: str, port: int) -> None:
         return
 
     _print_config(host, port)
-
-    brain = _get_brain()
-    _print_capabilities(brain)
 
     print(f"  {D}Type{R} help {D}for commands,{R} setup {D}to connect an LLM{R}")
     print()
@@ -435,6 +434,11 @@ def _serve(args: list[str]) -> None:
             host = args[i + 1]
 
     _print_banner()
+
+    if not _require_api_key():
+        print(f"  {D}Cannot start without an API key.{R}\n")
+        return
+
     _print_config(host, port)
 
     uvicorn.run(
