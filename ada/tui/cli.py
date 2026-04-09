@@ -45,6 +45,38 @@ def _print_banner(version: str = "0.2.0") -> None:
     print()
 
 
+class _BrailleSpinner:
+    """Braille dot spinner: ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"""
+    _FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+    def __init__(self, message: str = "thinking"):
+        self._message = message
+        self._running = False
+        self._thread = None
+
+    def start(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+
+    def stop(self):
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=1)
+        # Clear the spinner line
+        sys.stdout.write(f"\r\033[2K")
+        sys.stdout.flush()
+
+    def _spin(self):
+        i = 0
+        while self._running:
+            frame = self._FRAMES[i % len(self._FRAMES)]
+            sys.stdout.write(f"\r  {P}{frame}{R} {D}{self._message}{R}")
+            sys.stdout.flush()
+            i += 1
+            time.sleep(0.08)
+
+
 def _print_config(host: str, port: int) -> None:
     import os
     display_host = "localhost" if host == "0.0.0.0" else host
@@ -421,8 +453,11 @@ def _shell(host: str, port: int) -> None:
                 continue
 
             import asyncio
+            spinner = _BrailleSpinner("thinking")
+            spinner.start()
             try:
                 result = asyncio.run(brain.think(line))
+                spinner.stop()
                 print(f"  {CYAN}{result.response}{R}")
                 tags = []
                 if result.capability:
@@ -433,6 +468,7 @@ def _shell(host: str, port: int) -> None:
                 tags.append(f"{result.elapsed_ms:.0f}ms")
                 print(f"  {D}[{' · '.join(tags)}]{R}")
             except Exception as e:
+                spinner.stop()
                 print(f"  {PINK}Error: {e}{R}")
             print()
 
