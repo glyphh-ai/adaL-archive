@@ -35,3 +35,27 @@
 {"text": "save this to your memory", "capability": "memory", "cognitive_action": "remember", "capability_domain": "memory"}
 {"text": "have I mentioned this before", "capability": "memory", "cognitive_action": "recall", "capability_domain": "memory"}
 {"text": "learn from this interaction", "capability": "memory", "cognitive_action": "learn", "capability_domain": "memory"}
+{"text": "find files related to authentication", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "what handles webhook validation", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "search the codebase for payment logic", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "which files import the database module", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "find the middleware chain", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "what files changed recently", "capability": "code", "cognitive_action": "observe", "capability_domain": "general"}
+{"text": "show me the blast radius for this file", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "index this project", "capability": "code", "cognitive_action": "learn", "capability_domain": "general"}
+{"text": "how much has this file drifted", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "what is the risk of these changes", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "find code related to error handling", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "where is the user model defined", "capability": "code", "cognitive_action": "analyze", "capability_domain": "general"}
+{"text": "send a slack message", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "create a jira ticket", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "send an email via gmail", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "add a row to google sheets", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "post to twitter", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "create a stripe charge", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "update the CRM record", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "schedule a calendar event", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "fetch data from the API", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "sync contacts to hubspot", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "index my notion workspace", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}
+{"text": "connect to salesforce", "capability": "pipedream", "cognitive_action": "route", "capability_domain": "general"}

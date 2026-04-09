@@ -74,3 +74,9 @@ Thumbs.db
 # Ada engine (embedded SDK) — track the package, ignore caches
 ada/__pycache__/
 ada/**/__pycache__/
+
+# Large capability data (pulled on demand)
+capabilities/pipedream/apps/
+capabilities/pipedream/data/
+capabilities/pipedream/benchmark/
+capabilities/code/hooks/
