@@ -19,7 +19,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-from ada.memory.ada_cognitive import AdaCognitive, CognitiveResult
+from ada.memory.ada_cognitive import AdaCognitive
 from domains.brain.loader import ADA_ORG_ID, BrainState
 from domains.brain.llm import AdaLLM
 from domains.brain.observation import Observation, ObservationLog
@@ -99,19 +99,22 @@ class Brain:
             )
 
         # ── 1. CLASSIFY — what kind of input is this? ───────────────────
-        cognitive = self._cognitive.process(input_text)
-        state_name = cognitive.state.action.name if cognitive.state else "UNKNOWN"
+        # Use cognitive routing but don't absorb yet (avoid self-echo on recall)
+        state = self._cognitive.cognitive.process(input_text)
+        state_name = state.action.name if state else "UNKNOWN"
+
+        # Recall from memory (without absorbing the query first)
+        gate, facts = self._cognitive.recall(input_text)
 
         # ── 2. ROUTE — cognitive router with DONE/ASK gate ──────────────
         route = await self._router.route_with_fallback(input_text, self._llm)
 
         # ── 3. DISAMBIGUATE — if ASK, use LLM skill ────────────────────
         if route.capability is None and self._llm.available:
-            route = await self._disambiguate(input_text, cognitive, route)
+            route = await self._disambiguate(input_text, state_name, facts, route)
 
         # ── 4. EXECUTE — run the capability ─────────────────────────────
         response_text = ""
-        facts = cognitive.facts
 
         if route.capability:
             try:
@@ -123,10 +126,10 @@ class Brain:
 
         # Fall back to cognitive memory or LLM
         if not response_text:
-            if cognitive.gate == "DONE" and cognitive.facts:
+            if gate == "DONE" and facts:
                 response_text = self._format_facts(cognitive.facts)
             elif self._llm.available:
-                context = self._build_llm_context(input_text, cognitive, route)
+                context = self._build_llm_context(input_text, state_name, facts, route)
                 llm_response = await self._llm.ask(context)
                 if llm_response:
                     response_text = llm_response
@@ -206,28 +209,23 @@ class Brain:
 
     # ── Disambiguation — LLM skill for ASK responses ─────────────────────
 
-    async def _disambiguate(self, input_text: str, cognitive: CognitiveResult, route) -> Any:
-        """When the cognitive router says ASK, use the LLM to disambiguate.
-
-        This is a skill — Ada asks Haiku to help classify the input
-        into a specific capability based on what Ada knows.
-        """
+    async def _disambiguate(self, input_text: str, state_name: str, facts: list, route) -> Any:
+        """When the cognitive router says ASK, use the LLM to disambiguate."""
         from domains.brain.router import RouteResult
 
         cap_names = list(self._state.capabilities.keys())
         if not cap_names:
             return route
 
-        # Build context for Haiku
         prompt = (
             f"You are Ada's internal disambiguation skill.\n"
             f"The user said: \"{input_text}\"\n"
-            f"Ada's cognitive state: {cognitive.state.action.name if cognitive.state else 'unknown'}\n"
+            f"Ada's cognitive state: {state_name}\n"
         )
 
-        if cognitive.facts:
+        if facts:
             prompt += "Relevant memories:\n"
-            for content, speaker, sim in cognitive.facts[:3]:
+            for content, speaker, sim in facts[:3]:
                 prompt += f"  - {content} ({sim:.2f})\n"
 
         prompt += (
@@ -342,13 +340,12 @@ class Brain:
 
         return f"[{capability}] {str(result)[:500]}"
 
-    def _build_llm_context(self, input_text: str, cognitive: CognitiveResult, route) -> str:
+    def _build_llm_context(self, input_text: str, state_name: str, facts: list, route) -> str:
         parts = [f"User said: {input_text}"]
-        if cognitive.state:
-            parts.append(f"Cognitive state: {cognitive.state.action.name}")
-        if cognitive.facts:
+        parts.append(f"Cognitive state: {state_name}")
+        if facts:
             parts.append("Relevant memories:")
-            for content, speaker, sim in cognitive.facts[:3]:
+            for content, speaker, sim in facts[:3]:
                 parts.append(f"  - {content} ({sim:.2f})")
         parts.append("Respond helpfully and concisely.")
         return "\n".join(parts)

@@ -130,9 +130,11 @@ async def register_capabilities_in_db(
 ) -> None:
     """Register all capabilities with the ModelManager for DB persistence.
 
-    This loads exemplars into the database and creates runtime encoders.
+    Loads exemplars sequentially to avoid SQLite concurrent write locks.
     Uses ADA_ORG_ID as the org_id for all capabilities.
     """
+    import asyncio
+
     all_caps = list(state.capabilities.values()) + list(state.internal.values())
 
     for cap in all_caps:
@@ -142,6 +144,15 @@ async def register_capabilities_in_db(
                 org_id=ADA_ORG_ID,
                 model_id=cap.name,
             )
+
+            # Wait for background encoding to complete before loading the next
+            # capability — SQLite can only handle one writer at a time.
+            key = (ADA_ORG_ID, cap.name)
+            for _ in range(60):  # up to 30s per capability
+                if key not in model_manager._encoding_in_progress:
+                    break
+                await asyncio.sleep(0.5)
+
             logger.info(f"Registered {cap.name} in DB")
         except Exception as e:
             logger.error(f"Failed to register {cap.name}: {e}")
