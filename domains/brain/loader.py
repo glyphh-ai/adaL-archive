@@ -53,27 +53,34 @@ class Capability:
 class BrainState:
     """Snapshot of all loaded capabilities."""
     capabilities: Dict[str, Capability] = field(default_factory=dict)
-    router: Optional[Capability] = None
+    internal: Dict[str, Capability] = field(default_factory=dict)  # routers, etc.
 
     @property
     def capability_names(self) -> list[str]:
         return list(self.capabilities.keys())
 
+    @property
+    def all_capabilities(self) -> Dict[str, Capability]:
+        """All capabilities including internal ones."""
+        return {**self.capabilities, **self.internal}
+
     def get(self, name: str) -> Optional[Capability]:
-        return self.capabilities.get(name)
+        return self.capabilities.get(name) or self.internal.get(name)
 
 
 class CapabilityLoader:
     """Discovers and loads capabilities from the filesystem."""
 
-    ROUTER_NAMES = {"toolrouter", "cognitive-router"}
+    # Internal capabilities — loaded into DB but not exposed as user-facing
+    INTERNAL_NAMES = {"cognitive-router"}
 
     @classmethod
     def boot(cls, capabilities_dir: Path) -> BrainState:
         """Load all capabilities from the given directory.
 
         Returns a BrainState with all capabilities indexed by name.
-        The toolrouter capability is separated as the router.
+        Internal capabilities (routers) are tracked separately but
+        still registered in the DB for query access.
         """
         if not capabilities_dir.exists():
             logger.warning(f"Capabilities directory not found: {capabilities_dir}")
@@ -84,19 +91,19 @@ class CapabilityLoader:
 
         for lm in loader_models:
             cap = cls._to_capability(lm)
-            if cap.name in cls.ROUTER_NAMES:
+            if cap.name in cls.INTERNAL_NAMES:
                 cap.is_router = True
-                state.router = cap
-                logger.info(f"  [router] {cap.name}")
+                state.internal[cap.name] = cap
+                logger.info(f"  [internal] {cap.name}")
             else:
                 state.capabilities[cap.name] = cap
                 logger.info(f"  [capability] {cap.name}")
 
-        total = len(state.capabilities) + (1 if state.router else 0)
+        total = len(state.capabilities) + len(state.internal)
         logger.info(
             f"Brain loaded: {total} capabilities "
             f"({len(state.capabilities)} routable, "
-            f"{'1 router' if state.router else 'NO ROUTER'})"
+            f"{len(state.internal)} internal)"
         )
 
         return state
@@ -126,9 +133,7 @@ async def register_capabilities_in_db(
     This loads exemplars into the database and creates runtime encoders.
     Uses ADA_ORG_ID as the org_id for all capabilities.
     """
-    all_caps = list(state.capabilities.values())
-    if state.router:
-        all_caps.append(state.router)
+    all_caps = list(state.capabilities.values()) + list(state.internal.values())
 
     for cap in all_caps:
         try:
