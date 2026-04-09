@@ -39,15 +39,16 @@ if _is_sqlite:
     engine = create_async_engine(
         database_url,
         echo=settings.log_level == "DEBUG",
-        connect_args={"timeout": 5},
+        connect_args={"timeout": 30},  # 30s busy timeout for concurrent writes
     )
 
-    # Also set foreign_keys and WAL via the sync engine connect event.
     @event.listens_for(engine.sync_engine, "connect")
     def _enable_sqlite_pragmas(dbapi_conn, connection_record):
         cursor = dbapi_conn.cursor()
         cursor.execute("PRAGMA foreign_keys = ON")
         cursor.execute("PRAGMA journal_mode = WAL")
+        cursor.execute("PRAGMA busy_timeout = 30000")  # 30s in ms
+        cursor.execute("PRAGMA synchronous = NORMAL")  # faster writes, still safe with WAL
         cursor.close()
 else:
     engine = create_async_engine(
