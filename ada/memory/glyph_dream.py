@@ -323,6 +323,11 @@ class GlyphDreamLoop:
                 # Cap background-discovered pattern strength
                 self._cap_pattern(chain)
 
+                # Hebbian: reinforce thoughts that participate in dream chains
+                for hop in chain.hops:
+                    if hasattr(hop, 'result') and hasattr(hop.result, 'thought'):
+                        hop.result.thought.reinforce(amount=0.05)
+
                 # Track for convergence
                 if chain.answer:
                     self._convergence_map.setdefault(

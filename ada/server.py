@@ -104,6 +104,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.brain = brain
     logger.info("Think pipeline online")
 
+    # ── Load persistent memories ────────────────────────────────────────
+    from ada.memory.thought_persistence import load_thoughts
+    loaded = await load_thoughts(async_session_maker, brain.cognitive.thought_space)
+    if loaded:
+        logger.info(f"Restored {loaded} memories from database")
+
     # ── Initialize MCP ──────────────────────────────────────────────────
     from domains.auth.service import AuthService
     from domains.mcp.app import create_mcp_session_managers
@@ -133,6 +139,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # ── Shutdown ─────────────────────────────────────────────────────────
     logger.info("Going to sleep...")
     brain.stop_dreaming()
+
+    # Flush memory strengths to DB
+    from ada.memory.thought_persistence import flush_all_strengths
+    await flush_all_strengths(async_session_maker, brain.cognitive.thought_space)
+
     await close_db()
     logger.info("Ada is asleep.")
 

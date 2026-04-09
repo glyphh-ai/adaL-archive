@@ -50,15 +50,38 @@ class StoredThought:
     glyph: Glyph
     strength: float = 1.0
     created_at: float = field(default_factory=time.time)
+    last_accessed: float = field(default_factory=time.time)
+    access_count: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def reinforce(self, amount: float = 0.1) -> None:
-        """Hebbian strengthening with diminishing returns."""
-        self.strength = min(3.0, self.strength + amount / (1.0 + 0.1 * self.strength))
+        """Hebbian strengthening with diminishing returns.
 
-    def decay(self, factor: float = 0.95) -> None:
-        """Weaken unused thought."""
+        strength += amount / (1 + 0.1 * strength)
+        Getting from 1.0→2.0 is easy, 2.0→3.0 is hard.
+        """
+        self.strength = min(3.0, self.strength + amount / (1.0 + 0.1 * self.strength))
+        self.last_accessed = time.time()
+        self.access_count += 1
+
+    def decay(self, factor: float = 0.98) -> None:
+        """Weaken unused thought. Called by dream loop Slow-Wave."""
         self.strength = max(0.0, self.strength * factor)
+
+    @property
+    def age_hours(self) -> float:
+        """Hours since creation."""
+        return (time.time() - self.created_at) / 3600.0
+
+    @property
+    def idle_hours(self) -> float:
+        """Hours since last access."""
+        return (time.time() - self.last_accessed) / 3600.0
+
+    @property
+    def is_archivable(self) -> bool:
+        """Below threshold — candidate for cold storage."""
+        return self.strength < 0.05
 
 
 @dataclass
@@ -101,6 +124,7 @@ class ThoughtGlyphSpace:
         # Storage (in-memory for now)
         self._thoughts: dict[str, StoredThought] = {}
         self._absorbed_texts: set[str] = set()  # dedup
+        self._archive: list[StoredThought] = []  # cold storage
         self._primitives_version: int = primitives.version  # track for re-encoding
 
     @property
@@ -282,11 +306,26 @@ class ThoughtGlyphSpace:
             else:
                 w_content, w_role, w_struct = 0.10, 0.65, 0.25
 
-            combined = (
+            similarity = (
                 content_sim * w_content
                 + role_sim * w_role
                 + structural * w_struct
             )
+
+            # ── Strength boost (Hebbian) ─────────────────────────
+            # range: 1.0 (fresh, strength=1.0) to ~2.4 (max strength=3.0)
+            import math
+            strength_boost = 1.0 + math.log(1.0 + stored.strength)
+
+            # ── Recency boost (exponential decay with floor) ─────
+            # Recent memories score higher; old ones keep 30% weight
+            _RECENCY_FLOOR = 0.3
+            _RECENCY_LAMBDA = 0.05  # per hour
+            recency_boost = _RECENCY_FLOOR + (1.0 - _RECENCY_FLOOR) * math.exp(
+                -_RECENCY_LAMBDA * stored.idle_hours
+            )
+
+            combined = similarity * strength_boost * recency_boost
 
             if combined >= min_similarity:
                 results.append(RecallResult(
@@ -296,7 +335,13 @@ class ThoughtGlyphSpace:
                 ))
 
         results.sort(key=lambda r: r.global_similarity, reverse=True)
-        return results[:top_k]
+        top_results = results[:top_k]
+
+        # ── Hebbian reinforcement — recalled memories get stronger ──
+        for r in top_results:
+            r.thought.reinforce(amount=0.1)
+
+        return top_results
 
     def recall_by_layer(
         self,
@@ -406,20 +451,56 @@ class ThoughtGlyphSpace:
         if thought_id in self._thoughts:
             self._thoughts[thought_id].reinforce(amount)
 
-    def decay_all(self, factor: float = 0.95) -> int:
-        """Decay all thoughts. Returns count of pruned (strength ≤ 0)."""
-        pruned = 0
-        to_remove = []
+    def decay_all(self, factor: float = 0.98, idle_threshold_hours: float = 1.0) -> int:
+        """Decay idle thoughts, archive weak ones.
+
+        Only decays thoughts that haven't been accessed recently.
+        Active memories are untouched — Hebbian reinforcement keeps them strong.
+
+        Returns count of archived (moved to cold storage).
+        """
+        archived = 0
+        to_archive = []
         for tid, thought in self._thoughts.items():
-            thought.decay(factor)
-            if thought.strength <= 0.01:
-                to_remove.append(tid)
-                pruned += 1
-        for tid in to_remove:
-            text_key = self._thoughts[tid].content.strip().lower()
+            # Only decay if idle — active memories survive
+            if thought.idle_hours > idle_threshold_hours:
+                thought.decay(factor)
+
+            # Archive threshold — not deleted, moved to cold storage
+            if thought.is_archivable:
+                to_archive.append(tid)
+                archived += 1
+
+        for tid in to_archive:
+            thought = self._thoughts[tid]
+            # Store in archive before removing
+            self._archive.append(thought)
+            text_key = thought.content.strip().lower()
             self._absorbed_texts.discard(text_key)
             del self._thoughts[tid]
-        return pruned
+
+        return archived
+
+    def restore_from_archive(self, content_fragment: str) -> StoredThought | None:
+        """Restore an archived thought back to active memory.
+
+        Used by dream loop when a pattern references an archived thought.
+        Restored with partial strength (0.5).
+        """
+        for i, thought in enumerate(self._archive):
+            if content_fragment.lower() in thought.content.lower():
+                thought.strength = 0.5
+                thought.last_accessed = time.time()
+                self._thoughts[thought.thought_id] = thought
+                self._absorbed_texts.add(thought.content.strip().lower())
+                self._archive.pop(i)
+                logger.info("Restored archived thought: %s", thought.content[:50])
+                return thought
+        return None
+
+    @property
+    def archive_count(self) -> int:
+        return len(self._archive)
 
     def clear(self) -> None:
         """Clear all thoughts (hard reset)."""

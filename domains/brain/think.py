@@ -170,9 +170,14 @@ class Brain:
                 response_text = "I don't have a capability for that yet."
 
         # ── 5. ABSORB — remember this interaction ───────────────────────
-        self._cognitive.absorb(input_text)
+        stored_input = self._cognitive.absorb(input_text)
+        stored_response = None
         if response_text:
-            self._cognitive.absorb(response_text, speaker="ada")
+            stored_response = self._cognitive.absorb(response_text, speaker="ada")
+
+        # Persist new thoughts to SQLite (async, non-blocking)
+        self._persist_thought(stored_input)
+        self._persist_thought(stored_response)
 
         # ── 6. OBSERVE — log for dream loop + metrics ───────────────────
         elapsed = (time.monotonic() - start) * 1000
@@ -310,6 +315,19 @@ class Brain:
 
     def drain_insights(self):
         return self._cognitive.drain_insights()
+
+    # ── Persistence ───────────────────────────────────────────────────────
+
+    def _persist_thought(self, thought) -> None:
+        """Save a thought to SQLite in a background thread."""
+        if thought is None:
+            return
+        try:
+            import asyncio
+            from ada.memory.thought_persistence import save_thought
+            asyncio.ensure_future(save_thought(self._session_factory, thought))
+        except Exception:
+            pass  # Non-critical — memory is still in RAM
 
     # ── Observation recording ────────────────────────────────────────────
 
