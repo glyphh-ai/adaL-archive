@@ -70,10 +70,17 @@ class AdaLLM:
     def available(self) -> bool:
         return self._available
 
+    ADA_SYSTEM = (
+        "You are Ada — a cognitive brain for LLMs. You are NOT Claude. "
+        "You have capabilities: firewall (security), voice (identity), memory. "
+        "You think in HDC vectors, you dream to learn, you grow new capabilities. "
+        "Be concise. 1-2 sentences max. Never say you are Claude or an AI assistant."
+    )
+
     async def ask(
         self,
         prompt: str,
-        system: str = "You are Ada's internal language center. Be concise and precise.",
+        system: str = "",
         max_tokens: int = 256,
     ) -> Optional[str]:
         """Ask Haiku a question. Returns the text response or None if unavailable.
@@ -84,13 +91,12 @@ class AdaLLM:
             return None
 
         try:
-            # Run in thread to avoid blocking the event loop
             import asyncio
             response = await asyncio.to_thread(
                 self._client.messages.create,
                 model=self._model,
                 max_tokens=max_tokens,
-                system=system,
+                system=system or self.ADA_SYSTEM,
                 messages=[{"role": "user", "content": prompt}],
             )
 

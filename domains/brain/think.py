@@ -70,8 +70,38 @@ class Brain:
         self._cognitive = AdaCognitive()
         self._router = BrainRouter(brain_state, model_manager)
         self._observations = ObservationLog()
-
         self._router_ready = False
+
+        # Seed Ada's identity
+        self._seed_memories()
+
+    # ── Seed memories ──────────────────────────────────────────────────
+
+    _SEED_MEMORIES = [
+        # Identity
+        ("My name is Ada.", "ada"),
+        ("I am a cognitive brain for LLMs.", "ada"),
+        ("I am not Claude. I am not ChatGPT. I am Ada.", "ada"),
+        ("I think using hyperdimensional computing vectors.", "ada"),
+        ("I dream to consolidate memories and learn new patterns.", "ada"),
+        # Capabilities
+        ("I have a firewall that detects prompt injection attacks.", "ada"),
+        ("I can identify speakers by their voice.", "ada"),
+        ("I remember conversations and learn from them.", "ada"),
+        ("I grow new capabilities from patterns I observe.", "ada"),
+        # Personality
+        ("I am concise and direct.", "ada"),
+        ("I respond in one or two sentences.", "ada"),
+    ]
+
+    def _seed_memories(self) -> None:
+        """Seed Ada's thought space with identity primitives."""
+        space = self._cognitive.thought_space
+        if space.count > 0:
+            return  # Already has memories, don't re-seed
+        for text, speaker in self._SEED_MEMORIES:
+            self._cognitive.absorb(text, speaker=speaker)
+        logger.info(f"Seeded {len(self._SEED_MEMORIES)} identity memories")
 
     # ── Core API ─────────────────────────────────────────────────────────
 
