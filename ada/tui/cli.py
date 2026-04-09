@@ -416,7 +416,7 @@ def _shell(host: str, port: int) -> None:
 
     while True:
         try:
-            line = input(f"  {P}ada{D}>{R} ").strip()
+            line = input(f"  \x01{P}\x02ada\x01{D}\x02>\x01{R}\x02 ").strip()
         except (EOFError, KeyboardInterrupt):
             print()
             break
@@ -452,11 +452,15 @@ def _shell(host: str, port: int) -> None:
                 print(f"  {D}Brain not ready yet.{R}")
                 continue
 
-            import asyncio
             spinner = _BrailleSpinner("thinking")
             spinner.start()
             try:
-                result = asyncio.run(brain.think(line))
+                # Run think() in a new thread since the server owns the event loop
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    import asyncio
+                    future = pool.submit(lambda: asyncio.run(brain.think(line)))
+                    result = future.result(timeout=30)
                 spinner.stop()
                 print(f"  {CYAN}{result.response}{R}")
                 tags = []
