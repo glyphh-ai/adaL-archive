@@ -292,13 +292,16 @@ class ThoughtProcess:
             parts = [f"User said: \"{input_text}\""]
 
             if thought.facts:
-                parts.append("\nYour memories:")
+                parts.append("\nYour memories (ordered by relevance):")
                 for content, speaker, sim in thought.facts[:5]:
-                    parts.append(f"  - {content}")
+                    source = "user said" if speaker == "incoming" else "you (Ada) said"
+                    parts.append(f"  - [{source}] {content}")
 
             parts.append(
-                "\nRespond as Ada in 1-2 sentences. Use your memories if relevant. "
-                "Be direct and natural."
+                "\nRespond as Ada in 1-2 sentences. IMPORTANT: When the user asks "
+                "about themselves (who am I, what's my name, etc.), look for what "
+                "THEY told you, not what you know about yourself. Use memories "
+                "marked [user said] to answer personal questions."
             )
             response = await self._llm.ask("\n".join(parts))
             if response:
