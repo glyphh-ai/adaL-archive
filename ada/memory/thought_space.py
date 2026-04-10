@@ -231,8 +231,16 @@ class ThoughtGlyphSpace:
             "direction": 0.10,
         }
 
+        # Normalize query for self-match exclusion
+        query_normalized = query.strip().lower().rstrip("?.! ")
+
         results: list[RecallResult] = []
         for stored in self._thoughts.values():
+            # Skip self-matches — don't recall the question itself
+            stored_normalized = stored.content.strip().lower().rstrip("?.! ")
+            if stored_normalized == query_normalized:
+                continue
+
             # ── Content similarity ──────────────────────────────
             content_sim = 0.0
             stored_content_vec = stored.glyph.metadata.get("_content_vector")
