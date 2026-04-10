@@ -171,18 +171,21 @@ class Brain:
 
         # Fall back to cognitive memory or LLM
         if not response_text:
-            if gate == "DONE" and facts:
-                response_text = self._format_facts(facts)
-            elif self._llm.available:
+            if self._llm.available:
+                # Always use Haiku for natural responses — pass facts as context
                 context = self._build_llm_context(input_text, state_name, facts, route)
                 llm_response = await self._llm.ask(context)
                 if llm_response:
                     response_text = llm_response
-                    route.llm_fallback = True
+                    if not route.capability:
+                        route.llm_fallback = True
                 else:
                     response_text = "I'm not sure how to handle that yet."
+            elif gate == "DONE" and facts:
+                # No LLM — raw facts as last resort
+                response_text = self._format_facts(facts)
             else:
-                response_text = "I don't have a capability for that yet."
+                response_text = "I don't have a capability for that yet, and my language center is offline."
 
         # ── 5. ABSORB — remember this interaction ───────────────────────
         stored_input = self._cognitive.absorb(input_text)
@@ -493,13 +496,20 @@ class Brain:
         return f"[{capability}] {str(result)[:500]}"
 
     def _build_llm_context(self, input_text: str, state_name: str, facts: list, route) -> str:
-        parts = [f"User said: {input_text}"]
-        parts.append(f"Cognitive state: {state_name}")
+        parts = [f"User said: \"{input_text}\""]
+
         if facts:
-            parts.append("Relevant memories:")
-            for content, speaker, sim in facts[:3]:
-                parts.append(f"  - {content} ({sim:.2f})")
-        parts.append("Respond helpfully and concisely.")
+            parts.append("\nYour memories (use these to respond):")
+            for content, speaker, sim in facts[:5]:
+                parts.append(f"  - {content}")
+
+        if route.capability:
+            parts.append(f"\nRouted to: {route.capability} ({route.confidence:.0%})")
+
+        parts.append(
+            "\nRespond as Ada in 1-2 sentences. Use your memories if relevant. "
+            "Be direct and natural. Never list facts — just answer."
+        )
         return "\n".join(parts)
 
     # ── Status ───────────────────────────────────────────────────────────
