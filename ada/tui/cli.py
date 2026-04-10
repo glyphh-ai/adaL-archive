@@ -122,6 +122,7 @@ def _print_help() -> None:
   {B}setup claude{R}   Auto-configure Claude Code
   {B}setup key{R}      Set Anthropic API key
   {B}setup model{R}    Change Ada's internal LLM model
+  {B}setup license{R}   Install license file from glyphh.ai
   {B}setup pipedream{R} Connect to Pipedream (3000+ APIs)
   {B}connect{R} <app>   Authenticate an app (slack, gmail, etc.)
   {B}connect{R}         List connected apps
@@ -405,6 +406,17 @@ def _list_connected_apps() -> None:
         print(f"\n  {D}No apps connected yet.{R} Run: {W}connect slack{R}\n")
 
 
+def _setup_license(path: str) -> None:
+    """Install a license file."""
+    from domains.brain.skills.license import install_license
+
+    status = install_license(path)
+    if status.valid:
+        print(f"  {G}License installed: {status.message}{R}\n")
+    else:
+        print(f"  {PINK}{status.message}{R}\n")
+
+
 def _setup_claude_code(port: int) -> None:
     import subprocess
     import shutil
@@ -502,9 +514,32 @@ def _get_brain():
 # Interactive shell
 # ---------------------------------------------------------------------------
 
+def _check_license_or_exit() -> bool:
+    """Check license. Returns True if valid."""
+    from domains.brain.skills.license import check_license
+
+    status = check_license()
+
+    if status.valid:
+        if status.plan == "trial":
+            print(f"  {D}Trial:{R} {status.days_remaining} days remaining")
+        else:
+            print(f"  {G}●{R} {status.plan} license")
+        return True
+    else:
+        print(f"\n  {PINK}{status.message}{R}")
+        print(f"  {D}Purchase at:{R} {B}https://glyphh.ai{R}")
+        print(f"  {D}Then run:{R} {W}ada setup license <path-to-file>{R}\n")
+        return False
+
+
 def _shell(host: str, port: int) -> None:
     """Interactive Ada shell."""
     _print_banner()
+
+    # Check license
+    if not _check_license_or_exit():
+        return
 
     # Require API key before starting
     if not _require_api_key():
@@ -564,6 +599,11 @@ def _shell(host: str, port: int) -> None:
                 _setup_model()
             elif len(parts) > 1 and parts[1] == "pipedream":
                 _setup_pipedream()
+            elif len(parts) > 1 and parts[1] == "license":
+                if len(parts) > 2:
+                    _setup_license(parts[2])
+                else:
+                    print(f"  {D}Usage:{R} setup license <path-to-license-file>\n")
             else:
                 _print_setup(port)
         elif cmd == "connect":
@@ -632,6 +672,9 @@ def _serve(args: list[str]) -> None:
 
     _print_banner()
 
+    if not _check_license_or_exit():
+        return
+
     if not _require_api_key():
         print(f"  {D}Cannot start without an API key.{R}\n")
         return
@@ -676,6 +719,11 @@ def main() -> None:
             _setup_key()
         elif len(args) > 1 and args[1] == "model":
             _setup_model()
+        elif len(args) > 1 and args[1] == "license":
+            if len(args) > 2:
+                _setup_license(args[2])
+            else:
+                print(f"Usage: ada setup license <path-to-license-file>")
         else:
             _print_setup(port)
     elif args[0] == "help":
