@@ -129,7 +129,15 @@ class ThoughtProcess:
                     )
 
             # ── 3. RECALL ────────────────────────────────────────
-            gate, facts = self._cognitive.recall(input_text)
+            gate, raw_facts = self._cognitive.recall(input_text)
+
+            # Context-aware filtering: if the user is asking about
+            # themselves (RECALL state + identity words), prioritize
+            # what THEY said over what Ada knows about herself.
+            facts = self._filter_facts_by_context(
+                raw_facts, input_text, thought.cognitive_state
+            )
+
             thought.facts = facts
             thought.memory_gate = gate
 
@@ -200,6 +208,52 @@ class ThoughtProcess:
             elapsed_ms=elapsed,
             thoughts=thoughts,
         )
+
+    # ── Context-aware fact filtering ────────────────────────────
+
+    _SELF_QUERY_WORDS = {"i", "me", "my", "mine", "am", "myself", "who"}
+
+    def _filter_facts_by_context(
+        self,
+        facts: list[tuple],
+        query: str,
+        cognitive_state: str,
+    ) -> list[tuple]:
+        """Re-rank facts based on the cognitive context of the query.
+
+        When the user asks about themselves ("who am I", "what's my name"),
+        boost facts from the user (speaker=incoming) and demote Ada's
+        own identity facts. When asking about Ada, do the opposite.
+
+        This is deterministic re-ranking, not prompt engineering.
+        """
+        if not facts:
+            return facts
+
+        query_words = set(query.lower().split())
+
+        # Is the user asking about themselves?
+        asking_about_self = bool(query_words & self._SELF_QUERY_WORDS)
+
+        if not asking_about_self:
+            return facts  # No re-ranking needed
+
+        # Re-rank: boost user facts, demote Ada's identity facts
+        reranked = []
+        for content, speaker, similarity in facts:
+            adjusted = similarity
+            if speaker == "incoming":
+                # User's own statements — boost when they ask about themselves
+                adjusted *= 1.5
+            elif speaker == "ada":
+                # Ada's statements about herself — demote for self-queries
+                adjusted *= 0.5
+
+            reranked.append((content, speaker, similarity, adjusted))
+
+        # Sort by adjusted score, return in original tuple format
+        reranked.sort(key=lambda x: x[3], reverse=True)
+        return [(content, speaker, sim) for content, speaker, sim, _ in reranked]
 
     # ── Capability execution ─────────────────────────────────────
 
@@ -292,16 +346,12 @@ class ThoughtProcess:
             parts = [f"User said: \"{input_text}\""]
 
             if thought.facts:
-                parts.append("\nYour memories (ordered by relevance):")
+                parts.append("\nRelevant memories:")
                 for content, speaker, sim in thought.facts[:5]:
-                    source = "user said" if speaker == "incoming" else "you (Ada) said"
-                    parts.append(f"  - [{source}] {content}")
+                    parts.append(f"  - {content}")
 
             parts.append(
-                "\nRespond as Ada in 1-2 sentences. IMPORTANT: When the user asks "
-                "about themselves (who am I, what's my name, etc.), look for what "
-                "THEY told you, not what you know about yourself. Use memories "
-                "marked [user said] to answer personal questions."
+                "\nRespond as Ada in 1-2 sentences. Use your memories to answer."
             )
             response = await self._llm.ask("\n".join(parts))
             if response:
