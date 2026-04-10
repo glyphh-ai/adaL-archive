@@ -183,9 +183,9 @@ class Brain:
 
         # Persist new thoughts
         # (thought process already absorbs into memory — we just persist to DB)
-        self._persist_thought_from_text(input_text, "incoming")
+        await self._persist_thought_from_text(input_text, "incoming")
         if result.response:
-            self._persist_thought_from_text(result.response, "ada")
+            await self._persist_thought_from_text(result.response, "ada")
 
         # Observe for dream loop + metrics
         elapsed = (time.monotonic() - start) * 1000
@@ -415,7 +415,7 @@ class Brain:
 
     # ── Persistence ───────────────────────────────────────────────────────
 
-    def _persist_thought_from_text(self, text: str, speaker: str) -> None:
+    async def _persist_thought_from_text(self, text: str, speaker: str) -> None:
         """Persist a thought to SQLite. Finds it in the thought space first.
 
         The thought process already absorbs — this just persists what's
@@ -433,18 +433,16 @@ class Brain:
                 break
 
         if not stored:
-            # Not in memory yet — absorb and persist
             stored = self._cognitive.absorb(text, speaker=speaker)
 
         if stored is None:
             return
 
         try:
-            import asyncio
             from ada.memory.thought_persistence import save_thought
-            asyncio.ensure_future(save_thought(self._session_factory, stored))
-        except Exception:
-            pass  # Non-critical — memory is still in RAM
+            await save_thought(self._session_factory, stored)
+        except Exception as e:
+            logger.warning(f"Failed to persist thought: {e}")
 
     # ── Observation recording ────────────────────────────────────────────
 
