@@ -148,6 +148,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     brain.start_dreaming()
     logger.info("Dream loop active")
 
+    # ── Start background persistence worker ─────────────────────────────
+    async def _persist_worker():
+        """Flush thought queue to SQLite every 2 seconds."""
+        while True:
+            try:
+                saved = await brain.flush_persist_queue()
+                if saved:
+                    logger.debug(f"Persisted {saved} thoughts")
+            except Exception:
+                pass
+            await asyncio.sleep(2.0)
+
+    persist_task = asyncio.create_task(_persist_worker())
+
     logger.info("Ada is awake.")
 
     # Run MCP session managers
@@ -157,6 +171,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # ── Shutdown ─────────────────────────────────────────────────────────
     logger.info("Going to sleep...")
+    persist_task.cancel()
+    # Final flush — don't lose queued thoughts
+    await brain.flush_persist_queue()
     brain.stop_dreaming()
 
     # Flush memory strengths to DB

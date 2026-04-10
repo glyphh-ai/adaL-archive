@@ -72,6 +72,8 @@ class Brain:
         self._observations = ObservationLog()
         self._router_ready = False
         self._thought_process = None  # lazy init
+        self._persist_queue: list = []  # write queue for background persistence
+        self._persist_lock = None  # lazy init asyncio.Lock
 
         # Wire firewall into LLM — every prompt is checked before reaching Haiku
         self._llm.set_firewall(self._run_firewall)
@@ -181,11 +183,10 @@ class Brain:
         # Run the cognitive thought process
         result = await self._thought_process.think(input_text)
 
-        # Persist new thoughts
-        # (thought process already absorbs into memory — we just persist to DB)
-        await self._persist_thought_from_text(input_text, "incoming")
+        # Queue thoughts for background persistence (never blocks think)
+        self._queue_persist(input_text, "incoming")
         if result.response:
-            await self._persist_thought_from_text(result.response, "ada")
+            self._queue_persist(result.response, "ada")
 
         # Observe for dream loop + metrics
         elapsed = (time.monotonic() - start) * 1000
@@ -415,16 +416,11 @@ class Brain:
 
     # ── Persistence ───────────────────────────────────────────────────────
 
-    async def _persist_thought_from_text(self, text: str, speaker: str) -> None:
-        """Persist a thought to SQLite. Finds it in the thought space first.
-
-        The thought process already absorbs — this just persists what's
-        already in memory. Doesn't double-absorb.
-        """
+    def _queue_persist(self, text: str, speaker: str) -> None:
+        """Queue a thought for background persistence. Never blocks."""
         if not text:
             return
 
-        # Find the thought in memory (already absorbed by thought process)
         text_key = text.strip().lower()
         stored = None
         for t in self._cognitive.thought_space._thoughts.values():
@@ -435,14 +431,28 @@ class Brain:
         if not stored:
             stored = self._cognitive.absorb(text, speaker=speaker)
 
-        if stored is None:
-            return
+        if stored:
+            self._persist_queue.append(stored)
 
-        try:
-            from ada.memory.thought_persistence import save_thought
-            await save_thought(self._session_factory, stored)
-        except Exception as e:
-            logger.warning(f"Failed to persist thought: {e}")
+    async def flush_persist_queue(self) -> int:
+        """Flush queued thoughts to SQLite. Called by background worker."""
+        if not self._persist_queue:
+            return 0
+
+        from ada.memory.thought_persistence import save_thought
+
+        batch = self._persist_queue[:]
+        self._persist_queue.clear()
+        saved = 0
+
+        for stored in batch:
+            try:
+                await save_thought(self._session_factory, stored)
+                saved += 1
+            except Exception as e:
+                logger.warning(f"Failed to persist thought: {e}")
+
+        return saved
 
     # ── Observation recording ────────────────────────────────────────────
 
