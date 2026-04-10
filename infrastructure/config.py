@@ -35,7 +35,10 @@ class Settings(BaseSettings):
     def resolved_database_url(self) -> str:
         if self.database_url:
             return self.database_url
-        return "sqlite+aiosqlite:///./ada.db"
+        from pathlib import Path
+        db_dir = Path.home() / ".ada"
+        db_dir.mkdir(exist_ok=True)
+        return f"sqlite+aiosqlite:///{db_dir}/ada.db"
 
     @property
     def resolved_storage_backend(self) -> str:
