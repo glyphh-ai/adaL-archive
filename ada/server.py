@@ -119,11 +119,24 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.mcp_session_managers = (json_manager, sse_manager)
     logger.info("MCP endpoint online at /mcp")
 
-    # ── Resume staged encoding ──────────────────────────────────────────
+    # ── Resume any incomplete encoding from previous boot ─────────────
     try:
         await model_manager.resume_staged_encoding()
     except Exception as e:
         logger.warning(f"Staged encoding resume: {e}")
+
+    # ── Wait for ALL encoding to finish before accepting requests ────
+    # Ada doesn't serve until every capability (especially firewall)
+    # has all its exemplars loaded. First boot can take minutes.
+    import asyncio
+    if model_manager._encoding_in_progress:
+        logger.info(
+            f"Waiting for exemplar encoding to finish: "
+            f"{[k[1] for k in model_manager._encoding_in_progress]}"
+        )
+        while model_manager._encoding_in_progress:
+            await asyncio.sleep(1.0)
+        logger.info("All exemplars encoded")
 
     # ── Start dream loop ────────────────────────────────────────────────
     brain.start_dreaming()
