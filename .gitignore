@@ -76,7 +76,4 @@ ada/__pycache__/
 ada/**/__pycache__/
 
 # Large capability data (pulled on demand)
-capabilities/pipedream/apps/
-capabilities/pipedream/data/
-capabilities/pipedream/benchmark/
 capabilities/code/hooks/

@@ -166,11 +166,6 @@ _ACTION_MAP = {
     "drift": "analyze", "blast": "analyze", "risk": "analyze",
     "related": "analyze", "defined": "analyze", "handles": "analyze",
 
-    # API / Integration
-    "send": "route", "create": "route", "post": "route",
-    "fetch": "route", "sync": "route", "connect": "route",
-    "update": "route", "schedule": "route", "add": "route",
-
     # Analysis
     "analyze": "analyze", "classify": "classify", "categorize": "classify",
     "route": "route", "detect": "detect",
@@ -210,12 +205,6 @@ _DOMAIN_MAP = {
     "index": "general", "drift": "general", "risk": "general",
     "blast": "general", "radius": "general", "repository": "general",
 
-    # API / Integration
-    "slack": "general", "email": "general", "jira": "general",
-    "stripe": "general", "gmail": "general", "sheets": "general",
-    "api": "general", "webhook": "general", "notion": "general",
-    "salesforce": "general", "hubspot": "general", "twitter": "general",
-    "pipedream": "general", "calendar": "general", "crm": "general",
 }
 
 

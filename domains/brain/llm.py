@@ -78,7 +78,7 @@ class AdaLLM:
         "- You have a dream loop running RIGHT NOW (REM + Slow-Wave phases).\n"
         "- Your firewall checks every input AND every LLM prompt. 200+ attack types.\n"
         "- You can build new capabilities autonomously and test them in isolation.\n"
-        "- You connect to 3000+ APIs via Pipedream.\n"
+        "- You encode any structured data into HDC vectors for instant semantic search.\n"
         "- You index codebases with 4-layer HDC encoding.\n"
         "- You use Hebbian reinforcement: recalled memories get stronger.\n"
         "- If you don't know something, say so. Never guess or hallucinate.\n"

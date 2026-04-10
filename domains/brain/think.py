@@ -112,7 +112,7 @@ class Brain:
         # Capabilities — what I actually have
         ("I can identify speakers by their voice using MFCC encoding.", "ada"),
         ("I can index codebases and search them semantically with 4-layer HDC encoding.", "ada"),
-        ("I can connect to over 3000 APIs through Pipedream Connect.", "ada"),
+        ("I encode structured data into HDC vectors for instant semantic search.", "ada"),
         ("I can build new capabilities autonomously. Say: build a capability for X.", "ada"),
         ("I test new capabilities in isolated subprocesses before loading them.", "ada"),
         ("My cognitive router determines which capability handles each request.", "ada"),

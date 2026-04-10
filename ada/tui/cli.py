@@ -123,9 +123,6 @@ def _print_help() -> None:
   {B}setup key{R}      Set Anthropic API key
   {B}setup model{R}    Change Ada's internal LLM model
   {B}setup license{R}   Install license file from glyphh.ai
-  {B}setup pipedream{R} Connect to Pipedream (3000+ APIs)
-  {B}connect{R} <app>   Authenticate an app (slack, gmail, etc.)
-  {B}connect{R}         List connected apps
   {B}status{R}         Show brain status
   {B}config{R}         Show current configuration
   {B}exit{R}           Quit
@@ -597,8 +594,6 @@ def _shell(host: str, port: int) -> None:
                 _setup_key()
             elif len(parts) > 1 and parts[1] == "model":
                 _setup_model()
-            elif len(parts) > 1 and parts[1] == "pipedream":
-                _setup_pipedream()
             elif len(parts) > 1 and parts[1] == "license":
                 if len(parts) > 2:
                     _setup_license(parts[2])
@@ -606,12 +601,6 @@ def _shell(host: str, port: int) -> None:
                     print(f"  {D}Usage:{R} setup license <path-to-license-file>\n")
             else:
                 _print_setup(port)
-        elif cmd == "connect":
-            # connect <app> — authenticate an app via Pipedream
-            if len(parts) > 1:
-                _connect_app(parts[1])
-            else:
-                _list_connected_apps()
         elif cmd == "status":
             brain = _get_brain()
             _print_status(brain)
