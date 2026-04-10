@@ -204,6 +204,21 @@ class ThoughtProcess:
         if final_response:
             self._cognitive.absorb(final_response, speaker="ada")
 
+        # Record Q→A pattern — the question IS the gradient
+        if final_response and final_thought.confidence >= CONFIDENCE_THRESHOLD:
+            query_glyph = self._cognitive.thought_space.encoder.encode_thought(
+                final_thought.input_text, speaker="incoming"
+            )
+            query_vec = query_glyph.metadata.get("_content_vector")
+            if query_vec is not None:
+                import numpy as np
+                self._patterns.record(
+                    query_vector=np.array(query_vec, dtype=np.float64),
+                    answer_content=final_response,
+                    answer_speaker="ada",
+                    residual_steps=len(thoughts),
+                )
+
         elapsed = (time.monotonic() - start) * 1000
 
         return ThoughtResult(
