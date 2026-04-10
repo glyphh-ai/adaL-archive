@@ -71,6 +71,7 @@ class Brain:
         self._router = BrainRouter(brain_state, model_manager)
         self._observations = ObservationLog()
         self._router_ready = False
+        self._thought_process = None  # lazy init
 
         # Seed Ada's identity
         self._seed_memories()
@@ -109,29 +110,31 @@ class Brain:
     # ── Core API ─────────────────────────────────────────────────────────
 
     async def think(self, input_text: str) -> ThinkResult:
-        """Process a natural language request through Ada's brain."""
+        """Process a natural language request through Ada's brain.
+
+        Uses the cognitive thought process — a loop that perceives,
+        guards, recalls, reasons, acts, evaluates, and responds.
+        Can retry up to 3 cycles if confidence is low.
+        """
         start = time.monotonic()
 
-        # Lazy router init
+        # Lazy init
         if not self._router_ready:
             self._router.initialize(session_factory=self._session_factory)
             self._router_ready = True
 
-        # ── 0. FIREWALL — always first, no exceptions ───────────────────
-        firewall_result = await self._run_firewall(input_text)
-        if firewall_result is not None:
-            elapsed = (time.monotonic() - start) * 1000
-            self._record_observation(input_text, "firewall", 1.0, firewall_result, False, elapsed)
-            return ThinkResult(
-                response=firewall_result,
-                capability="firewall",
-                confidence=1.0,
-                gate="DONE",
-                firewall_pass=False,
-                elapsed_ms=elapsed,
+        if self._thought_process is None:
+            from domains.brain.thought_process import ThoughtProcess
+            self._thought_process = ThoughtProcess(
+                cognitive=self._cognitive,
+                router=self._router,
+                llm=self._llm,
+                model_manager=self._model_manager,
+                session_factory=self._session_factory,
+                firewall_fn=self._run_firewall,
             )
 
-        # ── 0.5. SKILL CHECK — is this a capability build request? ──────
+        # Check for capability build requests first (skill, not thought)
         build_result = await self._check_build_request(input_text)
         if build_result:
             elapsed = (time.monotonic() - start) * 1000
@@ -144,75 +147,31 @@ class Brain:
                 elapsed_ms=elapsed,
             )
 
-        # ── 1. CLASSIFY — what kind of input is this? ───────────────────
-        state = self._cognitive.cognitive.process(input_text)
-        state_name = state.action.name if state else "UNKNOWN"
+        # Run the cognitive thought process
+        result = await self._thought_process.think(input_text)
 
-        # Recall from memory (without absorbing the query first)
-        gate, facts = self._cognitive.recall(input_text)
+        # Persist new thoughts
+        # (thought process already absorbs into memory — we just persist to DB)
+        self._persist_thought_from_text(input_text, "incoming")
+        if result.response:
+            self._persist_thought_from_text(result.response, "ada")
 
-        # ── 2. ROUTE — cognitive router with DONE/ASK gate ──────────────
-        route = await self._router.route_with_fallback(input_text, self._llm)
-
-        # ── 3. DISAMBIGUATE — if ASK, use LLM skill ────────────────────
-        if route.capability is None and self._llm.available:
-            route = await self._disambiguate(input_text, state_name, facts, route)
-
-        # ── 4. EXECUTE — run the capability ─────────────────────────────
-        response_text = ""
-
-        if route.capability:
-            try:
-                result = await self._execute_capability(route.capability, input_text)
-                if result:
-                    response_text = result
-            except Exception as e:
-                logger.error(f"Capability {route.capability} failed: {e}")
-
-        # Fall back to cognitive memory or LLM
-        if not response_text:
-            if self._llm.available:
-                # Always use Haiku for natural responses — pass facts as context
-                context = self._build_llm_context(input_text, state_name, facts, route)
-                llm_response = await self._llm.ask(context)
-                if llm_response:
-                    response_text = llm_response
-                    if not route.capability:
-                        route.llm_fallback = True
-                else:
-                    response_text = "I'm not sure how to handle that yet."
-            elif gate == "DONE" and facts:
-                # No LLM — raw facts as last resort
-                response_text = self._format_facts(facts)
-            else:
-                response_text = "I don't have a capability for that yet, and my language center is offline."
-
-        # ── 5. ABSORB — remember this interaction ───────────────────────
-        stored_input = self._cognitive.absorb(input_text)
-        stored_response = None
-        if response_text:
-            stored_response = self._cognitive.absorb(response_text, speaker="ada")
-
-        # Persist new thoughts to SQLite (async, non-blocking)
-        self._persist_thought(stored_input)
-        self._persist_thought(stored_response)
-
-        # ── 6. OBSERVE — log for dream loop + metrics ───────────────────
+        # Observe for dream loop + metrics
         elapsed = (time.monotonic() - start) * 1000
         self._record_observation(
-            input_text, route.capability, route.confidence,
-            response_text, route.llm_fallback, elapsed,
+            input_text, result.capability, result.confidence,
+            result.response, result.llm_assisted, elapsed,
         )
 
-        # ── 7. RETURN ───────────────────────────────────────────────────
         return ThinkResult(
-            response=response_text,
-            capability=route.capability,
-            confidence=route.confidence,
-            cognitive_state=state_name,
-            gate="DONE" if route.capability else "ASK",
-            facts=facts,
-            llm_fallback=route.llm_fallback,
+            response=result.response,
+            capability=result.capability,
+            confidence=result.confidence,
+            cognitive_state=result.cognitive_state,
+            gate=result.gate,
+            facts=result.facts,
+            llm_fallback=result.llm_assisted,
+            firewall_pass=result.firewall_pass,
             elapsed_ms=elapsed,
         )
 
@@ -425,14 +384,17 @@ class Brain:
 
     # ── Persistence ───────────────────────────────────────────────────────
 
-    def _persist_thought(self, thought) -> None:
-        """Save a thought to SQLite in a background thread."""
-        if thought is None:
+    def _persist_thought_from_text(self, text: str, speaker: str) -> None:
+        """Absorb text and persist the resulting thought to SQLite."""
+        if not text:
             return
+        stored = self._cognitive.absorb(text, speaker=speaker)
+        if stored is None:
+            return  # duplicate, already absorbed
         try:
             import asyncio
             from ada.memory.thought_persistence import save_thought
-            asyncio.ensure_future(save_thought(self._session_factory, thought))
+            asyncio.ensure_future(save_thought(self._session_factory, stored))
         except Exception:
             pass  # Non-critical — memory is still in RAM
 
