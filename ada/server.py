@@ -102,13 +102,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         session_factory=async_session_maker,
     )
     app.state.brain = brain
-    logger.info("Think pipeline online")
 
-    # ── Load persistent memories ────────────────────────────────────────
+    # ── Load persistent memories AFTER brain init ───────────────────────
+    # This restores memories from SQLite with their strength/access data.
+    # Must happen after Brain init (which seeds identity memories) so
+    # that DB memories overwrite seed defaults with actual persisted state.
     from ada.memory.thought_persistence import load_thoughts
     loaded = await load_thoughts(async_session_maker, brain.cognitive.thought_space)
     if loaded:
         logger.info(f"Restored {loaded} memories from database")
+    else:
+        logger.info(f"No persisted memories — using {brain.cognitive.thought_space.count} seed memories")
+
+    logger.info("Think pipeline online")
 
     # ── Initialize MCP ──────────────────────────────────────────────────
     from domains.auth.service import AuthService

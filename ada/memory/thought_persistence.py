@@ -78,7 +78,8 @@ async def load_thoughts(
 ) -> int:
     """Load all non-archived thoughts from SQLite into the thought space.
 
-    Called once at boot. Returns count of loaded thoughts.
+    Called once at boot. Overwrites any seed memories with persisted state
+    (strength, access count, timestamps). Returns count of loaded thoughts.
     """
     from domains.models.db_models import AdaThought
 
@@ -90,17 +91,35 @@ async def load_thoughts(
         rows = result.scalars().all()
 
         for row in rows:
-            # Re-encode through the space's encoder (glyph_data is backup)
-            stored = space.absorb(row.content, speaker=row.speaker)
-            if stored:
-                # Restore persisted state
-                stored.thought_id = row.thought_id
-                stored.strength = row.strength
-                stored.created_at = row.created_at
-                stored.last_accessed = row.last_accessed
-                stored.access_count = row.access_count
-                stored.metadata = row.extra_data or {}
+            text_key = row.content.strip().lower()
+
+            # Check if this thought already exists (e.g. from seeds)
+            existing = None
+            for t in space._thoughts.values():
+                if t.content.strip().lower() == text_key:
+                    existing = t
+                    break
+
+            if existing:
+                # Overwrite seed with persisted state
+                existing.thought_id = row.thought_id
+                existing.strength = row.strength
+                existing.created_at = row.created_at
+                existing.last_accessed = row.last_accessed
+                existing.access_count = row.access_count
+                existing.metadata = row.extra_data or {}
                 count += 1
+            else:
+                # New thought from DB — absorb and restore state
+                stored = space.absorb(row.content, speaker=row.speaker)
+                if stored:
+                    stored.thought_id = row.thought_id
+                    stored.strength = row.strength
+                    stored.created_at = row.created_at
+                    stored.last_accessed = row.last_accessed
+                    stored.access_count = row.access_count
+                    stored.metadata = row.extra_data or {}
+                    count += 1
 
     if count:
         logger.info(f"Loaded {count} thoughts from database")

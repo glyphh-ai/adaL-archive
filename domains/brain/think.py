@@ -416,12 +416,29 @@ class Brain:
     # ── Persistence ───────────────────────────────────────────────────────
 
     def _persist_thought_from_text(self, text: str, speaker: str) -> None:
-        """Absorb text and persist the resulting thought to SQLite."""
+        """Persist a thought to SQLite. Finds it in the thought space first.
+
+        The thought process already absorbs — this just persists what's
+        already in memory. Doesn't double-absorb.
+        """
         if not text:
             return
-        stored = self._cognitive.absorb(text, speaker=speaker)
+
+        # Find the thought in memory (already absorbed by thought process)
+        text_key = text.strip().lower()
+        stored = None
+        for t in self._cognitive.thought_space._thoughts.values():
+            if t.content.strip().lower() == text_key:
+                stored = t
+                break
+
+        if not stored:
+            # Not in memory yet — absorb and persist
+            stored = self._cognitive.absorb(text, speaker=speaker)
+
         if stored is None:
-            return  # duplicate, already absorbed
+            return
+
         try:
             import asyncio
             from ada.memory.thought_persistence import save_thought
