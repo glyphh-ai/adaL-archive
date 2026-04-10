@@ -128,18 +128,22 @@ class ThoughtProcess:
                         thoughts=thoughts,
                     )
 
-            # ── 3. RECALL ────────────────────────────────────────
-            gate, raw_facts = self._cognitive.recall(input_text)
+            # ── 3. RECALL — gradient search through thought space ──
+            from domains.brain.cognitive_gradient import CognitiveGradient
 
-            # Context-aware filtering: if the user is asking about
-            # themselves (RECALL state + identity words), prioritize
-            # what THEY said over what Ada knows about herself.
-            facts = self._filter_facts_by_context(
-                raw_facts, input_text, thought.cognitive_state
-            )
+            gradient = CognitiveGradient(self._cognitive.thought_space)
+            grad_result = gradient.search(input_text, top_k=5)
 
+            facts = grad_result.facts  # already ranked by cognitive gradient
             thought.facts = facts
-            thought.memory_gate = gate
+
+            # Gate: if gradient converged with strong matches, DONE
+            if grad_result.converged and facts and facts[0][2] >= 0.35:
+                thought.memory_gate = "DONE"
+            else:
+                thought.memory_gate = "ASK"
+
+            gate = thought.memory_gate
 
             # ── 4. REASON ────────────────────────────────────────
             route = await self._router.route_with_fallback(input_text, self._llm)
@@ -208,52 +212,6 @@ class ThoughtProcess:
             elapsed_ms=elapsed,
             thoughts=thoughts,
         )
-
-    # ── Context-aware fact filtering ────────────────────────────
-
-    _SELF_QUERY_WORDS = {"i", "me", "my", "mine", "am", "myself", "who"}
-
-    def _filter_facts_by_context(
-        self,
-        facts: list[tuple],
-        query: str,
-        cognitive_state: str,
-    ) -> list[tuple]:
-        """Re-rank facts based on the cognitive context of the query.
-
-        When the user asks about themselves ("who am I", "what's my name"),
-        boost facts from the user (speaker=incoming) and demote Ada's
-        own identity facts. When asking about Ada, do the opposite.
-
-        This is deterministic re-ranking, not prompt engineering.
-        """
-        if not facts:
-            return facts
-
-        query_words = set(query.lower().split())
-
-        # Is the user asking about themselves?
-        asking_about_self = bool(query_words & self._SELF_QUERY_WORDS)
-
-        if not asking_about_self:
-            return facts  # No re-ranking needed
-
-        # Re-rank: boost user facts, demote Ada's identity facts
-        reranked = []
-        for content, speaker, similarity in facts:
-            adjusted = similarity
-            if speaker == "incoming":
-                # User's own statements — boost when they ask about themselves
-                adjusted *= 1.5
-            elif speaker == "ada":
-                # Ada's statements about herself — demote for self-queries
-                adjusted *= 0.5
-
-            reranked.append((content, speaker, similarity, adjusted))
-
-        # Sort by adjusted score, return in original tuple format
-        reranked.sort(key=lambda x: x[3], reverse=True)
-        return [(content, speaker, sim) for content, speaker, sim, _ in reranked]
 
     # ── Capability execution ─────────────────────────────────────
 
