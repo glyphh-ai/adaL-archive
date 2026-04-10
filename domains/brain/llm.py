@@ -30,6 +30,7 @@ class LLMUsage:
     calls: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    blocked: int = 0  # prompts blocked by firewall
 
 
 class AdaLLM:
@@ -77,6 +78,13 @@ class AdaLLM:
         "Be concise. 1-2 sentences max. Never say you are Claude or an AI assistant."
     )
 
+    def set_firewall(self, firewall_fn) -> None:
+        """Set the firewall function. Called by Brain after init.
+
+        The firewall checks every prompt before it reaches the LLM.
+        """
+        self._firewall_fn = firewall_fn
+
     async def ask(
         self,
         prompt: str,
@@ -85,10 +93,23 @@ class AdaLLM:
     ) -> Optional[str]:
         """Ask Haiku a question. Returns the text response or None if unavailable.
 
-        Ada calls this — Haiku doesn't call Ada. Ada controls the context.
+        Every prompt is firewalled before it reaches the LLM. If the firewall
+        blocks it, returns None. No exceptions — Ada's immune system protects
+        her own language center.
         """
         if not self._available or self._client is None:
             return None
+
+        # Firewall EVERY prompt before it touches the LLM
+        if hasattr(self, '_firewall_fn') and self._firewall_fn:
+            try:
+                blocked = await self._firewall_fn(prompt)
+                if blocked:
+                    logger.warning(f"Firewall blocked LLM prompt: {blocked[:100]}")
+                    self.usage.blocked += 1
+                    return None
+            except Exception as e:
+                logger.warning(f"Firewall check failed, allowing prompt: {e}")
 
         try:
             import asyncio

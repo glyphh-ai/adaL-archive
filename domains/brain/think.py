@@ -73,6 +73,9 @@ class Brain:
         self._router_ready = False
         self._thought_process = None  # lazy init
 
+        # Wire firewall into LLM — every prompt is checked before reaching Haiku
+        self._llm.set_firewall(self._run_firewall)
+
         # Seed Ada's identity
         self._seed_memories()
 
