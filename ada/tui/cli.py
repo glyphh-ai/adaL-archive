@@ -460,25 +460,32 @@ def _start_server_background(host: str, port: int) -> threading.Thread:
     return t
 
 
-def _wait_for_server(host: str, port: int, timeout: float = 30.0) -> bool:
-    """Wait for the server to be ready by polling the health endpoint."""
+def _wait_for_server(host: str, port: int, timeout: float = 300.0) -> bool:
+    """Wait for the server to be ready. First boot can take minutes (encoding exemplars)."""
     import socket
 
     check_host = "127.0.0.1" if host == "0.0.0.0" else host
-    deadline = time.time() + timeout
-    while time.time() < deadline:
+    start = time.time()
+    dots = 0
+    while time.time() - start < timeout:
         try:
-            # First check if port is open (fast)
             with socket.create_connection((check_host, port), timeout=1):
                 pass
-            # Then check health endpoint
             import httpx
             r = httpx.get(f"http://{check_host}:{port}/health", timeout=3)
             if r.status_code == 200:
                 return True
         except Exception:
             pass
-        time.sleep(0.5)
+
+        # Show progress dots so user knows it's working
+        elapsed = int(time.time() - start)
+        if elapsed > 5 and elapsed % 5 == 0 and elapsed // 5 > dots:
+            dots = elapsed // 5
+            sys.stdout.write(".")
+            sys.stdout.flush()
+
+        time.sleep(1.0)
     return False
 
 

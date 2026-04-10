@@ -130,8 +130,9 @@ async def register_capabilities_in_db(
 ) -> None:
     """Register all capabilities with the ModelManager for DB persistence.
 
-    Loads exemplars sequentially to avoid SQLite concurrent write locks.
-    Uses ADA_ORG_ID as the org_id for all capabilities.
+    Loads capabilities sequentially. Background exemplar encoding runs
+    one at a time — we wait for each to finish before starting the next
+    to avoid SQLite concurrent write locks.
     """
     import asyncio
 
@@ -145,13 +146,12 @@ async def register_capabilities_in_db(
                 model_id=cap.name,
             )
 
-            # Wait for background encoding to complete before loading the next
-            # capability — SQLite can only handle one writer at a time.
+            # Wait for background encoding to finish — no timeout.
+            # Pipedream has 22K exemplars, can take minutes on first boot.
+            # Subsequent boots skip encoding (glyphs already in DB).
             key = (ADA_ORG_ID, cap.name)
-            for _ in range(60):  # up to 30s per capability
-                if key not in model_manager._encoding_in_progress:
-                    break
-                await asyncio.sleep(0.5)
+            while key in model_manager._encoding_in_progress:
+                await asyncio.sleep(1.0)
 
             logger.info(f"Registered {cap.name} in DB")
         except Exception as e:
