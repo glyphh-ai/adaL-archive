@@ -35,12 +35,13 @@ import numpy as np
 
 from ada.core.ops import cosine_similarity
 from ada.memory.thought_space import ThoughtGlyphSpace, RecallResult
+from domains.brain.gradient_patterns import GradientPatternLibrary
 
 logger = logging.getLogger(__name__)
 
 MAX_STEPS = 5
-CONVERGENCE_THRESHOLD = 0.15  # residual norm below this = converged
-LEARNING_RATE = 0.7  # how much to move toward the residual
+CONVERGENCE_THRESHOLD = 0.15
+LEARNING_RATE = 0.7
 
 
 @dataclass
@@ -60,6 +61,7 @@ class GradientResult:
     steps: list[GradientStep] = field(default_factory=list)
     converged: bool = False
     total_steps: int = 0
+    pattern_used: str | None = None  # pattern_id if shortcut was used
 
 
 class CognitiveGradient:
@@ -69,25 +71,27 @@ class CognitiveGradient:
     residuals in HDC vector space.
     """
 
-    def __init__(self, space: ThoughtGlyphSpace):
+    def __init__(self, space: ThoughtGlyphSpace, patterns: GradientPatternLibrary | None = None):
         self._space = space
         self._encoder = space.encoder
+        self._patterns = patterns or GradientPatternLibrary()
 
     def search(self, query: str, top_k: int = 5) -> GradientResult:
         """Multi-step gradient search for the best answer to a query.
 
-        Returns facts ranked by cognitive relevance, not just similarity.
+        First checks for learned patterns (shortcuts from previous
+        successful searches). If no pattern matches, walks the full
+        gradient. Records the path on convergence.
         """
         steps: list[GradientStep] = []
-        seen_ids: set[str] = set()  # don't return same thought twice
-        all_results: list[tuple[RecallResult, float]] = []  # (result, step_weight)
+        seen_ids: set[str] = set()
+        all_results: list[tuple[RecallResult, float]] = []
 
         # Encode the original query
         query_glyph = self._encoder.encode_thought(query, speaker="incoming")
         query_vec = query_glyph.metadata.get("_content_vector")
 
         if query_vec is None:
-            # Fallback to standard recall
             results = self._space.recall(query, top_k=top_k)
             return GradientResult(
                 facts=[(r.thought.content, r.thought.speaker, r.global_similarity) for r in results],
@@ -95,8 +99,23 @@ class CognitiveGradient:
                 total_steps=1,
             )
 
-        current_vec = np.array(query_vec, dtype=np.float64)
-        original_vec = current_vec.copy()
+        query_np = np.array(query_vec, dtype=np.float64)
+
+        # ── Pattern shortcut — check if we've solved this before ────
+        pattern = self._patterns.match(query_np)
+        if pattern:
+            pattern.reinforce(amount=0.1)
+            logger.debug(f"Pattern shortcut: {pattern.pattern_id} → {pattern.answer_content[:40]}")
+            return GradientResult(
+                facts=[(pattern.answer_content, pattern.answer_speaker, pattern.confidence)],
+                converged=True,
+                total_steps=0,
+                pattern_used=pattern.pattern_id,
+            )
+
+        # ── No pattern — walk the gradient ──────────────────────────
+        current_vec = query_np.copy()
+        original_vec = query_np.copy()
 
         for step_num in range(MAX_STEPS):
             # Search with current vector
@@ -181,12 +200,32 @@ class CognitiveGradient:
                 adjusted_sim,
             ))
 
-        # Sort by adjusted similarity
         scored.sort(key=lambda x: x[2], reverse=True)
+        converged = any(s.converged for s in steps)
+
+        # ── Record the path as a pattern if it converged ────────────
+        if converged and scored:
+            top_content, top_speaker, top_sim = scored[0]
+            # Get the answer's content vector for future matching
+            answer_vec = None
+            for r, _ in all_results:
+                if r.thought.content == top_content:
+                    answer_vec = r.thought.glyph.metadata.get("_content_vector")
+                    if answer_vec is not None:
+                        answer_vec = np.array(answer_vec, dtype=np.float64)
+                    break
+
+            self._patterns.record(
+                query_vector=original_vec,
+                answer_content=top_content,
+                answer_speaker=top_speaker,
+                answer_vector=answer_vec,
+                residual_steps=len(steps),
+            )
 
         return GradientResult(
             facts=scored[:top_k],
             steps=steps,
-            converged=any(s.converged for s in steps),
+            converged=converged,
             total_steps=len(steps),
         )

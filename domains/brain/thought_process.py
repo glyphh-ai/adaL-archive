@@ -95,6 +95,10 @@ class ThoughtProcess:
         self._session_factory = session_factory
         self._firewall = firewall_fn
 
+        # Shared gradient pattern library — learns shortcuts over time
+        from domains.brain.gradient_patterns import GradientPatternLibrary
+        self._patterns = GradientPatternLibrary()
+
     async def think(self, input_text: str) -> ThoughtResult:
         """Run the full thought process."""
         start = time.monotonic()
@@ -131,7 +135,10 @@ class ThoughtProcess:
             # ── 3. RECALL — gradient search through thought space ──
             from domains.brain.cognitive_gradient import CognitiveGradient
 
-            gradient = CognitiveGradient(self._cognitive.thought_space)
+            gradient = CognitiveGradient(
+                self._cognitive.thought_space,
+                patterns=self._patterns,
+            )
             grad_result = gradient.search(input_text, top_k=5)
 
             facts = grad_result.facts  # already ranked by cognitive gradient
@@ -299,24 +306,42 @@ class ThoughtProcess:
                     return response
             return thought.action_result
 
-        # No capability result — use memory + LLM
-        if self._llm.available:
-            parts = [f"User said: \"{input_text}\""]
+        # ── Hallucination gate ─────────────────────────────────
+        # The LLM ONLY gets facts that survived the cognitive gradient.
+        # If the gradient didn't converge, Ada says "I don't know"
+        # instead of letting the LLM guess.
 
-            if thought.facts:
-                parts.append("\nRelevant memories:")
+        if thought.memory_gate == "DONE" and thought.facts:
+            # Gradient converged — we have grounded facts. LLM synthesizes.
+            if self._llm.available:
+                parts = [f"User said: \"{input_text}\""]
+                parts.append("\nFacts (from your memory — these are TRUE, use them):")
                 for content, speaker, sim in thought.facts[:5]:
                     parts.append(f"  - {content}")
-
-            parts.append(
-                "\nRespond as Ada in 1-2 sentences. Use your memories to answer."
-            )
-            response = await self._llm.ask("\n".join(parts))
-            if response:
-                return response
-
-        # Last resort — raw facts
-        if thought.facts:
+                parts.append(
+                    "\nRespond using ONLY these facts. 1-2 sentences. "
+                    "Do not add information that isn't in the facts."
+                )
+                response = await self._llm.ask("\n".join(parts))
+                if response:
+                    return response
+            # LLM offline — return top fact directly
             return thought.facts[0][0]
 
-        return "I'm not sure how to help with that."
+        if thought.facts and thought.facts[0][2] > 0.3:
+            # Partial match — some facts but not fully converged
+            if self._llm.available:
+                parts = [f"User said: \"{input_text}\""]
+                parts.append("\nPossibly relevant memories (not fully confirmed):")
+                for content, speaker, sim in thought.facts[:3]:
+                    parts.append(f"  - {content}")
+                parts.append(
+                    "\nRespond as Ada. Use these memories if they seem relevant, "
+                    "but say what you're unsure about. 1-2 sentences."
+                )
+                response = await self._llm.ask("\n".join(parts))
+                if response:
+                    return response
+
+        # No facts, no convergence — honest "I don't know"
+        return "I don't have information about that in my memory."
