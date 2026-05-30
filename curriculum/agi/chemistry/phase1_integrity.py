@@ -40,6 +40,8 @@ from teach import (CHEM_FILES, LAYER_0, LAYER_1, _load_yaml,  # noqa
 N_COMPOUNDS    = int(os.environ.get("N_COMPOUNDS", "1500"))
 BUDGET_USD     = float(os.environ.get("BUDGET_USD", "60"))
 CONCURRENCY    = int(os.environ.get("CONCURRENCY", "8"))
+CORPUS_FILE    = os.environ.get("CORPUS_FILE", "")
+DO_RETRY       = os.environ.get("DO_RETRY", "1") == "1"
 MODEL          = "claude-haiku-4-5-20251001"
 HAIKU_IN_PER_M = 1.00  # $/MTok input
 HAIKU_OUT_PER_M = 5.00  # $/MTok output
@@ -47,6 +49,8 @@ HAIKU_OUT_PER_M = 5.00  # $/MTok output
 HAIKU_CACHED_IN_PER_M = 0.10
 CACHE_DIR      = HERE / ".phase1_cache"
 CACHE_DIR.mkdir(exist_ok=True)
+EXTRACT_CACHE  = HERE / ".phase1_extract_cache"
+EXTRACT_CACHE.mkdir(exist_ok=True)
 
 
 # ── source corpus ──────────────────────────────────────────────────
@@ -385,8 +389,9 @@ def trace_to_primes(lattice: dict[str, dict], key: str,
 
 # ── Caller ─────────────────────────────────────────────────────────
 
-def call_haiku(client, system_blocks: list[dict], user: str,
-               max_retries: int = 2) -> tuple[dict | None, dict]:
+def call_haiku(client, system_blocks: list[dict],
+               messages: list[dict],
+               max_retries: int = 3) -> tuple[dict | None, dict]:
     """Returns (parsed_json | None, usage_dict)."""
     import anthropic
     for attempt in range(max_retries + 1):
@@ -395,7 +400,7 @@ def call_haiku(client, system_blocks: list[dict], user: str,
                 model=MODEL,
                 max_tokens=900,
                 system=system_blocks,
-                messages=[{"role": "user", "content": user}],
+                messages=messages,
             )
             usage = {
                 "in_tok": r.usage.input_tokens,
@@ -409,11 +414,33 @@ def call_haiku(client, system_blocks: list[dict], user: str,
             return parse_response(text), usage
         except anthropic.RateLimitError:
             time.sleep(2 ** attempt)
+        except (anthropic.APITimeoutError, anthropic.APIConnectionError):
+            time.sleep(1 + attempt)
         except Exception as e:
             if attempt == max_retries:
                 return None, {"error": str(e)[:200]}
             time.sleep(1)
     return None, {}
+
+
+def _extract_cache_path(title: str) -> Path:
+    safe = title.replace("/", "_").replace(" ", "_")[:140]
+    return EXTRACT_CACHE / f"ex_{safe}.json"
+
+
+def cached_extract(title: str) -> dict | None:
+    p = _extract_cache_path(title)
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            return None
+    return None
+
+
+def save_extract(title: str, parsed: dict | None, usage: dict) -> None:
+    _extract_cache_path(title).write_text(json.dumps(
+        {"parsed": parsed, "usage": usage}))
 
 
 def usage_cost(u: dict) -> float:
@@ -449,20 +476,27 @@ def main() -> None:
     print(f"  baseline: {len(initial_keys)} keys in substrate.\n")
 
     # 2. Corpus.
-    titles = parse_corpus(CORPUS)[:N_COMPOUNDS]
-    print(f"  corpus: {len(titles)} chemistry titles queued.\n")
+    if CORPUS_FILE and Path(CORPUS_FILE).exists():
+        titles = [t.strip() for t in Path(CORPUS_FILE).read_text().split("\n")
+                  if t.strip()][:N_COMPOUNDS]
+        print(f"  corpus: {len(titles)} chemistry titles from "
+              f"{CORPUS_FILE}.\n")
+    else:
+        titles = parse_corpus(CORPUS)[:N_COMPOUNDS]
+        print(f"  corpus: {len(titles)} chemistry titles queued.\n")
 
     # 3. Fetch Wikipedia in parallel (throttled — be a good neighbor).
-    print(f"  ── fetching Wikipedia summaries ...")
+    wp_conc = int(os.environ.get("WP_CONCURRENCY", "8"))
+    print(f"  ── fetching Wikipedia summaries (concurrency={wp_conc}) ...")
     summaries: dict[str, dict] = {}
-    with ThreadPoolExecutor(max_workers=4) as ex:
+    with ThreadPoolExecutor(max_workers=wp_conc) as ex:
         futs = {ex.submit(fetch_summary, t): t for t in titles}
         for i, fut in enumerate(as_completed(futs), 1):
             t = futs[fut]
             s = fut.result()
             if s and not s.get("_error") and s.get("extract"):
                 summaries[t] = s
-            if i % 100 == 0:
+            if i % 1000 == 0:
                 print(f"    {i}/{len(titles)} fetched, "
                       f"{len(summaries)} with extracts.")
     print(f"    fetched {len(summaries)}/{len(titles)} non-empty summaries.\n")
@@ -486,34 +520,56 @@ def main() -> None:
 
     print(f"  ── extracting via Haiku (concurrency={CONCURRENCY}) ...")
     t0 = time.time()
+    budget_hit = False
+    n_cache_hits = 0
+
+    # Reserve early cache hits so we don't pay for them.
+    pending: list[tuple[str, dict]] = []
+    for title, s in items:
+        cached = cached_extract(title)
+        if cached is not None:
+            results.append({"title": title, "parsed": cached.get("parsed"),
+                            "usage": cached.get("usage", {}),
+                            "cost_usd": 0.0})
+            n_done += 1
+            n_cache_hits += 1
+        else:
+            pending.append((title, s))
+    print(f"    {n_cache_hits} cache hits; {len(pending)} fresh calls needed.")
 
     def one(item):
         title, s = item
         user = build_user(title, s["extract"], s.get("description", ""))
-        parsed, usage = call_haiku(client, system_blocks, user)
+        parsed, usage = call_haiku(
+            client, system_blocks,
+            [{"role": "user", "content": user}])
+        save_extract(title, parsed, usage)
         return title, parsed, usage
 
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as ex:
-        futs = [ex.submit(one, it) for it in items]
+        futs = [ex.submit(one, it) for it in pending]
         for fut in as_completed(futs):
+            if budget_hit:
+                continue
             title, parsed, usage = fut.result()
             cost = usage_cost(usage)
             total_cost += cost
             n_done += 1
             results.append({"title": title, "parsed": parsed, "usage": usage,
                             "cost_usd": cost})
-            if n_done % 50 == 0:
+            if n_done % 200 == 0:
                 rate = n_done / max(1, time.time() - t0)
-                print(f"    {n_done:>4}/{len(items)}  "
+                print(f"    {n_done:>5}/{len(items)}  "
                       f"${total_cost:>6.2f} spent  "
                       f"{rate:.1f}/s")
             if total_cost > BUDGET_USD:
                 print(f"    ✗ budget exceeded at {n_done} items "
-                      f"(${total_cost:.2f})")
-                break
+                      f"(${total_cost:.2f}) — draining...")
+                budget_hit = True
 
     print(f"\n    {n_done} extractions complete in {time.time() - t0:.1f}s, "
-          f"cost ${total_cost:.4f}.\n")
+          f"fresh-call cost ${total_cost:.4f} "
+          f"({n_cache_hits} from cache).\n")
 
     # 6. Validation pass.
     print(f"  ── validation ──")
@@ -557,6 +613,115 @@ def main() -> None:
         for k, urs in unresolved_examples[:5]:
             print(f"      • {k}  → unresolved: {urs[:5]}")
     print()
+
+    # ── Retry-with-feedback pass ────────────────────────────────────
+    if DO_RETRY and not budget_hit:
+        # Collect failures with original summary text.
+        failures: list[tuple[str, dict, dict, list[str]]] = []
+        title_to_summary = dict(summaries)
+        for r in results:
+            entry = r.get("parsed")
+            if not isinstance(entry, dict):
+                continue
+            ok, unresolved = validate(entry, all_known)
+            if not ok and unresolved \
+                    and unresolved != ["empty_composed_of"] \
+                    and unresolved != ["missing_key"] \
+                    and unresolved != ["missing_entity"] \
+                    and r["title"] in title_to_summary:
+                failures.append((r["title"], title_to_summary[r["title"]],
+                                 entry, unresolved))
+        print(f"  ── retry pass: {len(failures)} entries with unresolved refs")
+        if failures:
+            print(f"    sending corrective feedback to Haiku...")
+
+            def retry_one(t):
+                title, s, prev, unresolved = t
+                user1 = build_user(title, s["extract"],
+                                   s.get("description", ""))
+                prev_json = json.dumps(prev, indent=None)
+                feedback = (
+                    f"Your previous response was:\n{prev_json}\n\n"
+                    f"These composed_of keys do NOT exist in the namespace: "
+                    f"{unresolved}. Re-emit a valid JSON for the SAME "
+                    f"concept, but every composed_of key MUST appear in the "
+                    f"namespace shown in the system prompt. Decompose unknown "
+                    f"functional groups into element.* + bond.* + group.* keys "
+                    f"that DO exist."
+                )
+                parsed, usage = call_haiku(
+                    client, system_blocks,
+                    [{"role": "user", "content": user1},
+                     {"role": "assistant", "content": prev_json},
+                     {"role": "user", "content": feedback}])
+                return title, parsed, usage
+
+            n_retry_fixed = 0
+            with ThreadPoolExecutor(max_workers=CONCURRENCY) as ex:
+                futs = [ex.submit(retry_one, t) for t in failures]
+                for i, fut in enumerate(as_completed(futs), 1):
+                    if budget_hit:
+                        continue
+                    title, parsed, usage = fut.result()
+                    cost = usage_cost(usage)
+                    total_cost += cost
+                    if parsed is not None:
+                        ok, unresolved = validate(parsed, all_known)
+                        if ok:
+                            n_retry_fixed += 1
+                            # Replace the original failed entry.
+                            for r in results:
+                                if r["title"] == title:
+                                    r["parsed"] = parsed
+                                    r["usage"] = usage
+                                    r["cost_usd"] += cost
+                                    r["retried"] = True
+                                    break
+                            save_extract(title, parsed, usage)
+                    if i % 100 == 0:
+                        print(f"    retry {i}/{len(failures)}  "
+                              f"+{n_retry_fixed} fixed  "
+                              f"${total_cost:.2f}")
+                    if total_cost > BUDGET_USD:
+                        budget_hit = True
+            print(f"    retry pass fixed {n_retry_fixed}/{len(failures)} "
+                  f"failures.\n")
+
+            # Re-run validation post-retry.
+            n_parseable = sum(1 for r in results if r["parsed"])
+            n_schema_ok = 0
+            n_refs_ok = 0
+            unresolved_examples = []
+            new_entries = []
+            proposed_keys = {r["parsed"]["key"] for r in results
+                             if r["parsed"]
+                             and isinstance(r["parsed"], dict)
+                             and isinstance(r["parsed"].get("key"), str)}
+            all_known = initial_keys | proposed_keys
+            for r in results:
+                entry = r["parsed"]
+                if not isinstance(entry, dict):
+                    continue
+                ok, unresolved = validate(entry, all_known)
+                if entry.get("key") and entry.get("entity") \
+                        and entry.get("composed_of"):
+                    n_schema_ok += 1
+                if ok:
+                    n_refs_ok += 1
+                    new_entries.append(entry)
+                elif unresolved:
+                    unresolved_examples.append((entry.get("key", "?"),
+                                                unresolved))
+            print(f"  ── validation (post-retry) ──")
+            print(f"    JSON parseable:           {n_parseable}/"
+                  f"{n_attempted} = "
+                  f"{100 * n_parseable / max(1, n_attempted):.1f}%")
+            print(f"    Schema fields present:    {n_schema_ok}/"
+                  f"{n_attempted} = "
+                  f"{100 * n_schema_ok / max(1, n_attempted):.1f}%")
+            print(f"    All composed_of resolve:  {n_refs_ok}/"
+                  f"{n_attempted} = "
+                  f"{100 * n_refs_ok / max(1, n_attempted):.1f}%\n")
 
     # 7. Integrate clean entries into a new lattice; re-grounded?
     print(f"  ── prime-grounding on the scaled lattice ──")
