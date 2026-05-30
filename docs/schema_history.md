@@ -10,549 +10,279 @@ Format per entry:
 - the exemplar fact that introduced it
 - the meta-glyph thought_id that now lives in the substrate
 
-## 2026-05-30T05:10:36.819841+00:00
+## 2026-05-30T05:20:36.710577+00:00
 
 - **new predicate**: `age`
 - **new topic**: `person.age`
 - **exemplar**: Chris is 31 years old.
 - **subject** / **object**: `chris` / `31`
-- **meta-glyph**: `schema.predicate.age@20260530T051037Z#v1`
+- **meta-glyph**: `schema.predicate.age@20260530T052037Z#v1`
 
-## 2026-05-30T05:10:38.617395+00:00
+## 2026-05-30T05:20:38.151425+00:00
 
 - **new predicate**: `residence`
 - **new topic**: `person.location`
 - **exemplar**: Chris lives in Austin.
 - **subject** / **object**: `chris` / `austin`
-- **meta-glyph**: `schema.predicate.residence@20260530T051039Z#v1`
+- **meta-glyph**: `schema.predicate.residence@20260530T052038Z#v1`
 
-## 2026-05-30T05:10:41.566991+00:00
+## 2026-05-30T05:20:40.331247+00:00
 
 - **new predicate**: `job`
-- **new topic**: `person.job`
+- **new topic**: `person.occupation`
 - **exemplar**: Chris works as a engineer.
 - **subject** / **object**: `chris` / `engineer`
-- **meta-glyph**: `schema.predicate.job@20260530T051042Z#v1`
+- **meta-glyph**: `schema.predicate.job@20260530T052040Z#v1`
 
-## 2026-05-30T05:10:43.467518+00:00
+## 2026-05-30T05:20:41.673027+00:00
 
 - **new predicate**: `favorite_color`
 - **new topic**: `person.preference`
 - **exemplar**: Chris's favorite color is blue.
 - **subject** / **object**: `chris` / `blue`
-- **meta-glyph**: `schema.predicate.favorite_color@20260530T051044Z#v1`
+- **meta-glyph**: `schema.predicate.favorite_color@20260530T052042Z#v1`
 
-## 2026-05-30T05:10:47.214500+00:00
+## 2026-05-30T05:20:47.365810+00:00
 
-- **new topic**: `person.occupation`
-- **exemplar**: Alice works as a doctor.
-- **subject** / **object**: `alice` / `doctor`
-- **meta-glyph**: `schema.topic.person_occupation@20260530T051048Z#v1`
+- **new topic**: `person.job`
+- **exemplar**: Bob works as a teacher.
+- **subject** / **object**: `bob` / `teacher`
+- **meta-glyph**: `schema.topic.person_job@20260530T052048Z#v1`
 
-## 2026-05-30T05:10:59.716873+00:00
-
-- **new predicate**: `lives_in`
-- **new topic**: `person.residence`
-- **exemplar**: Fran lives in Fresno.
-- **subject** / **object**: `fran` / `fresno`
-- **meta-glyph**: `schema.predicate.lives_in@20260530T051100Z#v1`
-
-## 2026-05-30T05:11:17.210781+00:00
+## 2026-05-30T05:21:09.724249+00:00
 
 - **new predicate**: `capital`
 - **new topic**: `geography.capital`
 - **exemplar**: The capital of France is Paris.
 - **subject** / **object**: `france` / `paris`
-- **meta-glyph**: `schema.predicate.capital@20260530T051117Z#v1`
+- **meta-glyph**: `schema.predicate.capital@20260530T052110Z#v1`
 
-## 2026-05-30T05:11:40.108828+00:00
+## 2026-05-30T05:21:37.237007+00:00
 
-- **new predicate**: `value`
+- **new predicate**: `value_in_meters_per_second`
 - **new topic**: `science.constant`
 - **exemplar**: The speed of light is 299,792,458 meters per second.
-- **subject** / **object**: `speed of light` / `299,792,458 meters per second`
-- **meta-glyph**: `schema.predicate.value@20260530T051140Z#v1`
+- **subject** / **object**: `speed of light` / `299792458`
+- **meta-glyph**: `schema.predicate.value_in_meters_per_second@20260530T052138Z#v1`
 
-## 2026-05-30T05:11:41.755558+00:00
+## 2026-05-30T05:21:38.938764+00:00
 
 - **new predicate**: `boiling_point`
-- **new topic**: `science.physical_property`
+- **new topic**: `science.property`
 - **exemplar**: Water boils at 100 degrees Celsius.
 - **subject** / **object**: `water` / `100 degrees celsius`
-- **meta-glyph**: `schema.predicate.boiling_point@20260530T051142Z#v1`
+- **meta-glyph**: `schema.predicate.boiling_point@20260530T052139Z#v1`
 
-## 2026-05-30T05:11:43.997736+00:00
+## 2026-05-30T05:21:40.507056+00:00
 
-- **new predicate**: `freezes_at_temperature`
-- **new topic**: `science.phase_transition`
+- **new predicate**: `freezing_point`
+- **new topic**: `science.physical_property`
 - **exemplar**: Water freezes at 0 degrees Celsius.
 - **subject** / **object**: `water` / `0 degrees celsius`
-- **meta-glyph**: `schema.predicate.freezes_at_temperature@20260530T051144Z#v1`
+- **meta-glyph**: `schema.predicate.freezing_point@20260530T052141Z#v1`
 
-## 2026-05-30T05:11:45.413880+00:00
+## 2026-05-30T05:21:42.011923+00:00
 
 - **new predicate**: `approximate_value`
 - **new topic**: `mathematics.constant`
 - **exemplar**: Pi is approximately 3.14159.
 - **subject** / **object**: `pi` / `3.14159`
-- **meta-glyph**: `schema.predicate.approximate_value@20260530T051146Z#v1`
+- **meta-glyph**: `schema.predicate.approximate_value@20260530T052142Z#v1`
 
-## 2026-05-30T05:11:47.201626+00:00
+## 2026-05-30T05:21:43.582031+00:00
 
-- **new predicate**: `gravitational_acceleration`
-- **new topic**: `science.physics`
+- **new predicate**: `surface_gravity`
+- **new topic**: `science.physics.gravity`
 - **exemplar**: Earth's gravity is 9.81 meters per second squared.
 - **subject** / **object**: `earth` / `9.81 m/s²`
-- **meta-glyph**: `schema.predicate.gravitational_acceleration@20260530T051148Z#v1`
+- **meta-glyph**: `schema.predicate.surface_gravity@20260530T052144Z#v1`
 
-## 2026-05-30T05:11:49.528220+00:00
+## 2026-05-30T05:21:45.458019+00:00
 
 - **new predicate**: `orbital_period`
 - **new topic**: `astronomy.orbital_mechanics`
 - **exemplar**: The Earth orbits the Sun in 365 days.
 - **subject** / **object**: `earth` / `365 days`
-- **meta-glyph**: `schema.predicate.orbital_period@20260530T051150Z#v1`
+- **meta-glyph**: `schema.predicate.orbital_period@20260530T052146Z#v1`
 
-## 2026-05-30T05:11:52.360638+00:00
+## 2026-05-30T05:21:47.710634+00:00
 
 - **new predicate**: `travel_time_to_earth`
 - **new topic**: `science.astronomy`
 - **exemplar**: Light travels from the Sun to Earth in 8 minutes.
 - **subject** / **object**: `light from the sun` / `8 minutes`
-- **meta-glyph**: `schema.predicate.travel_time_to_earth@20260530T051153Z#v1`
+- **meta-glyph**: `schema.predicate.travel_time_to_earth@20260530T052148Z#v1`
 
-## 2026-05-30T05:11:53.890180+00:00
+## 2026-05-30T05:21:49.247851+00:00
 
 - **new predicate**: `composition`
 - **new topic**: `chemistry.molecular_structure`
 - **exemplar**: A water molecule has two hydrogen atoms and one oxygen atom.
 - **subject** / **object**: `water molecule` / `two hydrogen atoms and one oxygen atom`
-- **meta-glyph**: `schema.predicate.composition@20260530T051154Z#v1`
+- **meta-glyph**: `schema.predicate.composition@20260530T052149Z#v1`
 
-## 2026-05-30T05:11:55.388893+00:00
+## 2026-05-30T05:21:50.665704+00:00
 
 - **new predicate**: `atomic_number`
 - **new topic**: `science.chemistry.element`
 - **exemplar**: Gold has atomic number 79.
 - **subject** / **object**: `gold` / `79`
-- **meta-glyph**: `schema.predicate.atomic_number@20260530T051156Z#v1`
+- **meta-glyph**: `schema.predicate.atomic_number@20260530T052151Z#v1`
 
-## 2026-05-30T05:11:56.927376+00:00
+## 2026-05-30T05:21:52.617650+00:00
 
 - **new predicate**: `is_lightest_element`
-- **new topic**: `chemistry.element_property`
+- **new topic**: `science.chemistry.element_property`
 - **exemplar**: Hydrogen is the lightest element.
 - **subject** / **object**: `hydrogen` / `true`
-- **meta-glyph**: `schema.predicate.is_lightest_element@20260530T051157Z#v1`
+- **meta-glyph**: `schema.predicate.is_lightest_element@20260530T052153Z#v1`
 
-## 2026-05-30T05:11:58.697458+00:00
+## 2026-05-30T05:21:54.138878+00:00
 
-- **new predicate**: `hardness_ranking`
-- **new topic**: `science.material_properties`
+- **new predicate**: `hardness_rank`
+- **new topic**: `science.material_property`
 - **exemplar**: Diamond is the hardest natural mineral.
 - **subject** / **object**: `diamond` / `hardest natural mineral`
-- **meta-glyph**: `schema.predicate.hardness_ranking@20260530T051159Z#v1`
+- **meta-glyph**: `schema.predicate.hardness_rank@20260530T052154Z#v1`
 
-## 2026-05-30T05:12:00.788785+00:00
+## 2026-05-30T05:21:55.968656+00:00
 
 - **new predicate**: `speed_in_air`
 - **new topic**: `physics.acoustics`
 - **exemplar**: Sound travels at 343 meters per second in air.
 - **subject** / **object**: `sound` / `343 meters per second`
-- **meta-glyph**: `schema.predicate.speed_in_air@20260530T051201Z#v1`
+- **meta-glyph**: `schema.predicate.speed_in_air@20260530T052156Z#v1`
 
-## 2026-05-30T05:12:02.244900+00:00
+## 2026-05-30T05:21:57.449954+00:00
 
 - **new predicate**: `temperature_in_celsius`
+- **new topic**: `science.temperature`
 - **exemplar**: Absolute zero is -273.15 degrees Celsius.
 - **subject** / **object**: `absolute zero` / `-273.15`
-- **meta-glyph**: `schema.predicate.temperature_in_celsius@20260530T051202Z#v1`
+- **meta-glyph**: `schema.predicate.temperature_in_celsius@20260530T052158Z#v1`
 
-## 2026-05-30T05:12:04.357538+00:00
-
-- **new predicate**: `bone_count`
-- **new topic**: `anatomy.skeletal_system`
-- **exemplar**: The human body has 206 bones.
-- **subject** / **object**: `human body` / `206`
-- **meta-glyph**: `schema.predicate.bone_count@20260530T051207Z#v1`
-
-## 2026-05-30T05:12:08.917846+00:00
-
-- **new predicate**: `abbreviation_of`
-- **new topic**: `knowledge.abbreviation`
-- **exemplar**: DNA stands for deoxyribonucleic acid.
-- **subject** / **object**: `dna` / `deoxyribonucleic acid`
-- **meta-glyph**: `schema.predicate.abbreviation_of@20260530T051209Z#v1`
-
-## 2026-05-30T05:12:13.277656+00:00
-
-- **new predicate**: `function`
-- **new topic**: `biology.cell_biology`
-- **exemplar**: The mitochondria is the powerhouse of the cell.
-- **subject** / **object**: `mitochondria` / `powerhouse of the cell`
-- **meta-glyph**: `schema.predicate.function@20260530T051214Z#v1`
-
-## 2026-05-30T05:12:14.779838+00:00
-
-- **new predicate**: `number_of_elements`
-- **new topic**: `science.chemistry`
-- **exemplar**: There are 118 elements in the periodic table.
-- **subject** / **object**: `periodic table` / `118`
-- **meta-glyph**: `schema.predicate.number_of_elements@20260530T051215Z#v1`
-
-## 2026-05-30T05:12:16.401626+00:00
-
-- **new predicate**: `converts`
-- **new topic**: `biology.process`
-- **exemplar**: Photosynthesis converts sunlight into chemical energy.
-- **subject** / **object**: `photosynthesis` / `sunlight into chemical energy`
-- **meta-glyph**: `schema.predicate.converts@20260530T051217Z#v1`
-
-## 2026-05-30T05:12:17.911048+00:00
-
-- **new predicate**: `uses_vector_dimension`
-- **new topic**: `technology.specification`
-- **exemplar**: Ada uses 2048-dimensional bipolar vectors.
-- **subject** / **object**: `ada` / `2048-dimensional bipolar vectors`
-- **meta-glyph**: `schema.predicate.uses_vector_dimension@20260530T051218Z#v1`
-
-## 2026-05-30T05:12:20.232230+00:00
-
-- **new predicate**: `encoding_method`
-- **new topic**: `technology.encoding`
-- **exemplar**: Ada's atoms are encoded with character n-grams.
-- **subject** / **object**: `ada` / `character n-grams`
-- **meta-glyph**: `schema.predicate.encoding_method@20260530T051221Z#v1`
-
-## 2026-05-30T05:12:22.193238+00:00
-
-- **new predicate**: `combine_through`
-- **new topic**: `cryptography.binding`
-- **exemplar**: Bindings combine atoms through XOR.
-- **subject** / **object**: `bindings` / `xor`
-- **meta-glyph**: `schema.predicate.combine_through@20260530T051222Z#v1`
-
-## 2026-05-30T05:12:23.934835+00:00
-
-- **new predicate**: `aggregates_vectors_by`
-- **new topic**: `machine_learning.ensemble_method`
-- **exemplar**: Bundling aggregates vectors by majority vote.
-- **subject** / **object**: `bundling` / `majority vote`
-- **meta-glyph**: `schema.predicate.aggregates_vectors_by@20260530T051224Z#v1`
-
-## 2026-05-30T05:12:25.497428+00:00
-
-- **new predicate**: `runs_on_port`
-- **new topic**: `software.configuration`
-- **exemplar**: The Ada server runs on port 8002.
-- **subject** / **object**: `ada server` / `8002`
-- **meta-glyph**: `schema.predicate.runs_on_port@20260530T051226Z#v1`
-
-## 2026-05-30T05:12:27.070364+00:00
-
-- **new predicate**: `has_hierarchical_layers`
-- **new topic**: `cognition.structure`
-- **exemplar**: Each thought has five hierarchical layers.
-- **subject** / **object**: `thought` / `five`
-- **meta-glyph**: `schema.predicate.has_hierarchical_layers@20260530T051227Z#v1`
-
-## 2026-05-30T05:12:29.105043+00:00
-
-- **new predicate**: `uses_components`
-- **new topic**: `knowledge.methodology`
-- **exemplar**: Glyph similarity uses weighted cortex, layer, segment, and role.
-- **subject** / **object**: `glyph similarity` / `weighted cortex, layer, segment, and role`
-- **meta-glyph**: `schema.predicate.uses_components@20260530T051229Z#v1`
-
-## 2026-05-30T05:12:30.876472+00:00
-
-- **new predicate**: `has_dream_loop_for`
-- **new topic**: `person.cognitive_function`
-- **exemplar**: Ada has a REM and slow-wave dream loop for pattern discovery.
-- **subject** / **object**: `ada` / `rem and slow-wave dream loop for pattern discovery`
-- **meta-glyph**: `schema.predicate.has_dream_loop_for@20260530T051231Z#v1`
-
-## 2026-05-30T05:12:32.432101+00:00
-
-- **new predicate**: `strengthens`
-- **new topic**: `neuroscience.learning`
-- **exemplar**: Hebbian reinforcement strengthens recalled memories.
-- **subject** / **object**: `hebbian reinforcement` / `recalled memories`
-- **meta-glyph**: `schema.predicate.strengthens@20260530T051233Z#v1`
-
-## 2026-05-30T05:13:00.341510+00:00
-
-- **new predicate**: `age`
-- **new topic**: `person.age`
-- **exemplar**: Chris is 31 years old.
-- **subject** / **object**: `chris` / `31`
-- **meta-glyph**: `schema.predicate.age@20260530T051301Z#v1`
-
-## 2026-05-30T05:13:02.055313+00:00
-
-- **new predicate**: `residence`
-- **new topic**: `person.location`
-- **exemplar**: Chris lives in Austin.
-- **subject** / **object**: `chris` / `austin`
-- **meta-glyph**: `schema.predicate.residence@20260530T051302Z#v1`
-
-## 2026-05-30T05:13:04.011364+00:00
-
-- **new predicate**: `job`
-- **new topic**: `person.job`
-- **exemplar**: Chris works as a engineer.
-- **subject** / **object**: `chris` / `engineer`
-- **meta-glyph**: `schema.predicate.job@20260530T051304Z#v1`
-
-## 2026-05-30T05:13:05.292381+00:00
-
-- **new predicate**: `favorite_color`
-- **new topic**: `person.preference`
-- **exemplar**: Chris's favorite color is blue.
-- **subject** / **object**: `chris` / `blue`
-- **meta-glyph**: `schema.predicate.favorite_color@20260530T051306Z#v1`
-
-## 2026-05-30T05:13:08.259116+00:00
-
-- **new topic**: `person.occupation`
-- **exemplar**: Alice works as a doctor.
-- **subject** / **object**: `alice` / `doctor`
-- **meta-glyph**: `schema.topic.person_occupation@20260530T051308Z#v1`
-
-## 2026-05-30T05:13:35.867271+00:00
-
-- **new predicate**: `capital`
-- **new topic**: `geography.capital`
-- **exemplar**: The capital of France is Paris.
-- **subject** / **object**: `france` / `paris`
-- **meta-glyph**: `schema.predicate.capital@20260530T051336Z#v1`
-
-## 2026-05-30T05:14:02.959430+00:00
-
-- **new predicate**: `value_in_meters_per_second`
-- **new topic**: `physics.constant`
-- **exemplar**: The speed of light is 299,792,458 meters per second.
-- **subject** / **object**: `speed of light` / `299792458`
-- **meta-glyph**: `schema.predicate.value_in_meters_per_second@20260530T051404Z#v1`
-
-## 2026-05-30T05:14:05.128389+00:00
-
-- **new predicate**: `boiling_point_celsius`
-- **new topic**: `science.physical_property`
-- **exemplar**: Water boils at 100 degrees Celsius.
-- **subject** / **object**: `water` / `100`
-- **meta-glyph**: `schema.predicate.boiling_point_celsius@20260530T051405Z#v1`
-
-## 2026-05-30T05:14:07.201180+00:00
-
-- **new predicate**: `freezing_point`
-- **exemplar**: Water freezes at 0 degrees Celsius.
-- **subject** / **object**: `water` / `0 degrees celsius`
-- **meta-glyph**: `schema.predicate.freezing_point@20260530T051408Z#v1`
-
-## 2026-05-30T05:14:08.713023+00:00
-
-- **new predicate**: `approximate_value`
-- **new topic**: `mathematics.constant`
-- **exemplar**: Pi is approximately 3.14159.
-- **subject** / **object**: `pi` / `3.14159`
-- **meta-glyph**: `schema.predicate.approximate_value@20260530T051409Z#v1`
-
-## 2026-05-30T05:14:10.323734+00:00
-
-- **new predicate**: `gravitational_acceleration`
-- **new topic**: `physics.gravity`
-- **exemplar**: Earth's gravity is 9.81 meters per second squared.
-- **subject** / **object**: `earth` / `9.81 m/s²`
-- **meta-glyph**: `schema.predicate.gravitational_acceleration@20260530T051411Z#v1`
-
-## 2026-05-30T05:14:11.906502+00:00
-
-- **new predicate**: `orbital_period`
-- **new topic**: `astronomy.orbital_mechanics`
-- **exemplar**: The Earth orbits the Sun in 365 days.
-- **subject** / **object**: `earth` / `365 days`
-- **meta-glyph**: `schema.predicate.orbital_period@20260530T051412Z#v1`
-
-## 2026-05-30T05:14:14.870071+00:00
-
-- **new predicate**: `travel_time_from_sun_to_earth`
-- **new topic**: `physics.light`
-- **exemplar**: Light travels from the Sun to Earth in 8 minutes.
-- **subject** / **object**: `light` / `8 minutes`
-- **meta-glyph**: `schema.predicate.travel_time_from_sun_to_earth@20260530T051415Z#v1`
-
-## 2026-05-30T05:14:16.477665+00:00
-
-- **new predicate**: `composition`
-- **new topic**: `chemistry.molecular_structure`
-- **exemplar**: A water molecule has two hydrogen atoms and one oxygen atom.
-- **subject** / **object**: `water molecule` / `two hydrogen atoms and one oxygen atom`
-- **meta-glyph**: `schema.predicate.composition@20260530T051417Z#v1`
-
-## 2026-05-30T05:14:17.979586+00:00
-
-- **new predicate**: `atomic_number`
-- **new topic**: `science.chemistry.element`
-- **exemplar**: Gold has atomic number 79.
-- **subject** / **object**: `gold` / `79`
-- **meta-glyph**: `schema.predicate.atomic_number@20260530T051418Z#v1`
-
-## 2026-05-30T05:14:19.471013+00:00
-
-- **new predicate**: `is_lightest_element`
-- **new topic**: `chemistry.element_properties`
-- **exemplar**: Hydrogen is the lightest element.
-- **subject** / **object**: `hydrogen` / `true`
-- **meta-glyph**: `schema.predicate.is_lightest_element@20260530T051420Z#v1`
-
-## 2026-05-30T05:14:21.445087+00:00
-
-- **new predicate**: `hardness_rating`
-- **new topic**: `science.mineralogy`
-- **exemplar**: Diamond is the hardest natural mineral.
-- **subject** / **object**: `diamond` / `hardest natural mineral`
-- **meta-glyph**: `schema.predicate.hardness_rating@20260530T051422Z#v1`
-
-## 2026-05-30T05:14:22.981280+00:00
-
-- **new predicate**: `speed_in_air`
-- **new topic**: `physics.acoustics`
-- **exemplar**: Sound travels at 343 meters per second in air.
-- **subject** / **object**: `sound` / `343 meters per second`
-- **meta-glyph**: `schema.predicate.speed_in_air@20260530T051423Z#v1`
-
-## 2026-05-30T05:14:24.663101+00:00
-
-- **new predicate**: `temperature_in_celsius`
-- **new topic**: `physics.temperature`
-- **exemplar**: Absolute zero is -273.15 degrees Celsius.
-- **subject** / **object**: `absolute zero` / `-273.15`
-- **meta-glyph**: `schema.predicate.temperature_in_celsius@20260530T051425Z#v1`
-
-## 2026-05-30T05:14:26.154786+00:00
+## 2026-05-30T05:21:58.890482+00:00
 
 - **new predicate**: `value`
-- **new topic**: `science.constant`
 - **exemplar**: Avogadro's number is 6.022 times 10 to the 23.
-- **subject** / **object**: `avogadro's number` / `6.022 × 10²³`
-- **meta-glyph**: `schema.predicate.value@20260530T051426Z#v1`
+- **subject** / **object**: `avogadro's number` / `6.022 × 10^23`
+- **meta-glyph**: `schema.predicate.value@20260530T052159Z#v1`
 
-## 2026-05-30T05:14:27.609789+00:00
+## 2026-05-30T05:22:00.399935+00:00
 
-- **new predicate**: `number_of_bones`
-- **new topic**: `anatomy.skeletal_system`
+- **new predicate**: `bone_count`
+- **new topic**: `anatomy.skeleton`
 - **exemplar**: The human body has 206 bones.
 - **subject** / **object**: `human body` / `206`
-- **meta-glyph**: `schema.predicate.number_of_bones@20260530T051428Z#v1`
+- **meta-glyph**: `schema.predicate.bone_count@20260530T052201Z#v1`
 
-## 2026-05-30T05:14:29.167817+00:00
+## 2026-05-30T05:22:01.949376+00:00
 
 - **new predicate**: `abbreviation_of`
 - **new topic**: `science.abbreviation`
 - **exemplar**: DNA stands for deoxyribonucleic acid.
 - **subject** / **object**: `dna` / `deoxyribonucleic acid`
-- **meta-glyph**: `schema.predicate.abbreviation_of@20260530T051430Z#v1`
+- **meta-glyph**: `schema.predicate.abbreviation_of@20260530T052202Z#v1`
 
-## 2026-05-30T05:14:30.827426+00:00
+## 2026-05-30T05:22:03.967628+00:00
 
-- **new predicate**: `role_in_cell`
+- **new predicate**: `function`
 - **new topic**: `biology.cell_biology`
 - **exemplar**: The mitochondria is the powerhouse of the cell.
 - **subject** / **object**: `mitochondria` / `powerhouse of the cell`
-- **meta-glyph**: `schema.predicate.role_in_cell@20260530T051431Z#v1`
+- **meta-glyph**: `schema.predicate.function@20260530T052204Z#v1`
 
-## 2026-05-30T05:14:32.906967+00:00
+## 2026-05-30T05:22:05.668312+00:00
 
 - **new predicate**: `number_of_elements`
 - **new topic**: `science.chemistry`
 - **exemplar**: There are 118 elements in the periodic table.
 - **subject** / **object**: `periodic table` / `118`
-- **meta-glyph**: `schema.predicate.number_of_elements@20260530T051433Z#v1`
+- **meta-glyph**: `schema.predicate.number_of_elements@20260530T052206Z#v1`
 
-## 2026-05-30T05:14:34.397536+00:00
+## 2026-05-30T05:22:07.053284+00:00
 
 - **new predicate**: `converts`
-- **new topic**: `biology.photosynthesis`
+- **new topic**: `biology.process`
 - **exemplar**: Photosynthesis converts sunlight into chemical energy.
 - **subject** / **object**: `photosynthesis` / `sunlight into chemical energy`
-- **meta-glyph**: `schema.predicate.converts@20260530T051435Z#v1`
+- **meta-glyph**: `schema.predicate.converts@20260530T052207Z#v1`
 
-## 2026-05-30T05:14:36.290672+00:00
+## 2026-05-30T05:22:08.764673+00:00
 
-- **new predicate**: `uses_vector_dimension`
-- **new topic**: `technology.specifications`
+- **new predicate**: `uses_vector_dimensions`
+- **new topic**: `technology.specification`
 - **exemplar**: Ada uses 2048-dimensional bipolar vectors.
 - **subject** / **object**: `ada` / `2048-dimensional bipolar vectors`
-- **meta-glyph**: `schema.predicate.uses_vector_dimension@20260530T051437Z#v1`
+- **meta-glyph**: `schema.predicate.uses_vector_dimensions@20260530T052209Z#v1`
 
-## 2026-05-30T05:14:38.708705+00:00
+## 2026-05-30T05:22:10.328678+00:00
 
 - **new topic**: `knowledge.abbreviation`
 - **exemplar**: HDC stands for hyperdimensional computing.
 - **subject** / **object**: `hdc` / `hyperdimensional computing`
-- **meta-glyph**: `schema.topic.knowledge_abbreviation@20260530T051439Z#v1`
+- **meta-glyph**: `schema.topic.knowledge_abbreviation@20260530T052211Z#v1`
 
-## 2026-05-30T05:14:40.308522+00:00
+## 2026-05-30T05:22:12.554697+00:00
 
-- **new predicate**: `atoms_encoding`
+- **new predicate**: `encoded_with`
 - **new topic**: `technology.encoding`
 - **exemplar**: Ada's atoms are encoded with character n-grams.
 - **subject** / **object**: `ada` / `character n-grams`
-- **meta-glyph**: `schema.predicate.atoms_encoding@20260530T051441Z#v1`
+- **meta-glyph**: `schema.predicate.encoded_with@20260530T052213Z#v1`
 
-## 2026-05-30T05:14:41.963584+00:00
+## 2026-05-30T05:22:14.116694+00:00
 
 - **new predicate**: `combine_atoms_through`
-- **new topic**: `cryptography.binding_mechanism`
+- **new topic**: `computing.logic`
 - **exemplar**: Bindings combine atoms through XOR.
 - **subject** / **object**: `bindings` / `xor`
-- **meta-glyph**: `schema.predicate.combine_atoms_through@20260530T051442Z#v1`
+- **meta-glyph**: `schema.predicate.combine_atoms_through@20260530T052215Z#v1`
 
-## 2026-05-30T05:14:43.644536+00:00
+## 2026-05-30T05:22:16.153509+00:00
 
 - **new predicate**: `aggregates_vectors_by`
-- **new topic**: `machine_learning.ensemble_method`
+- **new topic**: `machine_learning.ensemble_methods`
 - **exemplar**: Bundling aggregates vectors by majority vote.
 - **subject** / **object**: `bundling` / `majority vote`
-- **meta-glyph**: `schema.predicate.aggregates_vectors_by@20260530T051444Z#v1`
+- **meta-glyph**: `schema.predicate.aggregates_vectors_by@20260530T052216Z#v1`
 
-## 2026-05-30T05:14:45.374239+00:00
+## 2026-05-30T05:22:17.825784+00:00
 
 - **new predicate**: `runs_on_port`
-- **new topic**: `technology.server_configuration`
+- **new topic**: `software.server_configuration`
 - **exemplar**: The Ada server runs on port 8002.
 - **subject** / **object**: `ada server` / `8002`
-- **meta-glyph**: `schema.predicate.runs_on_port@20260530T051446Z#v1`
+- **meta-glyph**: `schema.predicate.runs_on_port@20260530T052218Z#v1`
 
-## 2026-05-30T05:14:48.070097+00:00
+## 2026-05-30T05:22:19.345023+00:00
 
 - **new predicate**: `has_hierarchical_layers`
 - **new topic**: `cognition.structure`
 - **exemplar**: Each thought has five hierarchical layers.
-- **subject** / **object**: `thought` / `five`
-- **meta-glyph**: `schema.predicate.has_hierarchical_layers@20260530T051449Z#v1`
+- **subject** / **object**: `thought` / `5`
+- **meta-glyph**: `schema.predicate.has_hierarchical_layers@20260530T052220Z#v1`
 
-## 2026-05-30T05:14:49.909756+00:00
+## 2026-05-30T05:22:21.143986+00:00
 
 - **new predicate**: `uses_components`
-- **new topic**: `linguistics.glyph_analysis`
+- **new topic**: `knowledge.computation`
 - **exemplar**: Glyph similarity uses weighted cortex, layer, segment, and role.
 - **subject** / **object**: `glyph similarity` / `weighted cortex, layer, segment, and role`
-- **meta-glyph**: `schema.predicate.uses_components@20260530T051450Z#v1`
+- **meta-glyph**: `schema.predicate.uses_components@20260530T052221Z#v1`
 
-## 2026-05-30T05:14:51.517542+00:00
+## 2026-05-30T05:22:22.719131+00:00
 
 - **new predicate**: `has_dream_loop`
-- **new topic**: `person.cognitive_process`
+- **new topic**: `person.cognition`
 - **exemplar**: Ada has a REM and slow-wave dream loop for pattern discovery.
 - **subject** / **object**: `ada` / `rem and slow-wave dream loop for pattern discovery`
-- **meta-glyph**: `schema.predicate.has_dream_loop@20260530T051452Z#v1`
+- **meta-glyph**: `schema.predicate.has_dream_loop@20260530T052224Z#v1`
 
-## 2026-05-30T05:14:53.098929+00:00
+## 2026-05-30T05:22:24.886456+00:00
 
-- **new predicate**: `effect_on`
+- **new predicate**: `strengthens`
 - **new topic**: `neuroscience.learning`
 - **exemplar**: Hebbian reinforcement strengthens recalled memories.
 - **subject** / **object**: `hebbian reinforcement` / `recalled memories`
-- **meta-glyph**: `schema.predicate.effect_on@20260530T051455Z#v1`
+- **meta-glyph**: `schema.predicate.strengthens@20260530T052225Z#v1`

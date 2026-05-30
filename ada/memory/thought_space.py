@@ -410,6 +410,25 @@ class ThoughtGlyphSpace:
                 if q_struct.topic and q_struct.topic == s_struct.topic:
                     struct_bonus += 0.3      # same domain
 
+            # ── Schema-introspection boost ──────────────────────────────
+            # When the query is *about* the substrate's own structure
+            # ("what predicates does Ada know?", "what topics exist?"),
+            # surface meta-glyphs that were written by SchemaTracker.
+            # Meta-glyphs are stored with speaker="schema" and topics
+            # under "schema.*" — give them a strong lift when the query
+            # looks like introspection.
+            q_lc = query.lower()
+            is_schema_query = (
+                "predicate" in q_lc
+                or "topic" in q_lc
+                or "schema" in q_lc
+                or "what does ada know" in q_lc
+                or "what has ada learned" in q_lc
+                or "ada's structure" in q_lc
+            )
+            if is_schema_query and stored.speaker == "schema":
+                struct_bonus += 1.5
+
             # ── Combine: adaptive weights (like ada-code re-ranking) ──
             # When query has distinctive content words, content dominates.
             # When query is all primitives ("who am i?"), lean on structure.
