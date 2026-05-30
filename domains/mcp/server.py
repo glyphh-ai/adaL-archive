@@ -89,6 +89,37 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
                     "required": ["text"],
                 },
             ),
+            Tool(
+                name="tell_raw",
+                description=(
+                    "Programmatically tell Ada a pre-structured fact. NO LLM "
+                    "in the path — bypasses the enricher entirely. Use this "
+                    "for curriculum loaders, batch importers, or anywhere you "
+                    "know the universal-schema slot fill ahead of time. The "
+                    "`facts` argument is {layer: {role: value}} matching the "
+                    "universal schema (entity, perceptual, spatial, temporal, "
+                    "relational, quantitative, epistemic)."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "facts": {
+                            "type": "object",
+                            "description": "Universal-schema slot fill, e.g. "
+                                "{\"entity\": {\"name\": \"blue\", \"kind\": "
+                                "\"color\"}, \"perceptual\": {\"wavelength\": "
+                                "\"470\"}}",
+                        },
+                        "key": {"type": "string"},
+                        "text": {
+                            "type": "string",
+                            "description": "Optional human-readable label "
+                                "(synthesized from facts if omitted).",
+                        },
+                    },
+                    "required": ["facts"],
+                },
+            ),
         ]
 
     @app.call_tool()
@@ -101,6 +132,8 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
             return _handle_ask(brain, args)
         if name == "tell":
             return _handle_tell(brain, args)
+        if name == "tell_raw":
+            return _handle_tell_raw(brain, args)
         return _err(f"Unknown tool: {name}")
 
     return app
@@ -146,6 +179,29 @@ def _handle_ask(brain, args: dict) -> CallToolResult:
         })
     except Exception as e:
         logger.error("ask failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_tell_raw(brain, args: dict) -> CallToolResult:
+    facts = args.get("facts") or {}
+    key = args.get("key")
+    text = args.get("text")
+    if not facts or not isinstance(facts, dict):
+        return _err("Missing or invalid 'facts' parameter (must be dict)")
+    try:
+        space = brain._cognitive.thought_space
+        stored = space.tell_raw(facts=facts, key=key, text=text, speaker="curriculum")
+        if stored is None:
+            return _ok({"told": False, "reason": "duplicate or empty"})
+        return _ok({
+            "told": True,
+            "thought_id": stored.thought_id,
+            "version": stored.metadata.get("_version"),
+            "key": stored.metadata.get("_key"),
+            "synthesized_text": stored.content,
+        })
+    except Exception as e:
+        logger.error("tell_raw failed: %s", e, exc_info=True)
         return _err(str(e))
 
 

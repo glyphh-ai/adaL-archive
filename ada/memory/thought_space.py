@@ -232,6 +232,134 @@ class ThoughtGlyphSpace:
         logger.debug("Absorbed thought %s: %s", thought_id, text[:50])
         return stored
 
+    # ── Raw / programmatic ingestion (LLM-free path) ──────────────────────
+
+    def tell_raw(
+        self,
+        facts: dict[str, dict[str, str]],
+        key: str | None = None,
+        text: str | None = None,
+        speaker: str = "incoming",
+        metadata: dict[str, Any] | None = None,
+    ) -> StoredThought | None:
+        """Ingest a pre-structured universal-schema fact. NO LLM call.
+
+        For programmatic teaching: curriculum loaders, API callers, batch
+        importers. Bypasses the enricher entirely. The caller is
+        responsible for providing well-formed universal-schema slots.
+
+        Args:
+            facts: {layer: {role: value}} — the universal-schema fill.
+                   Roles outside the schema are silently dropped.
+            key: Optional stable identifier for versioning (same as absorb).
+            text: Optional human-readable text (for display / dedup).
+                  If None, a synthetic representation is generated.
+            speaker: 'incoming' / 'outgoing' / 'schema' / 'curriculum'.
+            metadata: Extra metadata to attach to the StoredThought.
+
+        Returns: the StoredThought, or None if duplicate / empty.
+        """
+        from ada.cognitive.universal import UNIVERSAL_SCHEMA
+        from ada.encoder.llm_enricher import _project_to_structured
+
+        # Sanitize facts: only keep schema-valid layers/roles with values.
+        clean: dict[str, dict[str, str]] = {}
+        for layer, roles in (facts or {}).items():
+            if layer not in UNIVERSAL_SCHEMA:
+                continue
+            kept = {}
+            for role, value in (roles or {}).items():
+                if role not in UNIVERSAL_SCHEMA[layer]:
+                    continue
+                if value is None:
+                    continue
+                v = str(value).strip()
+                if not v or v.lower() in ("none", "null", "n/a"):
+                    continue
+                kept[role] = v
+            if kept:
+                clean[layer] = kept
+        if not clean:
+            return None
+
+        # Synthesize text if none provided (for dedup + display).
+        if text is None:
+            text = self._synthesize_text(clean)
+        text_key = text.strip().lower()
+        if not text_key or text_key in self._absorbed_texts:
+            return None
+
+        # Encode the synthetic text. We override _structured after with the
+        # caller's authoritative universal mapping so the LLM enricher's
+        # ad-hoc fill never wins over a curriculum-supplied fact.
+        meta = (metadata or {}).copy()
+        meta["_universal"] = clean
+        glyph = self._encoder.encode_thought(text, speaker=speaker, metadata=meta)
+        glyph.metadata["_structured"] = _project_to_structured(text, clean)
+        glyph.metadata["_universal"] = clean
+
+        # Versioning (same shape as absorb).
+        prev: StoredThought | None = None
+        version = 1
+        delta = None
+        if key is not None:
+            hist = self._history_by_key.get(key, [])
+            if hist:
+                prev = hist[-1]
+                version = prev.metadata.get("_version", 1) + 1
+                try:
+                    delta = self._temporal.compute_temporal_delta(
+                        prev.glyph.global_cortex, glyph.global_cortex,
+                    )
+                except Exception:
+                    delta = None
+
+        if key is not None:
+            from datetime import datetime, timezone
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            thought_id = f"{key}@{stamp}#v{version}"
+        else:
+            thought_id = str(uuid.uuid4())[:12]
+
+        stored_meta = meta.copy()
+        stored_meta["_raw"] = True
+        if key is not None:
+            stored_meta["_key"] = key
+            stored_meta["_version"] = version
+            stored_meta["_parent_id"] = prev.thought_id if prev else None
+            stored_meta["_delta"] = delta
+
+        stored = StoredThought(
+            thought_id=thought_id,
+            content=text,
+            speaker=speaker,
+            glyph=glyph,
+            metadata=stored_meta,
+        )
+        self._thoughts[thought_id] = stored
+        self._absorbed_texts.add(text_key)
+        if key is not None:
+            self._history_by_key.setdefault(key, []).append(stored)
+        logger.debug("tell_raw stored %s: %s", thought_id, text[:50])
+        return stored
+
+    @staticmethod
+    def _synthesize_text(facts: dict[str, dict[str, str]]) -> str:
+        """Human-readable text from a universal-schema fact dict."""
+        parts: list[str] = []
+        name = facts.get("entity", {}).get("name")
+        kind = facts.get("entity", {}).get("kind")
+        if name:
+            parts.append(name if not kind else f"{name} ({kind})")
+        elif kind:
+            parts.append(f"a {kind}")
+        for layer, roles in facts.items():
+            if layer == "entity":
+                continue
+            for role, value in roles.items():
+                parts.append(f"{layer}.{role}={value}")
+        return " :: ".join(parts) if parts else "(unnamed)"
+
     # ── Versioned-concept queries ──────────────────────────────────────────
 
     def history(self, key: str) -> list[StoredThought]:
