@@ -75,10 +75,11 @@ def compute_ground_truth(facts: list[dict]) -> dict:
 
         col = (f.get("perceptual") or {}).get("color")
         if col:
-            color_count[col] += 1
-            # Person's primary color (skip car_color)
-            if "car_color" not in key and "color" in key and name and e.get("kind") == "person":
-                by_person_color[name] = col
+            # Count only PRIMARY color (skip car_color) for cleanest cross-system comparison.
+            if "car_color" not in key and "color" in key:
+                color_count[col] += 1
+                if name and e.get("kind") == "person":
+                    by_person_color[name] = col
 
         loc = (f.get("spatial") or {}).get("location")
         if loc:
@@ -112,9 +113,14 @@ def compute_ground_truth(facts: list[dict]) -> dict:
 def ada_answer(space: ThoughtGlyphSpace, query_id: str) -> tuple[object, float]:
     t0 = time.time()
     if query_id == "A_blue_count":
-        n = sum(1 for t in space._thoughts.values()
-                if (t.glyph.metadata.get("_universal") or {})
-                .get("perceptual", {}).get("color") == "blue")
+        n = 0
+        for t in space._thoughts.values():
+            key = t.metadata.get("_key") or ""
+            if "car_color" in key or "color" not in key:
+                continue
+            u = t.glyph.metadata.get("_universal") or {}
+            if u.get("perceptual", {}).get("color") == "blue":
+                n += 1
         return n, (time.time() - t0) * 1000
 
     if query_id == "B_engineer_count":
@@ -136,6 +142,9 @@ def ada_answer(space: ThoughtGlyphSpace, query_id: str) -> tuple[object, float]:
     if query_id == "D_top5_colors":
         c = Counter()
         for t in space._thoughts.values():
+            key = t.metadata.get("_key") or ""
+            if "car_color" in key or "color" not in key:
+                continue
             v = (t.glyph.metadata.get("_universal") or {}).get("perceptual", {}).get("color")
             if v:
                 c[v] += 1
