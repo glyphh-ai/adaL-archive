@@ -284,7 +284,47 @@ For one fixed domain where you control the schema: KGs win on
 ergonomics. For a substrate that ingests heterogeneous facts and
 survives model swaps: Ada wins.
 
-### 4.6 Honest small-corpus result (where the LLM still wins)
+### 4.6 Production-RAG baseline (real embeddings + vector DB)
+
+The earlier RAG baseline used Ada's own bipolar cortex vectors for
+top-K retrieval — fair but not production-grade. We re-ran with a
+real production stack to close that gap:
+
+- **Embedding model**: `sentence-transformers/all-MiniLM-L6-v2` (384-dim
+  transformer embeddings)
+- **Vector DB**: sqlite-vec (cosine-distance ANN; same query semantics
+  as pgvector / Chroma / Pinecone — embedded variant used here)
+- **Renderer**: Claude Haiku 4.5 with top-50 retrieved facts in prompt
+
+At n=500 (10K facts, 357K tokens):
+
+| Query | Truth | Ada | Production RAG |
+|---|---|---|---|
+| A. blue count | 50 | **50 ✓** (6 ms) | "44" ✗ (569 ms) |
+| B. engineer count | 20 | **20 ✓** (11 ms) | "19" ✗ (1269 ms) |
+| C. top-5 cities | Quito/Denver/Istanbul/Warsaw (23), Lyon (21) | **exact ✓** (11 ms) | partial enumeration ✗ |
+| D. top-5 colors | red/pink/white/blue/green | **exact ✓** (6 ms) | partial enumeration ✗ |
+| E. blue ∧ Austin ∧ chess | [] | **[] ✓** (17 ms) | "I don't know" ~✓ |
+
+**Scoreboard:** Ada 5/5 · Production RAG 1/5 · LLM-only 0/5 (corpus
+already exceeds Haiku/Opus at 357K tokens).
+
+This is the **strongest evidence that the failure is structural**:
+
+- A: RAG retrieved top-50 facts, counted the blue ones it surfaced
+  (44), and reported that. The real number is 50. **Off by 12%
+  because top-K is a sample, not the whole substrate**.
+- B: same issue — RAG said 19 engineers, real number is 20.
+- C, D: RAG tried to list distributions but the top-50 sample doesn't
+  cleanly enumerate ordered top-5 counts.
+
+The key observation: **upgrading from naive cortex retrieval to a real
+transformer-embedding vector DB improved how *close* RAG got to the
+right number (44 ≈ 50, 19 ≈ 20) without changing the failure
+category**. No embedding upgrade fixes this; the count is a property of
+the whole substrate, not any single fact. Top-K cannot contain it.
+
+### 4.7 Honest small-corpus result (where the LLM still wins)
 
 On the small-corpus benchmark (77 facts about Project Aurora, 25
 queries across six categories), a full-context LLM scores **96%** to
