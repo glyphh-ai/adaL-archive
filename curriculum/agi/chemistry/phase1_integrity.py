@@ -201,6 +201,8 @@ def fetch_summary(title: str, timeout: float = 10,
                 return cached
         except Exception:
             pass
+    if os.environ.get("SKIP_NEW_FETCH") == "1":
+        return None
     enc = urllib.parse.quote(title.replace("_", " "))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{enc}"
     req = urllib.request.Request(url, headers={
