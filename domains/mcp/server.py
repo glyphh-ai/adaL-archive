@@ -73,9 +73,9 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
                 },
             ),
             Tool(
-                name="write",
+                name="tell",
                 description=(
-                    "Absorb a fact into Ada's substrate. Optional `key` makes "
+                    "Tell Ada something to remember. Optional `key` makes "
                     "this a new version of that key (versioned chain, drift "
                     "queryable). Call this on every decision or observation "
                     "you'd want to recall later."
@@ -99,8 +99,8 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
             return _handle_think(brain, args)
         if name == "ask":
             return _handle_ask(brain, args)
-        if name == "write":
-            return _handle_write(brain, args)
+        if name == "tell":
+            return _handle_tell(brain, args)
         return _err(f"Unknown tool: {name}")
 
     return app
@@ -149,7 +149,7 @@ def _handle_ask(brain, args: dict) -> CallToolResult:
         return _err(str(e))
 
 
-def _handle_write(brain, args: dict) -> CallToolResult:
+def _handle_tell(brain, args: dict) -> CallToolResult:
     text = args.get("text", "")
     key = args.get("key")
     if not text:
@@ -158,15 +158,15 @@ def _handle_write(brain, args: dict) -> CallToolResult:
         space = brain._cognitive.thought_space
         stored = space.absorb(text, key=key)
         if stored is None:
-            return _ok({"absorbed": False, "reason": "duplicate"})
+            return _ok({"told": False, "reason": "duplicate"})
         return _ok({
-            "absorbed": True,
+            "told": True,
             "thought_id": stored.thought_id,
             "version": stored.metadata.get("_version"),
             "key": stored.metadata.get("_key"),
         })
     except Exception as e:
-        logger.error("write failed: %s", e, exc_info=True)
+        logger.error("tell failed: %s", e, exc_info=True)
         return _err(str(e))
 
 
