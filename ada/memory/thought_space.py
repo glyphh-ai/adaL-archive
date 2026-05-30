@@ -109,6 +109,7 @@ class ThoughtGlyphSpace:
         self,
         primitives: PrimitiveSpace | None = None,
         encoder: ThoughtGlyphEncoder | None = None,
+        enricher: object | None = None,
     ) -> None:
         # Primitives
         if primitives is None:
@@ -116,16 +117,26 @@ class ThoughtGlyphSpace:
             primitives.load()
         self._primitives = primitives
 
-        # Encoder
+        # Encoder — pass the enricher down so it sees every absorb()/recall().
         if encoder is None:
-            encoder = ThoughtGlyphEncoder(primitives=primitives)
+            encoder = ThoughtGlyphEncoder(primitives=primitives, enricher=enricher)
         self._encoder = encoder
+        self._enricher = enricher
 
         # Storage (in-memory for now)
         self._thoughts: dict[str, StoredThought] = {}
         self._absorbed_texts: set[str] = set()  # dedup
         self._archive: list[StoredThought] = []  # cold storage
         self._primitives_version: int = primitives.version  # track for re-encoding
+
+        # ── Versioned-concept history ────────────────────────────────────
+        # Maps a stable key (e.g. "chris.age") to its full version chain in
+        # chronological order. Powers history() and drift() — the temporal
+        # math primitives in ada/temporal/delta.py wire into the absorb()
+        # path here so a `(key, version_of)` write builds a real chain.
+        self._history_by_key: dict[str, list[StoredThought]] = {}
+        from ada.temporal.delta import TemporalEncoder
+        self._temporal = TemporalEncoder()
 
     @property
     def primitives(self) -> PrimitiveSpace:
@@ -146,6 +157,7 @@ class ThoughtGlyphSpace:
         text: str,
         speaker: str = "incoming",
         metadata: dict[str, Any] | None = None,
+        key: str | None = None,
     ) -> StoredThought | None:
         """Encode a thought and store it in long-term memory.
 
@@ -155,6 +167,12 @@ class ThoughtGlyphSpace:
             text: Natural language text.
             speaker: "incoming" (user) or "outgoing" (Ada).
             metadata: Optional metadata.
+            key: Optional stable identifier ("chris.age", "ada.port"). When
+                provided, this absorb becomes the next version of that
+                key — a delta is computed from the prior version's cortex
+                via TemporalEncoder, and the chain is queryable via
+                history(key) / drift(key). The thought_id follows the
+                documented convention `key@iso_timestamp#v{version}`.
 
         Returns:
             StoredThought, or None if duplicate.
@@ -166,20 +184,92 @@ class ThoughtGlyphSpace:
             return None
 
         glyph = self._encoder.encode_thought(text, speaker=speaker, metadata=metadata)
-        thought_id = str(uuid.uuid4())[:12]
+
+        # ── Versioning ───────────────────────────────────────────────────
+        prev: StoredThought | None = None
+        version = 1
+        delta = None
+        if key is not None:
+            history = self._history_by_key.get(key, [])
+            if history:
+                prev = history[-1]
+                version = prev.metadata.get("_version", 1) + 1
+                # Delta from previous version's global cortex to this one.
+                try:
+                    delta = self._temporal.compute_temporal_delta(
+                        prev.glyph.global_cortex,
+                        glyph.global_cortex,
+                    )
+                except Exception:  # pragma: no cover — math primitive guards
+                    delta = None
+
+        if key is not None:
+            from datetime import datetime, timezone
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            thought_id = f"{key}@{stamp}#v{version}"
+        else:
+            thought_id = str(uuid.uuid4())[:12]
+
+        full_meta = (metadata or {}).copy()
+        if key is not None:
+            full_meta["_key"] = key
+            full_meta["_version"] = version
+            full_meta["_parent_id"] = prev.thought_id if prev else None
+            full_meta["_delta"] = delta
 
         stored = StoredThought(
             thought_id=thought_id,
             content=text,
             speaker=speaker,
             glyph=glyph,
-            metadata=metadata or {},
+            metadata=full_meta,
         )
 
         self._thoughts[thought_id] = stored
         self._absorbed_texts.add(text_key)
+        if key is not None:
+            self._history_by_key.setdefault(key, []).append(stored)
         logger.debug("Absorbed thought %s: %s", thought_id, text[:50])
         return stored
+
+    # ── Versioned-concept queries ──────────────────────────────────────────
+
+    def history(self, key: str) -> list[StoredThought]:
+        """Chronological version chain for a stable key. Empty if none."""
+        return list(self._history_by_key.get(key, []))
+
+    def drift(self, key: str) -> dict[str, Any]:
+        """How the substrate's representation of `key` has shifted over time.
+
+        Computes cosine similarity between consecutive versions' global
+        cortices and between first and last. drift_rate = 1 - sim(first, last).
+        Returns an empty result if fewer than 2 versions exist.
+        """
+        from ada.core.ops import cosine_similarity
+        hist = self.history(key)
+        if len(hist) < 2:
+            return {"key": key, "versions": len(hist), "drift": None}
+
+        consecutive: list[float] = []
+        for prev, cur in zip(hist, hist[1:]):
+            sim = float(cosine_similarity(
+                prev.glyph.global_cortex.data,
+                cur.glyph.global_cortex.data,
+            ))
+            consecutive.append(sim)
+
+        first_last = float(cosine_similarity(
+            hist[0].glyph.global_cortex.data,
+            hist[-1].glyph.global_cortex.data,
+        ))
+
+        return {
+            "key": key,
+            "versions": len(hist),
+            "consecutive_similarities": consecutive,
+            "first_to_last_similarity": first_last,
+            "drift_rate": 1.0 - first_last,
+        }
 
     # ── Recall ────────────────────────────────────────────────────────────
 
@@ -303,6 +393,42 @@ class ThoughtGlyphSpace:
             seg_total = len(query_activated | stored_activated) or 1
             structural = seg_overlap / seg_total
 
+            # ── LLM-at-build-time structured match (predicate / topic / subject) ──
+            # If both query and stored were enriched, predicate/topic match
+            # gives a strong directional signal: "Alice's age" → predicate=age
+            # only matches facts with predicate=age. Subject match helps but
+            # ties (multiple Alice facts) get broken by predicate.
+            q_struct = query_glyph.metadata.get("_structured")
+            s_struct = stored.glyph.metadata.get("_structured")
+            struct_bonus = 0.0
+            if q_struct is not None and s_struct is not None \
+                    and q_struct.is_structured() and s_struct.is_structured():
+                if q_struct.predicate and q_struct.predicate == s_struct.predicate:
+                    struct_bonus += 1.0      # predicate match — dominant signal
+                if q_struct.subject and q_struct.subject == s_struct.subject:
+                    struct_bonus += 0.5      # subject match
+                if q_struct.topic and q_struct.topic == s_struct.topic:
+                    struct_bonus += 0.3      # same domain
+
+            # ── Schema-introspection boost ──────────────────────────────
+            # When the query is *about* the substrate's own structure
+            # ("what predicates does Ada know?", "what topics exist?"),
+            # surface meta-glyphs that were written by SchemaTracker.
+            # Meta-glyphs are stored with speaker="schema" and topics
+            # under "schema.*" — give them a strong lift when the query
+            # looks like introspection.
+            q_lc = query.lower()
+            is_schema_query = (
+                "predicate" in q_lc
+                or "topic" in q_lc
+                or "schema" in q_lc
+                or "what does ada know" in q_lc
+                or "what has ada learned" in q_lc
+                or "ada's structure" in q_lc
+            )
+            if is_schema_query and stored.speaker == "schema":
+                struct_bonus += 1.5
+
             # ── Combine: adaptive weights (like ada-code re-ranking) ──
             # When query has distinctive content words, content dominates.
             # When query is all primitives ("who am i?"), lean on structure.
@@ -318,6 +444,9 @@ class ThoughtGlyphSpace:
                 content_sim * w_content
                 + role_sim * w_role
                 + structural * w_struct
+                + struct_bonus * 0.5       # structured match outweighs the
+                                            # cosine signals when both sides
+                                            # had a clean LLM-parse
             )
 
             # ── Strength boost (Hebbian) ─────────────────────────
@@ -345,9 +474,10 @@ class ThoughtGlyphSpace:
         results.sort(key=lambda r: r.global_similarity, reverse=True)
         top_results = results[:top_k]
 
-        # ── Hebbian reinforcement — recalled memories get stronger ──
-        for r in top_results:
-            r.thought.reinforce(amount=0.1)
+        # Reinforcement happens via confirm() now, not on every recall.
+        # Every reason() call triggers a hop-1 recall plus up to 3 hop-2
+        # recalls; auto-reinforcing each would compound 4× per query and
+        # bias later recalls toward whichever facts surfaced first.
 
         return top_results
 
