@@ -287,12 +287,16 @@ class ThoughtGlyphEncoder:
         self,
         primitives: "PrimitiveSpace | None" = None,
         config: EncoderConfig | None = None,
+        enricher: "object | None" = None,
     ) -> None:
         self._config = config or THOUGHT_ENCODER_CONFIG
         self._encoder = Encoder(self._config)
         # Import here to avoid circular import at module level
         from ada.memory.primitives import PrimitiveSpace
         self._primitives: PrimitiveSpace = primitives or PrimitiveSpace()
+        # Optional LLM-at-build-time enricher: parses each fact/query into
+        # {subject, predicate, object, topic} for structural recall.
+        self._enricher = enricher
 
     @property
     def space_id(self) -> str:
@@ -380,6 +384,16 @@ class ThoughtGlyphEncoder:
         meta = metadata.copy() if metadata else {}
         meta["_activated_attrs"] = sorted(attributes.keys())
         meta["_content_words"] = content_words
+
+        # ── LLM-at-build-time enrichment ────────────────────────────────
+        # If an enricher is wired in, parse this text into a structured
+        # triple. Recall then matches on predicate/topic for sharper
+        # discrimination ("Alice's age" vs "Alice's color").
+        if self._enricher is not None:
+            try:
+                meta["_structured"] = self._enricher.enrich(text)
+            except Exception:
+                meta["_structured"] = None
 
         concept = Concept(
             name=f"thought_{stable_id:08d}",

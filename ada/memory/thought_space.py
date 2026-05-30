@@ -109,6 +109,7 @@ class ThoughtGlyphSpace:
         self,
         primitives: PrimitiveSpace | None = None,
         encoder: ThoughtGlyphEncoder | None = None,
+        enricher: object | None = None,
     ) -> None:
         # Primitives
         if primitives is None:
@@ -116,10 +117,11 @@ class ThoughtGlyphSpace:
             primitives.load()
         self._primitives = primitives
 
-        # Encoder
+        # Encoder — pass the enricher down so it sees every absorb()/recall().
         if encoder is None:
-            encoder = ThoughtGlyphEncoder(primitives=primitives)
+            encoder = ThoughtGlyphEncoder(primitives=primitives, enricher=enricher)
         self._encoder = encoder
+        self._enricher = enricher
 
         # Storage (in-memory for now)
         self._thoughts: dict[str, StoredThought] = {}
@@ -303,6 +305,23 @@ class ThoughtGlyphSpace:
             seg_total = len(query_activated | stored_activated) or 1
             structural = seg_overlap / seg_total
 
+            # ── LLM-at-build-time structured match (predicate / topic / subject) ──
+            # If both query and stored were enriched, predicate/topic match
+            # gives a strong directional signal: "Alice's age" → predicate=age
+            # only matches facts with predicate=age. Subject match helps but
+            # ties (multiple Alice facts) get broken by predicate.
+            q_struct = query_glyph.metadata.get("_structured")
+            s_struct = stored.glyph.metadata.get("_structured")
+            struct_bonus = 0.0
+            if q_struct is not None and s_struct is not None \
+                    and q_struct.is_structured() and s_struct.is_structured():
+                if q_struct.predicate and q_struct.predicate == s_struct.predicate:
+                    struct_bonus += 1.0      # predicate match — dominant signal
+                if q_struct.subject and q_struct.subject == s_struct.subject:
+                    struct_bonus += 0.5      # subject match
+                if q_struct.topic and q_struct.topic == s_struct.topic:
+                    struct_bonus += 0.3      # same domain
+
             # ── Combine: adaptive weights (like ada-code re-ranking) ──
             # When query has distinctive content words, content dominates.
             # When query is all primitives ("who am i?"), lean on structure.
@@ -318,6 +337,9 @@ class ThoughtGlyphSpace:
                 content_sim * w_content
                 + role_sim * w_role
                 + structural * w_struct
+                + struct_bonus * 0.5       # structured match outweighs the
+                                            # cosine signals when both sides
+                                            # had a clean LLM-parse
             )
 
             # ── Strength boost (Hebbian) ─────────────────────────

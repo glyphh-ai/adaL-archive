@@ -17,6 +17,7 @@ from ada.cognitive.generate import (
     build_llm_renderer,
     build_qwen_renderer,
 )
+from ada.encoder.llm_enricher import auto_enricher
 from ada.memory.glyph_cognitive import GlyphCognitiveLoop
 from ada.memory.thought_space import ThoughtGlyphSpace
 
@@ -137,7 +138,8 @@ QUERIES: list[tuple[str, str, str]] = [
 # ── runner ──────────────────────────────────────────────────────────
 
 def main() -> None:
-    space = ThoughtGlyphSpace()
+    enricher = auto_enricher()
+    space = ThoughtGlyphSpace(enricher=enricher)
     cognitive = GlyphCognitiveLoop(space)
     renderer = build_llm_renderer() or build_qwen_renderer()
     gen = GlyphGenerator(space, cognitive, renderer=renderer)
