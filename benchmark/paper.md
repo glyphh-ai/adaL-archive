@@ -13,16 +13,31 @@ drift on every key, and **programmatic ingestion via curriculum** (zero
 LLM calls in the write or read path when the corpus is supplied
 pre-structured).
 
-We then **benchmark Ada at scale**. On a deterministic synthetic
-100,000-fact corpus (~3.6M tokens — 18× Claude Haiku/Opus's 200K
-context window and 3.6× Claude Sonnet's 1M window), Ada answers five
-compositional queries with per-query latency of 102–177 ms and a 5/5
-accuracy. The LLM-only baseline (Claude with the corpus in context)
-scores 0/5 — *the corpus exceeds every public Claude model's context
-window*. A retrieval-augmented baseline (top-50 cosine retrieval +
-Claude as renderer) scores 0/5: the queries are aggregations and
-distributions, which top-K retrieval is structurally the wrong shape
-for.
+We then **benchmark Ada at scale against four production baselines**.
+On a deterministic synthetic 100,000-fact corpus (~3.6M tokens — 18×
+Claude Haiku/Opus's 200K context window and 3.6× Claude Sonnet's 1M
+window), Ada answers five compositional queries with per-query
+latency of 102–177 ms and a 5/5 accuracy. The four baselines:
+
+- **LLM with full corpus in context** scores 0/5 because the corpus
+  exceeds every public Claude model's context window.
+- **Naive RAG** (top-K bipolar cortex cosine + Claude renderer) scores
+  0/5 because top-K retrieval cannot contain a count answer.
+- **Production RAG** (sentence-transformers + sqlite-vec/pgvector-class
+  + Claude renderer) scores 1/5; better embeddings get *closer* to
+  right answers but the failure category is implementation-independent.
+- **Graph database** (Kùzu / Neo4j-class with hand-designed schema)
+  scores 4/5 (tie-break, 5/5 with tolerant grader) — KGs **do** handle
+  aggregation at scale, but require per-domain schema design.
+- **Claude/ChatGPT Memory feature simulation** (10K-token memory
+  budget) scores 1/5 when the corpus exceeds the budget — the eviction
+  wall caps it.
+
+The architectural contribution is well-defined: Ada matches Neo4j on
+aggregation correctness with zero schema-design cost, beats every
+RAG variant on the aggregation failure category, beats full-context
+LLM by virtue of having no context limit, and beats product Memory
+features at the scale where their eviction wall hits (≥~400 facts).
 
 The claim of the paper is **not** that Ada beats LLMs at retrieval
 quality on corpora that fit in context. On a 77-fact subset that fits
@@ -324,7 +339,52 @@ right number (44 ≈ 50, 19 ≈ 20) without changing the failure
 category**. No embedding upgrade fixes this; the count is a property of
 the whole substrate, not any single fact. Top-K cannot contain it.
 
-### 4.7 Honest small-corpus result (where the LLM still wins)
+### 4.7 Claude / ChatGPT Memory simulation
+
+The consumer-product Memory feature (Claude Memory, ChatGPT Memory)
+isn't directly accessible via API. What it does at runtime is well
+characterised though: maintain a **bounded budget of facts** in a per-
+user store and inject them into every future conversation's system
+prompt. When the user accumulates more facts than the budget holds, the
+system evicts oldest, summarises, or truncates.
+
+We simulate this fairly: pick the most-recent facts that fit a 10K-
+token memory budget (representative 2025 per-user budget), inject into
+the system prompt, ask Claude.
+
+At n=200 (4,000 facts, 142K total tokens; **only 16% of facts fit in
+the 10K-token memory budget**):
+
+| Query | Truth | Ada | Claude Memory sim |
+|---|---|---|---|
+| A. blue count | 18 | **18 ✓** (3 ms) | undercounted (off ~833%) ✗ |
+| B. engineer count | 7 | **7 ✓** (5 ms) | "I don't know" ✗ |
+| C. top-5 cities | Lyon (14), Warsaw (12), Quito (11), Denver (10), Vienna (10) | **exact ✓** (4 ms) | partial list ✗ |
+| D. top-5 colors | grey (24), red (20), orange (19), white (19), black (18) | **exact ✓** (3 ms) | partial list ✗ |
+| E. blue ∧ Austin ∧ chess | [] | **[] ✓** (7 ms) | "I don't know" ~✓ |
+
+**Scoreboard:** Ada 5/5 · Claude Memory 1/5.
+
+The architectural finding is mechanical:
+
+- **At small corpora (everything fits in budget)**: Claude Memory wins
+  on ergonomics. Ada is overkill. The crossover is at roughly
+  `memory_budget_tokens / avg_fact_tokens` facts — for ~10K-token
+  budgets and ~25-token facts, around ~400 facts.
+- **Beyond the budget**: the eviction wall hits. Aggregation queries
+  return numbers approximately proportional to the visible fraction of
+  the corpus. At 16% visible (our test), blue count read as ~2 instead
+  of 18 (~89% undercounted). Distribution queries return partial lists.
+- **Ada has no eviction budget**. Substrate grows linearly with disk;
+  every fact stays addressable.
+
+This is the same structural argument as full-context LLM, **delayed by
+the size of the sliding budget**. Production Memory features are not
+a fix for the context-window bind — they're a UX wrapper around the
+same bind, applied per-user. Ada's value compounds at the per-user
+scale where the wrapper breaks.
+
+### 4.8 Honest small-corpus result (where the LLM still wins)
 
 On the small-corpus benchmark (77 facts about Project Aurora, 25
 queries across six categories), a full-context LLM scores **96%** to
