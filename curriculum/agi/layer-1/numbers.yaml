@@ -1,0 +1,93 @@
+# Cardinal numbers 0-10 + key extensions.
+# Each cites the layer-0 quantifier primes it's composed from.
+
+- key: number.0
+  category: number
+  entity:       {name: zero, kind: number}
+  quantitative: {count: "0", magnitude: none}
+  composed_of: [prime.not, prime.one]
+  source: "elementary mathematics"
+
+- key: number.1
+  category: number
+  entity:       {name: one, kind: number}
+  quantitative: {count: "1", magnitude: minimum-positive}
+  composed_of: [prime.one]
+  source: "elementary mathematics"
+
+- key: number.2
+  category: number
+  entity:       {name: two, kind: number}
+  quantitative: {count: "2"}
+  composed_of: [prime.two]
+  source: "elementary mathematics"
+
+- key: number.3
+  category: number
+  entity:       {name: three, kind: number}
+  quantitative: {count: "3"}
+  composed_of: [prime.one, prime.two]
+  source: "elementary mathematics"
+
+- key: number.4
+  category: number
+  entity:       {name: four, kind: number}
+  quantitative: {count: "4"}
+  composed_of: [prime.two, prime.two]
+  source: "elementary mathematics"
+
+- key: number.5
+  category: number
+  entity:       {name: five, kind: number}
+  quantitative: {count: "5"}
+  composed_of: [prime.two, prime.two, prime.one]
+  source: "elementary mathematics"
+
+- key: number.6
+  category: number
+  entity:       {name: six, kind: number}
+  quantitative: {count: "6"}
+  composed_of: [prime.two, prime.two, prime.two]
+  source: "elementary mathematics"
+
+- key: number.7
+  category: number
+  entity:       {name: seven, kind: number}
+  quantitative: {count: "7"}
+  composed_of: [prime.two, prime.two, prime.two, prime.one]
+  source: "elementary mathematics"
+
+- key: number.8
+  category: number
+  entity:       {name: eight, kind: number}
+  quantitative: {count: "8"}
+  composed_of: [prime.two, prime.two, prime.two, prime.two]
+  source: "elementary mathematics"
+
+- key: number.9
+  category: number
+  entity:       {name: nine, kind: number}
+  quantitative: {count: "9"}
+  composed_of: [prime.two, prime.two, prime.two, prime.two, prime.one]
+  source: "elementary mathematics"
+
+- key: number.10
+  category: number
+  entity:       {name: ten, kind: number}
+  quantitative: {count: "10"}
+  composed_of: [prime.many]
+  source: "elementary mathematics"
+
+- key: number.100
+  category: number
+  entity:       {name: hundred, kind: number}
+  quantitative: {count: "100", magnitude: large}
+  composed_of: [prime.many, number.10]
+  source: "elementary mathematics"
+
+- key: number.1000
+  category: number
+  entity:       {name: thousand, kind: number}
+  quantitative: {count: "1000", magnitude: very-large}
+  composed_of: [prime.many, number.100]
+  source: "elementary mathematics"

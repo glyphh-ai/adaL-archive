@@ -1,0 +1,91 @@
+# Berlin & Kay's 11 universal color terms (1969).
+# Each entry cites the layer-0 primes it's composed from. Color requires
+# `prime.see` (perception) and `prime.something` (something to perceive on).
+
+- key: color.black
+  category: color
+  entity:    {name: black, kind: color}
+  perceptual: {color: black, temperature: neutral}
+  semantic:  {category: achromatic}
+  composed_of: [prime.see, prime.something, prime.not]
+  source: "Berlin & Kay 1969"
+
+- key: color.white
+  category: color
+  entity:    {name: white, kind: color}
+  perceptual: {color: white, temperature: neutral}
+  semantic:  {category: achromatic}
+  composed_of: [prime.see, prime.something, prime.all]
+  source: "Berlin & Kay 1969"
+
+- key: color.red
+  category: color
+  entity:    {name: red, kind: color}
+  perceptual: {color: red, temperature: warm}
+  semantic:  {category: primary, subcategory: chromatic}
+  composed_of: [prime.see, prime.something]
+  source: "Berlin & Kay 1969"
+
+- key: color.green
+  category: color
+  entity:    {name: green, kind: color}
+  perceptual: {color: green, temperature: cool}
+  semantic:  {category: primary, subcategory: chromatic}
+  composed_of: [prime.see, prime.something]
+  source: "Berlin & Kay 1969"
+
+- key: color.yellow
+  category: color
+  entity:    {name: yellow, kind: color}
+  perceptual: {color: yellow, temperature: warm}
+  semantic:  {category: primary, subcategory: chromatic}
+  composed_of: [prime.see, prime.something]
+  source: "Berlin & Kay 1969"
+
+- key: color.blue
+  category: color
+  entity:    {name: blue, kind: color}
+  perceptual: {color: blue, temperature: cool}
+  semantic:  {category: primary, subcategory: chromatic}
+  composed_of: [prime.see, prime.something]
+  source: "Berlin & Kay 1969"
+
+- key: color.brown
+  category: color
+  entity:    {name: brown, kind: color}
+  perceptual: {color: brown, temperature: warm}
+  semantic:  {category: composite, subcategory: chromatic}
+  composed_of: [prime.see, prime.something, color.red, color.green, color.yellow]
+  source: "Berlin & Kay 1969"
+
+- key: color.purple
+  category: color
+  entity:    {name: purple, kind: color}
+  perceptual: {color: purple, temperature: cool}
+  semantic:  {category: composite, subcategory: chromatic}
+  composed_of: [prime.see, prime.something, color.red, color.blue]
+  source: "Berlin & Kay 1969"
+
+- key: color.pink
+  category: color
+  entity:    {name: pink, kind: color}
+  perceptual: {color: pink, temperature: warm}
+  semantic:  {category: composite, subcategory: chromatic}
+  composed_of: [prime.see, prime.something, color.red, color.white]
+  source: "Berlin & Kay 1969"
+
+- key: color.orange
+  category: color
+  entity:    {name: orange, kind: color}
+  perceptual: {color: orange, temperature: warm}
+  semantic:  {category: composite, subcategory: chromatic}
+  composed_of: [prime.see, prime.something, color.red, color.yellow]
+  source: "Berlin & Kay 1969"
+
+- key: color.grey
+  category: color
+  entity:    {name: grey, kind: color}
+  perceptual: {color: grey, temperature: neutral}
+  semantic:  {category: achromatic}
+  composed_of: [prime.see, prime.something, color.black, color.white]
+  source: "Berlin & Kay 1969"
