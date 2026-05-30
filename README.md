@@ -1,180 +1,209 @@
 # Ada
 
-**A cognitive substrate for LLMs.** Persistent memory with versioned beliefs,
-schema that grows as facts arrive, and a self-describing audit trail.
+**A hyperdimensional cognitive substrate that answers compositional queries
+on corpora exceeding any LLM context window.**
 
-> *"Why not just RAG?"* — see [`benchmark/paper.md`](benchmark/paper.md). Short
-> version: at small scale a full-context LLM beats Ada on retrieval (96% vs
-> 72% on our hard test). Ada wins on three things RAG/KG can't do at any
-> scale: **versioned-belief drift**, **substrate self-description with a
-> markdown changelog**, and **cognitive continuity across model versions**.
+At 100,000 facts / 3.6M tokens (18× Claude Haiku/Opus, 3.6× Sonnet),
+Ada answers five compositional queries correctly in under 200 ms each
+with full provenance. A full-context LLM scores 0/5 because the corpus
+doesn't fit in any prompt. Naive RAG scores 0/5 because top-K retrieval
+is the wrong shape for aggregation. Read the paper:
+[`benchmark/paper.md`](benchmark/paper.md).
 
-## What it is
+> *"Why not just RAG?"* — RAG handles **retrieval**. Ada handles
+> **aggregation, distribution, and multi-role intersection** — query
+> shapes RAG structurally cannot answer because the answer is not a
+> single fact in the substrate, it's a *property of the whole substrate*.
 
-Ada is a hierarchical hyperdimensional-computing (HDC) substrate wrapped
-in four layers:
+## The headline result
 
-1. **The HDC substrate** — 2048-dim bipolar vectors. Atoms encode words via
-   positional character n-grams (no embedding model needed). Bindings
-   compose role-filler frames; bundling aggregates. Standard SPA-style
-   algebra. (`ada/memory/`)
-2. **LLM-at-build-time enrichment** — one Claude Haiku call per fact,
-   cached. Yields a structured `(subject, predicate, object, topic)`
-   tuple, bound into the glyph. Recall gets a +1.0 boost on predicate
-   match — the lift that makes "Alice's age" stop confusing with
-   "Alice's color." (`ada/encoder/llm_enricher.py`)
-3. **Versioned-concept memory** — `absorb(text, key=...)` makes the
-   write a new version of `key`. The `TemporalEncoder` computes a delta
-   vector to the prior version. Queryable via `history(key)` and
-   `drift(key)`. Thought IDs follow `key@iso_timestamp#v{N}`. (`ada/temporal/`,
-   `ada/memory/thought_space.py`)
-4. **Schema evolution + audit** — `SchemaTracker` watches every absorb. On
-   the first sight of a new predicate or topic it (a) appends a
-   human-readable entry to `docs/schema_history.md` and (b) absorbs a
-   meta-glyph back into the substrate so Ada can recall her own schema.
-   (`ada/skill/schema_evolution.py`)
+| | Score | Latency | Why |
+|---|---|---|---|
+| **Ada (substrate)** | **5/5 ✓** | 102–177 ms | Universal-schema role scan; aggregation is `Counter().most_common()` |
+| **LLM-only (full context)** | **0/5 ✗** | N/A | Corpus is 3.6–18× every public Claude window — bytes don't fit |
+| **LLM + naive RAG** (top-50) | **0/5 ✗** | ~1 s | Top-K can't contain a *count*; aggregation isn't a retrieval shape |
 
-The MCP layer (`domains/mcp/server.py`) exposes three tools an LLM can
-call: `think`, `ask`, and `write`.
+Reproducible from this repo: `ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_rag.py --n 5000` (~30 minutes; details in [`curriculum/at-scale/README.md`](curriculum/at-scale/README.md)).
 
-## Try it in the REPL
+## What it actually is
+
+Four pieces, each independently inspectable:
+
+1. **HDC substrate** — 2048-dim bipolar vectors. Atoms encode words via
+   positional character n-grams (no embedding model). Bindings compose
+   role-filler frames; bundling aggregates. Standard SPA-style algebra.
+   `ada/memory/`, `ada/core/`.
+
+2. **Universal schema** — a fixed 7-layer × 33-role lattice that every
+   fact maps into. No schema sprawl. Counting matches on
+   `perceptual.color = blue` is a one-line dict scan; top-5 cities is
+   `Counter().most_common(5)`. `ada/cognitive/universal.py`.
+
+3. **Programmatic ingestion** — `space.tell_raw(facts, key)` takes
+   pre-structured universal-schema slots and writes a glyph with **zero
+   LLM calls**. The path used by the curriculum loaders and the
+   at-scale benchmark. Versioned: same `key` becomes v2, v3, ...,
+   with `TemporalEncoder` delta vectors and `drift(key)` trajectories.
+   `ada/memory/thought_space.py`.
+
+4. **Curriculum** — YAML files that declare every concept as a
+   universal-schema fill plus `composed_of:` references to earlier
+   concepts. Layer-0 is the 63 NSM semantic primes (Wierzbicka). Layer-1
+   is 59 concepts (Berlin & Kay colors, numbers, spatial, logical,
+   temporal) each citing its layer-0 primes. The composition lattice
+   is recursive: any concept can be traced back to its primes.
+   `curriculum/`.
+
+## MCP surface
+
+Four tools an LLM (Claude, Claude Code, any MCP-capable model) can call:
+
+| Tool | What it does |
+|---|---|
+| `think(input)` | Pure associative recall — surfaces what activates. No interpretation. |
+| `ask(question)` | Predicate-aware targeted retrieval. Returns one fact + confidence, or "I don't know." |
+| `tell(text)` | Natural-language ingestion. Optional LLM enrichment at build time. |
+| `tell_raw(facts)` | Programmatic ingestion. Zero LLM in the path. |
+
+`domains/mcp/server.py`.
+
+## Run it
+
+### Quick: the interactive REPL
 
 ```bash
-# Install
 pip install numpy pyyaml pydantic pydantic-settings transformers torch anthropic
-
-# (Optional but recommended) — Haiku-backed enrichment + Claude renderer:
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# Without an API key, Ada falls back to a heuristic enricher + Qwen3-0.6B
-# local renderer. Download Qwen3 first:
-python -c "from huggingface_hub import snapshot_download; \
-  snapshot_download('Qwen/Qwen3-0.6B', local_dir='/tmp/qwen3-0.6b', \
-  allow_patterns=['*.json','*.safetensors','tokenizer*','*.txt'])"
-
-# Launch the REPL
+export ANTHROPIC_API_KEY=sk-ant-...   # optional; substrate works without
 PYTHONPATH=. python scripts/ada_repl.py
 ```
 
-Inside the REPL:
-
+Inside:
 ```
-  ada> aurora
-  loaded 77/77 Aurora facts.
-
+  ada> aurora                        # load 77-fact Project Aurora corpus
   ada> ask what hull does aurora use?
-  The Aurora boat currently uses a trimaran hull design.
-  grounded in: The Aurora boat uses a trimaran hull design.
-
+  → trimaran                         (grounded in: "The Aurora boat uses a trimaran hull design.")
   ada> history aurora.hull
-  v1: The Aurora boat uses a single hull design.
-  v2: The Aurora boat uses a catamaran hull design.
-  v3: The Aurora boat uses a trimaran hull design.
-
+  v1: single hull design  →  v2: catamaran  →  v3: trimaran
   ada> drift aurora.hull
-  versions: 3
-  consecutive sims: [+0.812, +0.829]
-  first→last sim  : +0.694
-  drift rate      : +0.306
-
-  ada> think project aurora
-  6 thoughts activated
-    [+1.69]  Project Aurora partnered with Sony for image sensors.
-    [+1.65]  Project Aurora targets the recreational sailing market.
-    [+1.55]  Project Aurora's budget was increased to 350,000 dollars.
-    ...
-
-  ada> schema
-  predicates known: 41
-  topics known    : 37
-
-  ada> ask what is Aurora's CTO's name?
-  I don't know.  (conf=0.18)
-
-  ada> write key=chris.location Chris just moved to Brooklyn.
-  absorbed v2: chris.location@20260530T053012Z#v2
-
-  ada> ask where does chris live?
-  Chris lives in Brooklyn.
+  consecutive sims: [+0.812, +0.829]  drift rate: +0.306
+  ada> tell key=chris.location Chris just moved to Brooklyn.
+  absorbed v2 ✓
 ```
 
-## Try the benchmarks
+### The headline benchmark
 
 ```bash
-# Held-out generalization (95% / 100% on facts the enricher never parsed)
-PYTHONPATH=. python scripts/heldout_test.py
+# Three-way scoreboard (Ada / LLM-only / RAG) at 3.6M tokens
+ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_rag.py --n 5000
 
-# The hard test — 77 facts, 25 queries across six categories
-PYTHONPATH=. python scripts/hard_test.py
-
-# Baseline: same 25 queries answered by Claude with all 77 facts in context
-ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/llm_only_baseline.py
-
-# Demos of the individual primitives
-PYTHONPATH=. python scripts/versioning_demo.py
-PYTHONPATH=. python scripts/schema_demo.py
-PYTHONPATH=. python scripts/think_vs_ask.py
-PYTHONPATH=. python scripts/multihop_demo.py
+# Substrate-only timing (no API needed)
+PYTHONPATH=. python curriculum/at-scale/bench.py --n 1000
 ```
+
+### The curriculum
+
+```bash
+# Load 63 NSM primes (layer-0)
+PYTHONPATH=. python curriculum/agi/layer-0/teach.py
+
+# Load layer-0 + layer-1 (~122 concepts + 120 composition facts)
+PYTHONPATH=. python curriculum/agi/layer-1/teach.py
+
+# Five demos of substrate-native operations no LLM does the same way
+PYTHONPATH=. python curriculum/agi/layer-1/explore.py
+```
+
+## When Ada is and isn't the right tool
+
+| Use case | Right tool |
+|---|---|
+| Cross-session memory beyond context window | **Ada** |
+| Aggregation / distribution / multi-role queries on >1M-token corpora | **Ada** |
+| Versioned beliefs with drift trajectories (`history(key)`, `drift(key)`) | **Ada** |
+| Audit trail of every learned schema element | **Ada** (markdown changelog) |
+| Privacy-first deployment (no embedding API) | **Ada** (deterministic char n-grams) |
+| Federated memory (merge across users) | **Ada** (HDC majority-bundle) |
+| Compositional understanding by traversing primitives | **Ada** (curriculum + composition lattice) |
+| Q&A over a small fixed corpus that fits in context | full-context LLM |
+| Pure semantic similarity over documents | transformer embeddings + ANN |
+| Strict typed-relationship reasoning (legal, compliance) | knowledge graph + Cypher/SPARQL |
+
+The honest summary: **Ada is not a general-purpose retrieval winner**.
+On a 77-fact corpus that fits in any LLM's window, a full-context LLM
+beats Ada 96–72 on accuracy. Ada's contribution is the **specific
+shape of queries the other architectures structurally cannot answer**.
 
 ## Architecture map
 
 ```
 ada/
-  core/                HDC primitives (Vector, ops: bind, bundle, cosine)
-  encoder/             encoders (character, projection, intent)
-    llm_enricher.py    LLM-at-build-time fact enrichment ← NEW
-  memory/
-    atom.py            2048-dim bipolar atoms
-    binding.py         role-filler frames
-    thought_space.py   absorb / recall + versioning ← UPDATED
-    glyph_dream.py     REM + slow-wave dream loops
-    thought_glyph.py   5-layer hierarchical encoder
-  temporal/
-    delta.py           compute / apply version-delta vectors
-    predictor.py       drift statistics, beam search
+  core/                      HDC primitives (Vector, ops: bind, bundle, cosine)
   cognitive/
-    loop.py            9-stage cognitive loop
-    generate.py        LLM-as-renderer for substrate context
-    surface.py         think + ask cognitive surfaces ← NEW
+    universal.py             7-layer × 33-role universal schema
+    surface.py               think / ask cognitive surfaces
+    generate.py              LLM-as-renderer
+    loop.py                  9-stage cognitive loop
+  encoder/
+    llm_enricher.py          LLM-at-build-time fact enrichment
+    universal-schema adapter projects mapping → StructuredFact
+  memory/
+    atom.py                  2048-dim bipolar atoms
+    binding.py               role-filler frames
+    thought_space.py         tell_raw / absorb / recall + versioning
+    glyph_dream.py           REM + slow-wave dream loops
+    thought_glyph.py         5-layer hierarchical encoder
+  temporal/
+    delta.py                 compute / apply version-delta vectors
+    predictor.py             drift statistics, beam search
   skill/
-    schema_evolution.py SchemaTracker ← NEW
-  tui/                 CLI / REPL
-  llm/                 local LLM backends (MLX, llama-cpp, API)
+    schema_evolution.py      SchemaTracker (markdown + meta-glyphs)
+  tui/                       CLI / REPL
+  llm/                       local LLM backends (MLX, llama-cpp, API)
+
 domains/
-  brain/               the central think() pipeline
-  mcp/                 MCP server exposing think / ask / write ← UPDATED
+  brain/                     central think() pipeline
+  mcp/server.py              MCP server: think / ask / tell / tell_raw
   query/, models/, nl_query/, listeners/, capabilities/
-api/                   FastAPI routes
-infrastructure/        config + db
-shared/                auth, exceptions, utilities
+
+api/                         FastAPI HTTP routes
+infrastructure/              config + db
+shared/                      auth, exceptions, utilities
 
 benchmark/
-  paper.md             the writeup ← NEW
-  aurora_versioned.py  77-fact, 25-query benchmark (run via hard_test.py)
-  llm_only_baseline.py same questions, LLM with full corpus
+  paper.md                   the writeup — at-scale empirical claim
+  aurora_versioned.py        77-fact / 25-query benchmark (= hard_test)
+  llm_only_baseline.py       LLM with full corpus in context (small-scale only)
+
+curriculum/
+  README.md                  what curricula are
+  agi/
+    layer-0/                 63 NSM semantic primes
+    layer-1/                 59 concepts + 120 composition facts
+                             (colors, numbers, spatial, logical, temporal)
+  at-scale/
+    generate.py              deterministic synthetic corpus
+    bench.py                 Ada-only timing
+    bench_rag.py             three-way: Ada / LLM-only / RAG
 
 scripts/
-  ada_repl.py          interactive REPL ← NEW
-  hard_test.py         Aurora benchmark
-  heldout_test.py      generalization test
-  versioning_demo.py
-  schema_demo.py
-  think_vs_ask.py
-  multihop_demo.py
-  generate_demo.py
-  generate_demo_100.py
+  ada_repl.py                interactive REPL
+  hard_test.py               77-fact Aurora benchmark
+  heldout_test.py            generalization test
+  versioning_demo.py         absorb(key=…) → history → drift
+  schema_demo.py             SchemaTracker over Alice corpus
+  think_vs_ask.py            side-by-side cognitive ops
+  multihop_demo.py           "what are Chris's children's names?"
 
 docs/
-  schema_history.md    auto-generated schema changelog
+  schema_history.md          auto-generated schema changelog (per-run)
 ```
 
-## Endpoints (HTTP / MCP)
+## HTTP / MCP endpoints
 
 | Endpoint | Purpose |
 |---|---|
 | `GET /health` | liveness probe |
-| `POST /{org_id}/{model_id}/mcp` | MCP tool calls: `think`, `ask`, `write` |
+| `POST /{org_id}/{model_id}/mcp` | MCP tool calls: `think` / `ask` / `tell` / `tell_raw` |
 | `POST /{org_id}/{model_id}/listener` | async data ingestion |
 | `POST /{org_id}/tokens` | API token management |
 
@@ -182,7 +211,7 @@ docs/
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | Enables Haiku-backed enricher + Claude renderer |
+| `ANTHROPIC_API_KEY` | — | Enables Haiku-backed enricher + Claude as renderer in MCP `ask` |
 | `ADA_MODEL` | `claude-haiku-4-5-20251001` | LLM model for enrichment / rendering |
 | `DATABASE_URL` | SQLite | PostgreSQL + pgvector for production |
 | `HOST` | `0.0.0.0` | Server bind address |
@@ -192,12 +221,12 @@ docs/
 
 ## The paper
 
-Read [`benchmark/paper.md`](benchmark/paper.md) for the architectural
-contribution and benchmark results. The honest summary: Ada is not the
-right tool when an LLM's context window can hold your whole corpus. It is
-the right tool when (a) it can't, (b) you need versioned trajectories on
-beliefs, (c) you need a substrate that survives model swaps, or (d) you
-need an auditable record of every structural concept the system learned.
+Read [`benchmark/paper.md`](benchmark/paper.md) for the full
+architectural contribution and benchmark results. The honest claim:
+**at corpus sizes that exceed an LLM context window — which is the
+regime any production memory system enters within months of use — Ada
+answers compositional queries that the LLM cannot see and that naive
+RAG, by construction, cannot aggregate.**
 
 ## License
 
