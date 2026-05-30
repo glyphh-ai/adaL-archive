@@ -78,3 +78,6 @@ ada/**/__pycache__/
 # Large capability data (pulled on demand)
 capabilities/code/hooks/
 corpus.json
+
+# Phase 1 transient artifacts
+curriculum/agi/chemistry/.phase1_cache/

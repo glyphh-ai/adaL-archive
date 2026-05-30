@@ -1,0 +1,7033 @@
+- key: compound.pentane
+  category: compound
+  entity:
+    name: pentane
+    kind: compound
+    subkind: alkane
+  semantic:
+    category: organic-alkane
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.hexane
+  category: compound
+  entity:
+    name: hexane
+    kind: compound
+    subkind: alkane
+  semantic:
+    category: straight-chain-alkane
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.hydrocarbon
+  category: compound
+  entity:
+    name: Hydrocarbon
+    kind: compound
+    subkind: organic
+  perceptual:
+    color: colorless
+    odor: faint
+  semantic:
+    category: hydrogen-carbon-organic
+  relational:
+    predicate: composed_of
+    object: hydrogen and carbon
+  composed_of:
+  - element.hydrogen
+  - element.carbon
+- key: compound.cyclobutane
+  category: compound
+  entity:
+    name: cyclobutane
+    kind: compound
+    subkind: cycloalkane
+  perceptual:
+    color: colorless
+  semantic:
+    category: organic-compound
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.butane
+  category: compound
+  entity:
+    name: butane
+    kind: compound
+    subkind: alkane
+  perceptual:
+    color: colorless
+    temperature: vaporizes at room temperature
+  semantic:
+    category: flammable-organic-fuel
+  relational:
+    predicate: is-isomer-of
+    object: compound.butane
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.propane
+  category: compound
+  entity:
+    name: propane
+    kind: compound
+    subkind: alkane
+  perceptual:
+    state: gas at standard temperature and pressure, liquid when compressed
+  quantitative:
+    magnitude: '3'
+    unit: carbon atoms
+  semantic:
+    category: hydrocarbon-fuel
+  relational:
+    predicate: used-as
+    object: fuel
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.methane
+  category: compound
+  entity:
+    name: methane
+    kind: compound
+    subkind: alkane
+  perceptual:
+    color: colorless
+    state: gas
+  semantic:
+    category: organic-hydrocarbon
+  relational:
+  - predicate: main-constituent-of
+    object: natural-gas
+  - predicate: absorbs
+    object: infrared-radiation
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.ethane
+  category: compound
+  entity:
+    name: ethane
+    kind: compound
+    subkind: hydrocarbon
+  perceptual:
+    color: colorless
+    odor: odorless
+    state: gas
+  semantic:
+    category: organic-hydrocarbon
+  relational:
+    predicate: feedstock-for
+    object: compound.ethylene
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.decane
+  category: compound
+  entity:
+    name: decane
+    kind: compound
+    subkind: alkane
+  perceptual:
+    color: color.white
+    state: liquid
+  semantic:
+    category: hydrocarbon-alkane
+  relational:
+  - predicate: component-of
+    object: gasoline
+  - predicate: component-of
+    object: kerosene
+  - predicate: is
+    object: flammable
+  - predicate: is
+    object: nonpolar-solvent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - group.methyl
+- key: compound.cyclopropane
+  category: compound
+  entity:
+    name: cyclopropane
+    kind: compound
+    subkind: cycloalkane
+  semantic:
+    category: three-membered-carbon-ring
+  relational:
+    predicate: has-property
+    object: ring-strain
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - group.methyl
+- key: compound.cycloheptane
+  category: compound
+  entity:
+    name: cycloheptane
+    kind: compound
+    subkind: cycloalkane
+  semantic:
+    category: organic-cycloalkane
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.cyclopentane
+  category: compound
+  entity:
+    name: cyclopentane
+    kind: compound
+    subkind: cycloalkane
+  perceptual:
+    color: colorless
+    odor: petrol-like
+  quantitative:
+    freezing_point: '-94'
+    freezing_point_unit: "\xB0C"
+    boiling_point: '49'
+    boiling_point_unit: "\xB0C"
+  semantic:
+    category: alicyclic-hydrocarbon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.ethylene
+  category: compound
+  entity:
+    name: ethylene
+    kind: compound
+    subkind: alkene
+  perceptual:
+    color: colorless
+    odor: sweet and musky
+  semantic:
+    category: hydrocarbon-alkene
+  relational:
+    predicate: is
+    object: flammable gas
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.double-covalent
+- key: compound.cyclohexane
+  category: compound
+  entity:
+    name: cyclohexane
+    kind: compound
+    subkind: cycloalkane
+  perceptual:
+    color: colorless
+    state: liquid
+    odor: detergent-like
+  semantic:
+    category: organic-hydrocarbon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.nonane
+  category: compound
+  entity:
+    name: nonane
+    kind: compound
+    subkind: alkane
+  perceptual:
+    color: color.white
+    state: liquid
+  semantic:
+    category: hydrocarbon-alkane
+  relational:
+  - predicate: used-as
+    object: fuel
+  - predicate: used-as
+    object: solvent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.octane
+  category: compound
+  entity:
+    name: octane
+    kind: compound
+    subkind: alkane
+  semantic:
+    category: hydrocarbon-alkane
+  relational:
+    predicate: has-formula
+    object: C8H18
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.pentene
+  category: compound
+  entity:
+    name: pentene
+    kind: compound
+    subkind: alkene
+  quantitative:
+    magnitude: '5'
+    unit: carbon atoms
+  semantic:
+    category: alkene-hydrocarbon
+  relational:
+  - predicate: contains
+    object: double-bond
+  - predicate: isomer-class-of
+    object: 6 structural variants
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.propene
+  category: compound
+  entity:
+    name: propene
+    kind: compound
+    subkind: alkene
+  perceptual:
+    color: colorless
+    odor: faint petroleum-like
+  semantic:
+    category: unsaturated-hydrocarbon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.double-covalent
+- key: compound.ethyne
+  category: compound
+  entity:
+    name: ethyne
+    kind: compound
+    subkind: alkyne
+  perceptual:
+    color: colorless
+  semantic:
+    category: hydrocarbon-alkyne
+  relational:
+    predicate: also-known-as
+    object: acetylene
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.triple-covalent
+- key: compound.propyne
+  category: compound
+  entity:
+    name: propyne
+    kind: compound
+    subkind: alkyne
+  semantic:
+    category: hydrocarbon-alkyne
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.triple-covalent
+  - bond.covalent
+- key: compound.cyclohexene
+  category: compound
+  entity:
+    name: cyclohexene
+    kind: compound
+    subkind: cycloalkene
+  perceptual:
+    color: colorless
+    state: liquid
+    odor: sharp
+  semantic:
+    category: hydrocarbon-cycloalkene
+  relational:
+    predicate: intermediate_in
+    object: nylon synthesis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.benzene
+  category: compound
+  entity:
+    name: Benzene
+    kind: compound
+    subkind: aromatic-hydrocarbon
+  semantic:
+    category: organic-hydrocarbon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.butyne
+  category: compound
+  entity:
+    name: Butyne
+    kind: compound
+    subkind: alkyne
+  semantic:
+    category: alkyne-with-triple-bond
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.triple-covalent
+- key: compound.toluene
+  category: compound
+  entity:
+    name: toluene
+    kind: compound
+    subkind: aromatic hydrocarbon
+  perceptual:
+    color: colorless
+    smell: sweet
+  semantic:
+    category: mono-substituted-benzene
+  relational:
+    predicate: is-derivative-of
+    object: benzene
+  composed_of:
+  - compound.benzene
+  - group.methyl
+  - bond.covalent
+- key: compound.1-hexene
+  category: compound
+  entity:
+    name: 1-hexene
+    kind: compound
+    subkind: alkene
+  perceptual:
+    color: colorless
+    phase: liquid
+  quantitative:
+    magnitude: C6H12
+    unit: molecular-formula
+  semantic:
+    category: alpha-olefin, higher-olefin
+  relational:
+    predicate: has-double-bond-at
+    object: primary-position
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.xylene
+  category: compound
+  entity:
+    name: xylene
+    kind: compound
+    subkind: aromatic-hydrocarbon
+  perceptual:
+    color: color.white
+    state: liquid
+  semantic:
+    category: dimethyl-benzene
+  relational:
+    predicate: is-flammable
+    object: 'true'
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+  - group.methyl
+- key: compound.acetylene
+  category: compound
+  entity:
+    name: acetylene
+    kind: compound
+    subkind: alkyne
+  perceptual:
+    color: colorless
+  semantic:
+    category: hydrocarbon-alkyne
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.triple-covalent
+- key: compound.heptane
+  category: compound
+  entity:
+    name: heptane
+    kind: compound
+    subkind: alkane
+  semantic:
+    category: straight-chain-alkane
+  relational:
+    predicate: used-in
+    object: octane-rating-scale
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.butene
+  category: compound
+  entity:
+    name: butene
+    kind: compound
+    subkind: alkene
+  perceptual:
+    color: colorless
+    state: gas
+  semantic:
+    category: hydrocarbon-alkene
+  relational:
+    predicate: derived_from
+    object: crude oil
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.anthracene
+  category: compound
+  entity:
+    name: anthracene
+    kind: compound
+    subkind: polycyclic-aromatic-hydrocarbon
+  perceptual:
+    color: colorless
+    fluorescence: blue
+  semantic:
+    category: polycyclic-aromatic-hydrocarbon
+  relational:
+  - predicate: component-of
+    object: coal-tar
+  - predicate: precursor-for
+    object: anthraquinone
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.styrene
+  category: compound
+  entity:
+    name: styrene
+    kind: compound
+    subkind: organic-monomer
+  perceptual:
+    color: colorless-to-yellowish
+    odor: sweet
+    physical-state: oily-liquid
+    volatility: high
+  semantic:
+    category: vinyl-aromatic-hydrocarbon
+  relational:
+    predicate: precursor-to
+    object: polystyrene
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - group.methyl
+  - bond.covalent
+  - bond.double-covalent
+  - compound.benzene
+- key: compound.phenanthrene
+  category: compound
+  entity:
+    name: Phenanthrene
+    kind: compound
+    subkind: polycyclic-aromatic-hydrocarbon
+  perceptual:
+    color: colorless to yellow
+    state: solid
+  quantitative:
+    magnitude: '14'
+    unit: carbon-atoms
+  semantic:
+    category: aromatic-hydrocarbon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.pyrrole
+  category: compound
+  entity:
+    name: pyrrole
+    kind: compound
+    subkind: heterocyclic-aromatic-organic
+  perceptual:
+    color: color.white
+    temperature: volatile
+  semantic:
+    category: five-membered-aromatic-ring
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - bond.double-covalent
+  - group.amino
+- key: compound.naphthalene
+  category: compound
+  entity:
+    name: naphthalene
+    kind: compound
+    subkind: polycyclic-aromatic-hydrocarbon
+  perceptual:
+    color: color.white
+    state: solid
+    odor: characteristic
+  quantitative:
+    magnitude: '0.08'
+    unit: ppm
+    property: odor-detection-threshold
+  semantic:
+    category: aromatic-hydrocarbon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.imidazole
+  category: compound
+  entity:
+    name: Imidazole
+    kind: compound
+    subkind: heterocyclic-diazole
+  perceptual:
+    color: white
+  semantic:
+    category: organic-heterocycle-diazole
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - group.amino
+- key: compound.indole
+  category: compound
+  entity:
+    name: Indole
+    kind: compound
+    subkind: aromatic-heterocycle
+  semantic:
+    category: bicyclic-aromatic-heterocycle
+  relational:
+  - predicate: is-precursor-to
+    object: compound.tryptophan
+  - predicate: is-precursor-to
+    object: compound.serotonin
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - bond.double-covalent
+  - group.amino
+- key: compound.methanol
+  category: compound
+  entity:
+    name: methanol
+    kind: compound
+    subkind: alcohol
+  perceptual:
+    color: colorless
+    state: liquid
+    odor: distinctive alcoholic
+  semantic:
+    category: aliphatic-alcohol
+  relational:
+    predicate: produced-from
+    object: carbon-monoxide
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.methyl
+  - bond.covalent
+- key: compound.furan
+  category: compound
+  entity:
+    name: Furan
+    kind: compound
+    subkind: heterocyclic-aromatic
+  semantic:
+    category: five-membered-aromatic-ring
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.2-propanol
+  category: compound
+  entity:
+    name: 2-propanol
+    kind: compound
+    subkind: secondary alcohol
+  perceptual:
+    color: colorless
+    odor: pungent
+  semantic:
+    category: alcohol-secondary
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.1-propanol
+  category: compound
+  entity:
+    name: 1-propanol
+    kind: compound
+    subkind: primary alcohol
+  perceptual:
+    color: color.white
+  semantic:
+    category: primary-alcohol-solvent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.ethanol
+  category: compound
+  entity:
+    name: ethanol
+    kind: compound
+    subkind: alcohol
+  perceptual:
+    color: colorless
+    state: liquid
+  semantic:
+    category: organic-alcohol
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.tert-butanol
+  category: compound
+  entity:
+    name: tert-Butanol
+    kind: compound
+    subkind: tertiary alcohol
+  perceptual:
+    color: colorless
+    odor: camphor-like
+  semantic:
+    category: tertiary-alcohol
+  relational:
+    predicate: miscible-with
+    object: water, ethanol, diethyl ether
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.1-butanol
+  category: compound
+  entity:
+    name: 1-butanol
+    kind: compound
+    subkind: primary alcohol
+  semantic:
+    category: organic-alcohol
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.quinoline
+  category: compound
+  entity:
+    name: quinoline
+    kind: compound
+    subkind: heterocyclic-aromatic-organic
+  perceptual:
+    color: 'colorless (aged samples: yellow to brown)'
+    odor: strong
+  quantitative:
+    magnitude: C9H7N
+    unit: molecular-formula
+  semantic:
+    category: alkaloid-precursor
+  relational:
+  - predicate: slightly-soluble-in
+    object: cold water
+  - predicate: soluble-in
+    object: hot water and organic solvents
+  - predicate: parent-of
+    object: quinine and derivatives
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.glycerol
+  category: compound
+  entity:
+    name: glycerol
+    kind: compound
+    subkind: sugar alcohol
+  perceptual:
+    color: colorless
+    state: liquid
+    taste: sweet
+    texture: viscous
+  quantitative:
+    magnitude: C3H5(OH)3
+    unit: chemical formula
+  semantic:
+    category: polyol, sugar-alcohol
+  relational:
+  - predicate: miscible-with
+    object: water
+  - predicate: is
+    object: hygroscopic
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.resorcinol
+  category: compound
+  entity:
+    name: Resorcinol
+    kind: compound
+    subkind: benzenediol
+  perceptual:
+    color: colorless
+    form: needles
+  semantic:
+    category: phenolic-compound
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.propylene-glycol
+  category: compound
+  entity:
+    name: propylene glycol
+    kind: compound
+    subkind: diol
+  perceptual:
+    color: colorless
+    taste: faintly sweet
+  semantic:
+    category: aliphatic-diol
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: group.ketone
+  category: group
+  entity:
+    name: ketone
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: carbonyl-functional-group
+  relational:
+    predicate: contains
+    object: carbonyl-group
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.double-covalent
+  - group.carbonyl
+- key: compound.1,4-dioxane
+  category: compound
+  entity:
+    name: 1,4-dioxane
+    kind: compound
+    subkind: heterocyclic-ether
+  perceptual:
+    color: colorless
+    odor: faint-sweet
+  semantic:
+    category: cyclic-ether
+  relational:
+    predicate: is-a
+    object: ether
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ether
+  - bond.covalent
+- key: compound.phenol
+  category: compound
+  entity:
+    name: phenol
+    kind: compound
+    subkind: aromatic-alcohol
+  perceptual:
+    color: white
+    texture: crystalline
+  semantic:
+    category: aromatic-organic-compound
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.tetrahydrofuran
+  category: compound
+  entity:
+    name: tetrahydrofuran
+    kind: compound
+    subkind: cyclic ether
+  perceptual:
+    color: colorless
+    viscosity: low
+  semantic:
+    category: heterocyclic-organic-solvent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - group.ether
+- key: compound.methyl-tert-butyl-ether
+  category: compound
+  entity:
+    name: Methyl tert-butyl ether
+    kind: compound
+    subkind: ether
+  perceptual:
+    color: colorless
+    state: liquid
+    volatility: volatile
+  semantic:
+    category: fuel-additive, octane-booster
+  relational:
+    predicate: reduces
+    object: tailpipe-emissions
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ether
+  - group.methyl
+- key: compound.dimethyl-ether
+  category: compound
+  entity:
+    name: Dimethyl ether
+    kind: compound
+    subkind: ether
+  perceptual:
+    color: colorless
+  semantic:
+    category: organic-ether-gas
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ether
+  - group.methyl
+- key: compound.formaldehyde
+  category: compound
+  entity:
+    name: Formaldehyde
+    kind: compound
+    subkind: aldehyde
+  perceptual:
+    color: colorless
+  semantic:
+    category: organic-compound, aldehyde, industrial-chemical
+  relational:
+  - predicate: used-in
+    object: disinfection
+  - predicate: used-in
+    object: tissue-preservation
+  - predicate: precursor-to
+    object: industrial-resins
+  composed_of:
+  - element.hydrogen
+  - element.carbon
+  - element.oxygen
+  - group.aldehyde
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.propionaldehyde
+  category: compound
+  entity:
+    name: propionaldehyde
+    kind: compound
+    subkind: aldehyde
+  perceptual:
+    color: colorless
+    odor: pungent and fruity
+  semantic:
+    category: organic-compound, aldehyde
+  relational:
+    predicate: is
+    object: flammable liquid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.aldehyde
+  - group.methyl
+- key: compound.diethyl-ether
+  category: compound
+  entity:
+    name: Diethyl ether
+    kind: compound
+    subkind: ether
+  perceptual:
+    color: colorless
+    odor: sweet-smelling
+    volatility: highly volatile
+  semantic:
+    category: organic-solvent-anesthetic
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ether
+  - bond.covalent
+- key: compound.acetone
+  category: compound
+  entity:
+    name: acetone
+    kind: compound
+    subkind: ketone
+  perceptual:
+    color: colorless
+    smell: pungent
+  semantic:
+    category: volatile-organic-compound
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ketone
+  - group.methyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.ethylene-glycol
+  category: compound
+  entity:
+    name: ethylene glycol
+    kind: compound
+    subkind: diol
+  perceptual:
+    color: colorless
+    state: liquid
+    viscosity: viscous
+  semantic:
+    category: organic-compound
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.butanone
+  category: compound
+  entity:
+    name: butanone
+    kind: compound
+    subkind: ketone
+  perceptual:
+    color: colorless
+    odor: sharp, sweet
+  semantic:
+    category: organic-solvent
+  relational:
+    predicate: also-known-as
+    object: methyl ethyl ketone
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ketone
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.catechol
+  category: compound
+  entity:
+    name: catechol
+    kind: compound
+    subkind: benzenediol
+  perceptual:
+    color: colorless
+  semantic:
+    category: organic-compound
+  composed_of:
+  - compound.benzene
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.methyl-ethyl-ketone
+  category: compound
+  entity:
+    name: Methyl Ethyl Ketone
+    kind: compound
+    subkind: ketone
+  perceptual:
+    color: colorless
+    odor: sharp, sweet
+  semantic:
+    category: industrial-solvent
+  relational:
+    predicate: partially soluble in
+    object: compound.water
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ketone
+  - bond.covalent
+- key: compound.benzaldehyde
+  category: compound
+  entity:
+    name: Benzaldehyde
+    kind: compound
+    subkind: aromatic aldehyde
+  semantic:
+    category: aromatic-aldehyde
+  composed_of:
+  - compound.benzene
+  - group.aldehyde
+  - bond.covalent
+- key: compound.butyraldehyde
+  category: compound
+  entity:
+    name: butyraldehyde
+    kind: compound
+    subkind: aldehyde
+  perceptual:
+    color: color.white
+    state: liquid
+  semantic:
+    category: organic-aldehyde
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.aldehyde
+  - bond.covalent
+- key: compound.acetaldehyde
+  category: compound
+  entity:
+    name: acetaldehyde
+    kind: compound
+    subkind: aldehyde
+  perceptual:
+    color: colorless
+    state: liquid or gas
+  semantic:
+    category: organic-aldehyde
+  relational:
+  - predicate: occurs-in
+    object: natural-sources
+  - predicate: produced-from
+    object: ethanol-oxidation
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.aldehyde
+  - group.methyl
+  - bond.covalent
+  - bond.double-covalent
+- key: group.carboxyl
+  category: group
+  entity:
+    name: Carboxylic acid group
+    kind: functional group
+    subkind: carboxyl
+  semantic:
+    category: weak-organic-acid
+  relational:
+    predicate: contains
+    object: carbon-oxygen double bond with hydroxyl
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - element.hydrogen
+  - bond.double-covalent
+  - bond.covalent
+  - group.hydroxyl
+- key: compound.cyclohexanone
+  category: compound
+  entity:
+    name: cyclohexanone
+    kind: compound
+    subkind: cyclic ketone
+  perceptual:
+    color: colorless to pale yellow
+    odor: sweet
+  semantic:
+    category: organic-cyclic-ketone
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ketone
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.acetic-acid
+  category: compound
+  entity:
+    name: acetic acid
+    kind: compound
+    subkind: organic acid
+  perceptual:
+    color: colorless
+    state: liquid
+  semantic:
+    category: organic-acid
+  relational:
+    predicate: found_in
+    object: vinegar
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+- key: compound.acid
+  category: group
+  entity:
+    name: acid
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: proton-donor-or-electron-pair-acceptor
+  relational:
+  - predicate: donates
+    object: element.hydrogen
+  - predicate: forms-bond-with
+    object: bond.covalent
+  composed_of:
+  - element.hydrogen
+  - bond.covalent
+  - group.carboxyl
+- key: compound.acetophenone
+  category: compound
+  entity:
+    name: Acetophenone
+    kind: compound
+    subkind: aromatic ketone
+  perceptual:
+    color: colorless
+    state: viscous liquid
+  semantic:
+    category: aromatic-ketone
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ketone
+  - bond.covalent
+  - bond.double-covalent
+  - compound.benzene
+- key: compound.valeric-acid
+  category: compound
+  entity:
+    name: Valeric acid
+    kind: compound
+    subkind: carboxylic acid
+  perceptual:
+    odor: unpleasant
+  semantic:
+    category: straight-chain-alkyl-carboxylic-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.methyl
+- key: compound.propionic-acid
+  category: compound
+  entity:
+    name: propionic acid
+    kind: compound
+    subkind: carboxylic acid
+  perceptual:
+    color: colorless
+    odor: pungent
+  semantic:
+    category: carboxylic-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.methyl
+- key: compound.benzophenone
+  category: compound
+  entity:
+    name: Benzophenone
+    kind: compound
+    subkind: diarylketone
+  perceptual:
+    color: color.white
+    odor: rose-like
+  quantitative:
+    magnitude: "C\u2081\u2083H\u2081\u2080O"
+    unit: molecular_formula
+  semantic:
+    category: aromatic-ketone
+  relational:
+  - predicate: contains
+    object: group.carbonyl
+  - predicate: contains
+    object: group.phenyl
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+  - group.carbonyl
+- key: compound.malonic-acid
+  category: compound
+  entity:
+    name: malonic acid
+    kind: compound
+    subkind: dicarboxylic acid
+  semantic:
+    category: dicarboxylic-acid
+  relational:
+  - predicate: contains
+    object: group.carboxyl
+  - predicate: has-formula
+    object: CH2(COOH)2
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+- key: compound.butyric-acid
+  category: compound
+  entity:
+    name: butyric acid
+    kind: compound
+    subkind: fatty acid
+  perceptual:
+    color: colorless
+    odor: unpleasant
+  semantic:
+    category: straight-chain-alkyl-fatty-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+- key: compound.oxalic-acid
+  category: compound
+  entity:
+    name: oxalic acid
+    kind: compound
+    subkind: dicarboxylic acid
+  perceptual:
+    color: white
+    state: crystalline solid
+  semantic:
+    category: organic-acid
+  relational:
+  - predicate: contains
+    object: group.carboxyl
+  - predicate: is-simplest
+    object: dicarboxylic-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.glutaric-acid
+  category: compound
+  entity:
+    name: Glutaric acid
+    kind: compound
+    subkind: dicarboxylic acid
+  quantitative:
+    magnitude: '50'
+    unit: percent w/w solubility in water
+  semantic:
+    category: organic-dicarboxylic-acid
+  relational:
+    predicate: has high solubility compared to
+    object: adipic acid and succinic acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+- key: compound.citric-acid
+  category: compound
+  entity:
+    name: citric acid
+    kind: compound
+    subkind: organic acid
+  perceptual:
+    color: color.white
+  semantic:
+    category: weak-organic-acid
+  relational:
+    predicate: intermediate-in
+    object: reaction.cellular-respiration
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.formic-acid
+  category: compound
+  entity:
+    name: formic acid
+    kind: compound
+    subkind: carboxylic acid
+  semantic:
+    category: carboxylic-acid
+  relational:
+  - predicate: simplest
+    object: carboxylic acid
+  - predicate: occurs in
+    object: ants
+  - predicate: produced from
+    object: carbon monoxide
+  composed_of:
+  - element.hydrogen
+  - element.carbon
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.tartaric-acid
+  category: compound
+  entity:
+    name: tartaric acid
+    kind: compound
+    subkind: organic acid
+  perceptual:
+    color: white
+    texture: crystalline
+  semantic:
+    category: alpha-hydroxy-carboxylic-acid, diprotic
+  relational:
+  - predicate: found in
+    object: grapes
+  - predicate: found in
+    object: tamarinds
+  - predicate: found in
+    object: bananas
+  - predicate: used as
+    object: antioxidant
+  - predicate: imparts
+    object: sour taste
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.succinic-acid
+  category: compound
+  entity:
+    name: succinic acid
+    kind: compound
+    subkind: dicarboxylic acid
+  semantic:
+    category: organic-acid
+  relational:
+  - predicate: metabolic-intermediate-in
+    object: reaction.cellular-respiration
+  - predicate: substrate-for
+    object: enzyme-succinate-dehydrogenase
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.carboxyl
+  - bond.covalent
+- key: compound.malic-acid
+  category: compound
+  entity:
+    name: malic acid
+    kind: compound
+    subkind: dicarboxylic-acid
+  semantic:
+    category: organic-acid
+  relational:
+  - predicate: contributes-to
+    object: sour-taste
+  - predicate: metabolic-intermediate-in
+    object: citric-acid-cycle
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.benzoic-acid
+  category: compound
+  entity:
+    name: benzoic acid
+    kind: compound
+    subkind: aromatic-carboxylic-acid
+  perceptual:
+    color: white
+  semantic:
+    category: organic-aromatic-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - compound.benzene
+  - group.carboxyl
+  - bond.covalent
+- key: compound.adipic-acid
+  category: compound
+  entity:
+    name: adipic acid
+    kind: compound
+    subkind: dicarboxylic acid
+  perceptual:
+    color: white
+    texture: crystalline powder
+  semantic:
+    category: organic-compound
+  relational:
+    predicate: used_as_precursor_for
+    object: nylon
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+  - group.methyl
+- key: compound.salicylic-acid
+  category: compound
+  entity:
+    name: salicylic acid
+    kind: compound
+    subkind: organic acid
+  perceptual:
+    color: white
+    taste: bitter
+  quantitative:
+    magnitude: C7H6O3
+    unit: molecular formula
+  semantic:
+    category: plant-hormone-dermatologic-agent
+  relational:
+  - predicate: precursor_to
+    object: compound.acetic-acid
+  - predicate: metabolite_of
+    object: aspirin
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.pyruvic-acid
+  category: compound
+  entity:
+    name: pyruvic acid
+    kind: compound
+    subkind: alpha-keto acid
+  semantic:
+    category: alpha-keto-acid
+  relational:
+  - predicate: has_functional_group
+    object: group.carboxyl
+  - predicate: has_functional_group
+    object: group.ketone
+  - predicate: intermediate_in
+    object: metabolic-pathways
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.ketone
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.lactic-acid
+  category: compound
+  entity:
+    name: lactic acid
+    kind: compound
+    subkind: alpha-hydroxy acid
+  perceptual:
+    color: white
+    state: solid to colorless solution
+  quantitative:
+    magnitude: C3H6O3
+    unit: molecular formula
+  semantic:
+    category: organic-acid
+  relational:
+  - predicate: is
+    object: alpha-hydroxy acid
+  - predicate: miscible-with
+    object: compound.water
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.carboxyl
+  - bond.covalent
+- key: compound.acetyl-chloride
+  category: compound
+  entity:
+    name: acetyl chloride
+    kind: compound
+    subkind: acid halide
+  perceptual:
+    color: color.white
+    state: liquid
+    volatility: high
+  semantic:
+    category: organic-acyl-halide
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.chlorine
+  - bond.covalent
+  - bond.double-covalent
+  - group.carbonyl
+- key: compound.methyl-acetate
+  category: compound
+  entity:
+    name: Methyl acetate
+    kind: compound
+    subkind: ester
+  perceptual:
+    color: colorless
+    smell: pleasant, reminiscent of glues and nail polish removers
+  quantitative:
+    magnitude: '25'
+    unit: percent solubility in water at room temperature
+  semantic:
+    category: carboxylate-ester, solvent
+  relational:
+  - predicate: flammable
+    object: liquid
+  - predicate: weakly polar
+    object: solvent property
+  - predicate: lipophilic
+    object: solvent property
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ester
+  - group.methyl
+  - group.carbonyl
+- key: compound.ethyl-acetate
+  category: compound
+  entity:
+    name: Ethyl acetate
+    kind: compound
+    subkind: ester
+  perceptual:
+    color: colorless
+    smell: sweet
+  semantic:
+    category: organic-ester-solvent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ester
+  - group.methyl
+  - bond.covalent
+- key: compound.acetic-anhydride
+  category: compound
+  entity:
+    name: acetic anhydride
+    kind: compound
+    subkind: anhydride
+  perceptual:
+    color: colorless
+    odor: strong acetic acid smell
+  semantic:
+    category: carboxylic-acid-anhydride
+  relational:
+    predicate: reacts with
+    object: water
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carbonyl
+  - bond.covalent
+- key: compound.phthalic-acid
+  category: compound
+  entity:
+    name: phthalic acid
+    kind: compound
+    subkind: aromatic dicarboxylic acid
+  semantic:
+    category: organic-aromatic-dicarboxylic-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.carboxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.terephthalic-acid
+  category: compound
+  entity:
+    name: Terephthalic acid
+    kind: compound
+    subkind: aromatic-dicarboxylic-acid
+  perceptual:
+    color: white
+  semantic:
+    category: organic-precursor-polymer
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.carboxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.ethyl-propionate
+  category: compound
+  entity:
+    name: ethyl propionate
+    kind: compound
+    subkind: ester
+  perceptual:
+    color: colorless
+    odor: pineapple-like
+  semantic:
+    category: organic-ester
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ester
+  - group.methyl
+- key: compound.aspirin
+  category: compound
+  entity:
+    name: Aspirin
+    kind: compound
+    subkind: nonsteroidal anti-inflammatory drug
+  semantic:
+    category: pain-reducer, fever-reducer, anti-inflammatory
+  relational:
+  - predicate: treats
+    object: inflammation
+  - predicate: reduces
+    object: pain
+  - predicate: reduces
+    object: fever
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.ester
+  - bond.covalent
+- key: compound.methylamine
+  category: compound
+  entity:
+    name: methylamine
+    kind: compound
+    subkind: primary-amine
+  perceptual:
+    color: colorless
+  semantic:
+    category: organic-ammonia-derivative
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+  - group.methyl
+  - bond.covalent
+- key: compound.acetamide
+  category: compound
+  entity:
+    name: acetamide
+    kind: compound
+    subkind: amide
+  semantic:
+    category: organic-amide-plasticizer-solvent
+  relational:
+  - predicate: derived-from
+    object: compound.acetic-acid
+  - predicate: derived-from
+    object: compound.ammonia
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.carbonyl
+  - group.amino
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.methyl-benzoate
+  category: compound
+  entity:
+    name: Methyl benzoate
+    kind: compound
+    subkind: ester
+  perceptual:
+    color: colorless
+    smell: pleasant, almond and floral aromas
+  semantic:
+    category: organic-ester
+  relational:
+  - predicate: poorly soluble in
+    object: water
+  - predicate: miscible with
+    object: organic solvents
+  - predicate: used in
+    object: perfumery
+  - predicate: used as
+    object: solvent
+  - predicate: used as
+    object: pesticide
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carbonyl
+  - group.ester
+  - group.methyl
+- key: group.nitrile
+  category: group
+  entity:
+    name: nitrile
+    kind: functional-group
+    subkind: carbon-nitrogen-triple-bond
+  semantic:
+    category: organic-functional-group
+  relational:
+  - predicate: contains
+    object: bond.triple-covalent
+  - predicate: bonding-atoms
+    object: element.carbon
+  - predicate: bonding-atoms
+    object: element.nitrogen
+  composed_of:
+  - element.carbon
+  - element.nitrogen
+  - bond.triple-covalent
+- key: compound.dimethylamine
+  category: compound
+  entity:
+    name: dimethylamine
+    kind: compound
+    subkind: secondary-amine
+  perceptual:
+    color: colorless
+    odor: ammonia-like
+  semantic:
+    category: organic-compound
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.methyl
+  - group.amino
+  - bond.covalent
+- key: compound.ethylamine
+  category: compound
+  entity:
+    name: Ethylamine
+    kind: compound
+    subkind: amine
+  perceptual:
+    color: colorless
+    odor: ammonia-like
+  semantic:
+    category: organic-compound, nucleophilic-base
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+- key: compound.ethylenediamine
+  category: compound
+  entity:
+    name: Ethylenediamine
+    kind: compound
+    subkind: organic amine
+  perceptual:
+    color: colorless
+    odor: ammonia-like
+  semantic:
+    category: basic-amine, building-block
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+  - bond.covalent
+- key: compound.trimethylamine
+  category: compound
+  entity:
+    name: Trimethylamine
+    kind: compound
+    subkind: organic-amine
+  perceptual:
+    odor: fishy at low concentrations, ammonia-like at high concentrations
+  semantic:
+    category: volatile-organic-amine
+  relational:
+    predicate: responsible-for
+    object: rotten-fish-odor
+  composed_of:
+  - element.nitrogen
+  - element.carbon
+  - element.hydrogen
+  - group.methyl
+  - group.methyl
+  - group.methyl
+- key: compound.histamine
+  category: compound
+  entity:
+    name: histamine
+    kind: compound
+    subkind: organic-nitrogenous
+  semantic:
+    category: immune-response-mediator
+  relational:
+    predicate: found-in
+    object: mammals-vegetables-fruits
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+  - bond.covalent
+- key: compound.cyanide
+  category: compound
+  entity:
+    name: cyanide
+    kind: compound
+    subkind: functional-group
+  semantic:
+    category: inorganic-compound-with-cyano-group
+  composed_of:
+  - element.carbon
+  - element.nitrogen
+  - bond.triple-covalent
+- key: compound.aniline
+  category: compound
+  entity:
+    name: aniline
+    kind: compound
+    subkind: aromatic-amine
+  perceptual:
+    color: colorless-to-pale-yellow
+    odor: rotten-fish
+  semantic:
+    category: aromatic-amine
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.formamide
+  category: compound
+  entity:
+    name: formamide
+    kind: compound
+    subkind: amide
+  perceptual:
+    color: colorless
+    odor: ammonia-like
+  semantic:
+    category: organic-amide-solvent
+  relational:
+  - predicate: derived-from
+    object: formic-acid
+  - predicate: miscible-with
+    object: compound.water
+  - predicate: used-as
+    object: solvent
+  - predicate: feedstock-for
+    object: pharmaceuticals
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.carbonyl
+  - group.amino
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.benzonitrile
+  category: compound
+  entity:
+    name: benzonitrile
+    kind: compound
+    subkind: aromatic-organic-compound
+  perceptual:
+    color: colorless
+    odor: cherry or almond-like
+  semantic:
+    category: aromatic-nitrile
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - bond.triple-covalent
+- key: compound.acetonitrile
+  category: compound
+  entity:
+    name: acetonitrile
+    kind: compound
+    subkind: nitrile
+  perceptual:
+    color: colorless
+  semantic:
+    category: organic-nitrile
+  relational:
+    predicate: is_solvent
+    object: organic synthesis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - bond.triple-covalent
+- key: compound.urea
+  category: compound
+  entity:
+    name: urea
+    kind: compound
+    subkind: organic-amide
+  semantic:
+    category: organic-compound
+  relational:
+    predicate: is-amide-of
+    object: carbamic-acid
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - element.nitrogen
+  - element.hydrogen
+  - group.carbonyl
+  - group.amino
+  - bond.covalent
+- key: compound.compound
+  category: compound
+  entity:
+    name: Compound
+    kind: compound
+    subkind: general
+  semantic:
+    category: chemical-substance-with-multiple-elements
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+- key: compound.hydrogen-cyanide
+  category: compound
+  entity:
+    name: Hydrogen cyanide
+    kind: compound
+    subkind: volatile organic
+  perceptual:
+    color: colorless
+    temperature: "25.6\xB0C (boiling point)"
+  quantitative:
+    magnitude: '25.6'
+    unit: "\xB0C"
+  semantic:
+    category: toxic-flammable-precursor
+  relational:
+  - predicate: boils at
+    object: "25.6\xB0C"
+  - predicate: used to produce
+    object: potassium cyanide
+  - predicate: used to produce
+    object: adiponitrile
+  composed_of:
+  - element.hydrogen
+  - element.carbon
+  - element.nitrogen
+  - bond.triple-covalent
+- key: compound.inorganic
+  category: compound
+  entity:
+    name: Inorganic Compound
+    kind: compound
+    subkind: inorganic
+  semantic:
+    category: lacking-carbon-hydrogen-bonds
+  relational:
+    predicate: excludes
+    object: bond.covalent
+  composed_of:
+  - element.aluminum
+  - element.calcium
+  - element.chlorine
+  - element.copper
+  - element.fluorine
+  - element.gold
+  - element.helium
+  - element.iron
+  - element.magnesium
+  - element.neon
+  - element.nitrogen
+  - element.oxygen
+  - element.phosphorus
+  - element.potassium
+  - element.silicon
+  - element.sodium
+  - element.sulfur
+  - element.argon
+- key: compound.water
+  category: compound
+  entity:
+    name: water
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: color.white
+    temperature: liquid at room temperature
+  quantitative:
+    magnitude: H2O
+    unit: molecular formula
+  semantic:
+    category: universal-solvent, polar-molecule
+  relational:
+  - predicate: undergoes
+    object: bond.hydrogen
+  - predicate: vital-for
+    object: prime.live
+  composed_of:
+  - element.hydrogen
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.nitric-oxide
+  category: compound
+  entity:
+    name: Nitric oxide
+    kind: compound
+    subkind: oxide
+  perceptual:
+    color: colorless
+  semantic:
+    category: nitrogen-oxide
+  composed_of:
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.carbon-dioxide
+  category: compound
+  entity:
+    name: Carbon Dioxide
+    kind: compound
+    subkind: gas
+  perceptual:
+    color: transparent
+    temperature: gaseous at room temperature
+  semantic:
+    category: greenhouse-gas
+  relational:
+  - predicate: primary carbon source for
+    object: life on Earth
+  - predicate: absorbs
+    object: infrared radiation
+  - predicate: soluble in
+    object: water
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.double-covalent
+- key: compound.nitrous-oxide
+  category: compound
+  entity:
+    name: Nitrous oxide
+    kind: compound
+    subkind: oxide
+  perceptual:
+    color: color.white
+    temperature: room-temperature
+  semantic:
+    category: greenhouse-gas
+  composed_of:
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.carbon-monoxide
+  category: compound
+  entity:
+    name: Carbon Monoxide
+    kind: compound
+    subkind: oxide
+  perceptual:
+    color: colorless
+    odor: odorless
+    taste: tasteless
+  semantic:
+    category: poisonous-gas
+  relational:
+    predicate: is
+    object: flammable
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.triple-covalent
+- key: compound.nitrogen-dioxide
+  category: compound
+  entity:
+    name: Nitrogen dioxide
+    kind: compound
+    subkind: nitrogen oxide
+  perceptual:
+    color: reddish-brown
+  semantic:
+    category: free-radical
+  relational:
+    predicate: intermediate-in
+    object: nitric acid synthesis
+  composed_of:
+  - element.nitrogen
+  - element.oxygen
+  - element.oxygen
+  - bond.covalent
+- key: compound.hydrogen-peroxide
+  category: compound
+  entity:
+    name: Hydrogen peroxide
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: color.blue
+  semantic:
+    category: oxidizer-bleaching-agent-antiseptic
+  relational:
+  - predicate: decomposes-explosively
+    object: prime.when heat applied
+  - predicate: forms
+    object: bond.hydrogen networks
+  composed_of:
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.ozone
+  category: compound
+  entity:
+    name: ozone
+    kind: compound
+    subkind: allotrope
+  perceptual:
+    color: pale blue
+    odor: pungent
+  semantic:
+    category: inorganic-molecule
+  relational:
+  - predicate: allotrope-of
+    object: element.oxygen
+  - predicate: formed-by
+    object: ultraviolet-light
+  composed_of:
+  - element.oxygen
+  - element.oxygen
+  - element.oxygen
+- key: compound.hydrazine
+  category: compound
+  entity:
+    name: Hydrazine
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: color.white
+    odor: ammonia-like
+  semantic:
+    category: pnictogen-hydride
+  composed_of:
+  - element.nitrogen
+  - element.nitrogen
+  - element.hydrogen
+  - element.hydrogen
+  - element.hydrogen
+  - element.hydrogen
+  - bond.covalent
+- key: compound.sulfur-dioxide
+  category: compound
+  entity:
+    name: sulfur dioxide
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: colorless
+    smell: pungent
+  semantic:
+    category: gas-nonmetal-oxide
+  relational:
+    predicate: produced_by
+    object: volcanic activity, metal refining, hydrocarbon combustion
+  composed_of:
+  - element.sulfur
+  - element.oxygen
+  - bond.double-covalent
+- key: compound.sulfur-trioxide
+  category: compound
+  entity:
+    name: Sulfur trioxide
+    kind: compound
+    subkind: sulfur oxide
+  semantic:
+    category: industrial-precursor
+  relational:
+  - predicate: precursor-to
+    object: compound.sulfuric-acid
+  - predicate: precursor-to
+    object: surfactant
+  composed_of:
+  - element.sulfur
+  - element.oxygen
+  - element.oxygen
+  - element.oxygen
+- key: compound.n-n-dimethylformamide
+  category: compound
+  entity:
+    name: N,N-dimethylformamide
+    kind: compound
+    subkind: organic-solvent
+  perceptual:
+    color: color.white
+    state: liquid
+  semantic:
+    category: polar-aprotic-solvent
+  relational:
+  - predicate: miscible-with
+    object: compound.water
+  - predicate: facilitates
+    object: reaction.sn2
+  composed_of:
+  - element.hydrogen
+  - element.carbon
+  - element.oxygen
+  - element.nitrogen
+  - group.carbonyl
+  - group.methyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.sodium-bicarbonate
+  category: compound
+  entity:
+    name: sodium bicarbonate
+    kind: compound
+    subkind: salt
+  perceptual:
+    color: white
+    texture: crystalline powder
+    taste: salty alkaline
+  semantic:
+    category: acid-salt, weak-base
+  composed_of:
+  - element.sodium
+  - element.hydrogen
+  - element.carbon
+  - element.oxygen
+  - bond.ionic
+  - bond.covalent
+- key: compound.carbon-disulfide
+  category: compound
+  entity:
+    name: carbon disulfide
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: colorless to yellowish
+    odor: ether-like or chloroform-like
+  semantic:
+    category: flammable-neurotoxic-liquid
+  relational:
+    predicate: used as
+    object: building block in organic synthesis
+  composed_of:
+  - element.carbon
+  - element.sulfur
+  - bond.double-covalent
+- key: compound.potassium-chloride
+  category: compound
+  entity:
+    name: Potassium chloride
+    kind: compound
+    subkind: metal halide salt
+  perceptual:
+    color: white
+    appearance: vitreous crystal
+  semantic:
+    category: salt-substitute
+  relational:
+    predicate: used as
+    object: fertilizer, medication, salt substitute
+  composed_of:
+  - element.potassium
+  - element.chlorine
+  - bond.ionic
+- key: compound.sodium-carbonate
+  category: compound
+  entity:
+    name: sodium carbonate
+    kind: compound
+    subkind: salt
+  perceptual:
+    color: white
+  semantic:
+    category: inorganic-salt-alkaline
+  composed_of:
+  - element.sodium
+  - element.carbon
+  - element.oxygen
+  - bond.ionic
+  - bond.covalent
+- key: compound.sodium-chloride
+  category: compound
+  entity:
+    name: sodium chloride
+    kind: compound
+    subkind: ionic
+  perceptual:
+    color: white
+    texture: brittle, hygroscopic
+  semantic:
+    category: food-preservative, de-icer, industrial-feedstock
+  relational:
+  - predicate: occurs-as
+    object: mineral halite
+  - predicate: used-in
+    object: food-preservation
+  - predicate: used-in
+    object: road-de-icing
+  composed_of:
+  - element.sodium
+  - element.chlorine
+  - bond.ionic
+- key: compound.ammonia
+  category: compound
+  entity:
+    name: Ammonia
+    kind: compound
+    subkind: inorganic hydride
+  perceptual:
+    color: colorless
+    smell: pungent
+  semantic:
+    category: nitrogen-hydrogen-binary
+  relational:
+  - predicate: used-in
+    object: fertilizers
+  - predicate: used-in
+    object: refrigerants
+  - predicate: used-in
+    object: explosives
+  - predicate: used-in
+    object: cleaning agents
+  - predicate: is-nitrogenous-waste
+    object: biological
+  composed_of:
+  - element.nitrogen
+  - element.hydrogen
+  - bond.covalent
+- key: compound.calcium-chloride
+  category: compound
+  entity:
+    name: calcium chloride
+    kind: compound
+    subkind: salt
+  perceptual:
+    color: white
+    form: crystalline solid
+  semantic:
+    category: inorganic-salt
+  relational:
+  - predicate: soluble-in
+    object: compound.water
+  - predicate: formed-from
+    object: reaction.neutralization
+  composed_of:
+  - element.calcium
+  - element.chlorine
+  - bond.ionic
+- key: compound.calcium-carbonate
+  category: compound
+  entity:
+    name: Calcium carbonate
+    kind: compound
+    subkind: ionic
+  semantic:
+    category: common-mineral
+  relational:
+  - predicate: found-in
+    object: limestone
+  - predicate: found-in
+    object: chalk
+  - predicate: medical-use
+    object: calcium-supplement
+  composed_of:
+  - element.calcium
+  - element.carbon
+  - element.oxygen
+  - bond.ionic
+- key: compound.calcium-phosphate
+  category: compound
+  entity:
+    name: calcium phosphate
+    kind: compound
+    subkind: inorganic salt
+  perceptual:
+    color: white
+  semantic:
+    category: mineral, nutritional
+  relational:
+  - predicate: found in
+    object: bone mineral
+  - predicate: found in
+    object: tooth enamel
+  composed_of:
+  - element.calcium
+  - element.phosphorus
+  - element.oxygen
+  - group.phosphate
+- key: compound.nitric-acid
+  category: compound
+  entity:
+    name: Nitric acid
+    kind: compound
+    subkind: mineral acid
+  perceptual:
+    color: colorless
+  semantic:
+    category: corrosive-mineral-acid
+  composed_of:
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.magnesium-chloride
+  category: compound
+  entity:
+    name: magnesium chloride
+    kind: compound
+    subkind: inorganic salt
+  perceptual:
+    color: colorless to white
+  semantic:
+    category: ionic-salt
+  relational:
+  - predicate: soluble in
+    object: water
+  - predicate: precursor to
+    object: magnesium metal
+  composed_of:
+  - element.magnesium
+  - element.chlorine
+  - bond.ionic
+  - compound.water
+- key: compound.potassium-hydroxide
+  category: compound
+  entity:
+    name: potassium hydroxide
+    kind: compound
+    subkind: inorganic
+  semantic:
+    category: caustic-base
+  composed_of:
+  - element.potassium
+  - group.hydroxyl
+- key: compound.sodium-hydroxide
+  category: compound
+  entity:
+    name: Sodium hydroxide
+    kind: compound
+    subkind: inorganic ionic compound
+  perceptual:
+    color: white
+  semantic:
+    category: caustic-base
+  composed_of:
+  - element.sodium
+  - element.oxygen
+  - element.hydrogen
+  - group.hydroxyl
+  - bond.ionic
+- key: compound.hydrochloric-acid
+  category: compound
+  entity:
+    name: Hydrochloric acid
+    kind: compound
+    subkind: aqueous solution
+  perceptual:
+    color: colorless
+    smell: pungent
+  semantic:
+    category: strong-acid
+  relational:
+  - predicate: component-of
+    object: gastric acid
+  - predicate: used-as
+    object: laboratory reagent
+  - predicate: used-as
+    object: industrial chemical
+  composed_of:
+  - element.hydrogen
+  - element.chlorine
+  - bond.covalent
+  - compound.water
+- key: compound.phosphoric-acid
+  category: compound
+  entity:
+    name: phosphoric acid
+    kind: compound
+    subkind: inorganic acid
+  perceptual:
+    color: colorless
+    odor: odorless
+  semantic:
+    category: inorganic-acid, industrial-chemical
+  relational:
+    predicate: component-of
+    object: fertilizers
+  composed_of:
+  - element.phosphorus
+  - element.oxygen
+  - element.hydrogen
+  - group.hydroxyl
+  - group.phosphate
+  - bond.covalent
+- key: compound.calcium-hydroxide
+  category: compound
+  entity:
+    name: calcium hydroxide
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: white
+  semantic:
+    category: alkaline-inorganic-compound
+  relational:
+  - predicate: produced from
+    object: compound.calcium-oxide
+  - predicate: produced from
+    object: compound.water
+  composed_of:
+  - element.calcium
+  - group.hydroxyl
+  - group.hydroxyl
+  - bond.ionic
+- key: compound.ammonium-hydroxide
+  category: compound
+  entity:
+    name: Ammonium Hydroxide
+    kind: compound
+    subkind: aqueous solution
+  semantic:
+    category: ammonia-in-water-solution
+  relational:
+  - predicate: is solution of
+    object: compound.ammonia
+  - predicate: dissolved in
+    object: compound.water
+  composed_of:
+  - compound.ammonia
+  - compound.water
+  - element.nitrogen
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.hydrogen
+  - group.hydroxyl
+- key: compound.hydrogen-sulfide
+  category: compound
+  entity:
+    name: hydrogen sulfide
+    kind: compound
+    subkind: chalcogenide
+  perceptual:
+    color: colorless
+    odor: rotten eggs
+  semantic:
+    category: toxic-flammable-gas
+  composed_of:
+  - element.hydrogen
+  - element.sulfur
+  - bond.covalent
+- key: compound.sodium-sulfate
+  category: compound
+  entity:
+    name: Sodium sulfate
+    kind: compound
+    subkind: inorganic salt
+  perceptual:
+    color: white
+  quantitative:
+    magnitude: '6000000'
+    unit: tonnes per year
+  semantic:
+    category: inorganic-salt, commodity-chemical
+  relational:
+    predicate: used in
+    object: detergent manufacturing, paper pulping
+  composed_of:
+  - element.sodium
+  - element.sulfur
+  - element.oxygen
+  - bond.ionic
+- key: compound.potassium-nitrate
+  category: compound
+  entity:
+    name: Potassium nitrate
+    kind: compound
+    subkind: alkali metal nitrate
+  perceptual:
+    taste: sharp, salty, bitter
+  semantic:
+    category: nitrogen-source
+  relational:
+  - predicate: contains
+    object: potassium cation
+  - predicate: contains
+    object: nitrate anion
+  - predicate: occurs-in-nature-as
+    object: mineral-niter
+  composed_of:
+  - element.potassium
+  - element.nitrogen
+  - element.oxygen
+  - bond.ionic
+- key: compound.ammonium-nitrate
+  category: compound
+  entity:
+    name: ammonium nitrate
+    kind: compound
+    subkind: salt
+  perceptual:
+    color: white
+    texture: crystalline
+  semantic:
+    category: fertilizer, nitrogen-source
+  relational:
+  - predicate: soluble_in
+    object: compound.water
+  - predicate: used_as
+    object: agricultural-fertilizer
+  composed_of:
+  - element.nitrogen
+  - element.hydrogen
+  - element.oxygen
+  - bond.ionic
+- key: compound.sodium-nitrate
+  category: compound
+  entity:
+    name: sodium nitrate
+    kind: compound
+    subkind: salt
+  semantic:
+    category: alkali-metal-nitrate-salt
+  relational:
+  - predicate: also-known-as
+    object: Chile saltpeter
+  - predicate: mineral-form
+    object: nitratine
+  composed_of:
+  - element.sodium
+  - element.nitrogen
+  - element.oxygen
+  - bond.ionic
+- key: compound.sulfuric-acid
+  category: compound
+  entity:
+    name: Sulfuric acid
+    kind: compound
+    subkind: mineral acid
+  perceptual:
+    color: colorless
+    viscosity: viscous
+  semantic:
+    category: mineral-acid
+  composed_of:
+  - element.hydrogen
+  - element.sulfur
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.iron-sulfate
+  category: compound
+  entity:
+    name: iron sulfate
+    kind: compound
+    subkind: index
+  semantic:
+    category: iron-sulfur-compound
+  relational:
+  - predicate: includes
+    object: ferrous-sulfate
+  - predicate: includes
+    object: ferric-sulfate
+  composed_of:
+  - element.iron
+  - element.sulfur
+  - element.oxygen
+- key: compound.copper-sulfate
+  category: compound
+  entity:
+    name: Copper sulfate
+    kind: compound
+    subkind: metal sulfate
+  perceptual:
+    color: color.blue
+  semantic:
+    category: fungicide-herbicide
+  relational:
+    predicate: used-as
+    object: fungicide and herbicide
+  composed_of:
+  - element.copper
+  - element.sulfur
+  - element.oxygen
+  - bond.ionic
+- key: compound.sodium-hypochlorite
+  category: compound
+  entity:
+    name: sodium hypochlorite
+    kind: compound
+    subkind: salt
+  semantic:
+    category: alkaline-inorganic-salt
+  relational:
+    predicate: commonly-known-as
+    object: bleach
+  composed_of:
+  - element.sodium
+  - element.oxygen
+  - element.chlorine
+  - bond.ionic
+- key: compound.perchloric-acid
+  category: compound
+  entity:
+    name: Perchloric acid
+    kind: compound
+    subkind: mineral acid
+  perceptual:
+    color: colorless
+  semantic:
+    category: oxoacid, strong-acid, oxidizer
+  relational:
+  - predicate: stronger than
+    object: compound.sulfuric-acid
+  - predicate: stronger than
+    object: compound.hydrochloric-acid
+  composed_of:
+  - element.hydrogen
+  - element.chlorine
+  - element.oxygen
+  - bond.covalent
+- key: compound.silicon-dioxide
+  category: compound
+  entity:
+    name: Silicon Dioxide
+    kind: compound
+    subkind: oxide
+  perceptual:
+    color: white
+  semantic:
+    category: mineral-oxide
+  composed_of:
+  - element.silicon
+  - element.oxygen
+  - element.oxygen
+- key: compound.sodium-thiosulfate
+  category: compound
+  entity:
+    name: sodium thiosulfate
+    kind: compound
+    subkind: inorganic salt
+  perceptual:
+    color: white or colorless
+  semantic:
+    category: reducing-agent, ligand, photographic-fixer
+  relational:
+  - predicate: used-for
+    object: cyanide poisoning treatment
+  - predicate: used-for
+    object: photographic fixation
+  composed_of:
+  - element.sodium
+  - element.sulfur
+  - element.oxygen
+  - compound.water
+  - bond.covalent
+  - bond.ionic
+- key: compound.aluminum-oxide
+  category: compound
+  entity:
+    name: Aluminium oxide
+    kind: compound
+    subkind: ceramic
+  perceptual:
+    color: white
+    temperature: high-melting-point
+  quantitative:
+    magnitude: '2'
+    unit: Al
+  semantic:
+    category: refractory-abrasive-material
+  relational:
+    predicate: used-as
+    object: abrasive-feedstock-refractory
+  composed_of:
+  - element.aluminum
+  - element.oxygen
+  - bond.ionic
+- key: compound.iron-oxide
+  category: compound
+  entity:
+    name: iron(III) oxide
+    kind: compound
+    subkind: inorganic oxide
+  perceptual:
+    color: color.red
+  semantic:
+    category: iron-source-pigment
+  relational:
+  - predicate: occurs-as-mineral
+    object: hematite
+  - predicate: used-in
+    object: steel-industry
+  composed_of:
+  - element.iron
+  - element.oxygen
+  - bond.ionic
+- key: compound.iron-oxide
+  category: compound
+  entity:
+    name: Iron(II) oxide
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: black
+  semantic:
+    category: iron-oxide
+  composed_of:
+  - element.iron
+  - element.oxygen
+- key: compound.calcium-oxide
+  category: compound
+  entity:
+    name: calcium oxide
+    kind: compound
+    subkind: inorganic solid
+  perceptual:
+    color: white
+    temperature: room temperature
+  semantic:
+    category: caustic-alkaline-solid
+  composed_of:
+  - element.calcium
+  - element.oxygen
+  - bond.ionic
+- key: compound.sulfur-hexafluoride
+  category: compound
+  entity:
+    name: Sulfur hexafluoride
+    kind: compound
+    subkind: inorganic gas
+  perceptual:
+    color: colorless
+  semantic:
+    category: greenhouse-gas
+  composed_of:
+  - element.sulfur
+  - element.fluorine
+- key: group.amino
+  category: group
+  entity:
+    name: Amino
+    kind: group
+    subkind: nitrogen-containing functional group
+  semantic:
+    category: organic-nitrogen-group
+  relational:
+    predicate: contains
+    object: lone pair of electrons on nitrogen
+  composed_of:
+  - element.nitrogen
+  - element.hydrogen
+  - bond.covalent
+- key: compound.glycine
+  category: compound
+  entity:
+    name: glycine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: proteinogenic-amino-acid
+  relational:
+  - predicate: building-block-of
+    object: proteins
+  - predicate: has-property
+    object: non-chiral
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.alanine
+  category: compound
+  entity:
+    name: alanine
+    kind: compound
+    subkind: "\u03B1-amino acid"
+  semantic:
+    category: protein-biosynthesis
+  relational:
+  - predicate: contains
+    object: group.amino
+  - predicate: contains
+    object: group.carboxyl
+  - predicate: contains
+    object: group.methyl
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - group.methyl
+  - bond.covalent
+- key: compound.magnesium-oxide
+  category: compound
+  entity:
+    name: Magnesium oxide
+    kind: compound
+    subkind: ionic mineral
+  perceptual:
+    color: white
+  semantic:
+    category: hygroscopic-solid-mineral
+  relational:
+  - predicate: occurs-naturally-as
+    object: periclase
+  - predicate: source-of
+    object: element.magnesium
+  composed_of:
+  - element.magnesium
+  - element.oxygen
+  - bond.ionic
+- key: compound.sodium-oxide
+  category: compound
+  entity:
+    name: sodium oxide
+    kind: compound
+    subkind: ionic
+  perceptual:
+    color: white
+  semantic:
+    category: ceramic-glass-component
+  relational:
+  - predicate: used-in
+    object: ceramics
+  - predicate: used-in
+    object: glasses
+  composed_of:
+  - element.sodium
+  - element.oxygen
+  - bond.ionic
+- key: compound.leucine
+  category: compound
+  entity:
+    name: Leucine
+    kind: compound
+    subkind: amino-acid
+  perceptual:
+    color: color.white
+  semantic:
+    category: essential-amino-acid
+  relational:
+  - predicate: contains
+    object: group.amino
+  - predicate: contains
+    object: group.carboxyl
+  - predicate: encoded-by
+    object: codon-UUA-UUG-CUU-CUC-CUA-CUG
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - group.methyl
+  - bond.covalent
+- key: compound.phenylalanine
+  category: compound
+  entity:
+    name: phenylalanine
+    kind: compound
+    subkind: "\u03B1-amino acid"
+  semantic:
+    category: aromatic-amino-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+- key: compound.isoleucine
+  category: compound
+  entity:
+    name: isoleucine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: essential-amino-acid
+  relational:
+  - predicate: has-functional-group
+    object: group.amino
+  - predicate: has-functional-group
+    object: group.carboxyl
+  - predicate: is-used-in
+    object: protein-biosynthesis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.serine
+  category: compound
+  entity:
+    name: Serine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: polar-amino-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.methionine
+  category: compound
+  entity:
+    name: methionine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: essential-amino-acid-sulfur-containing
+  relational:
+  - predicate: precursor-to
+    object: cysteine
+  - predicate: required-for
+    object: protein-synthesis
+  - predicate: contains
+    object: element.sulfur
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.proline
+  category: compound
+  entity:
+    name: Proline
+    kind: compound
+    subkind: amino acid
+  semantic:
+    category: proteinogenic-amino-acid
+  relational:
+  - predicate: contains
+    object: group.carboxyl
+  - predicate: contains
+    object: group.amino
+  - predicate: is-a
+    object: aliphatic-amino-acid
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.carboxyl
+  - group.amino
+- key: compound.valine
+  category: compound
+  entity:
+    name: Valine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: essential-amino-acid
+  relational:
+  - predicate: used-in
+    object: protein-biosynthesis
+  - predicate: encoded-by
+    object: GU-codons
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - group.methyl
+- key: compound.tyrosine
+  category: compound
+  entity:
+    name: Tyrosine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: standard-amino-acid
+  relational:
+  - predicate: has-functional-group
+    object: group.hydroxyl
+  - predicate: has-functional-group
+    object: group.amino
+  - predicate: has-functional-group
+    object: group.carboxyl
+  - predicate: contains-aromatic-ring
+    object: compound.benzene
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.threonine
+  category: compound
+  entity:
+    name: threonine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: polar-uncharged-amino-acid
+  relational:
+  - predicate: used-in
+    object: protein-biosynthesis
+  - predicate: essential-in
+    object: humans
+  composed_of:
+  - group.amino
+  - group.carboxyl
+  - group.hydroxyl
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.glutamine
+  category: compound
+  entity:
+    name: Glutamine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: polar-charge-neutral-amino-acid
+  relational:
+  - predicate: contains-functional-group
+    object: group.amino
+  - predicate: contains-functional-group
+    object: group.carboxyl
+  - predicate: contains-functional-group
+    object: group.amide
+  - predicate: similar-to
+    object: compound.alanine
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.cysteine
+  category: compound
+  entity:
+    name: cysteine
+    kind: compound
+    subkind: proteinogenic-amino-acid
+  semantic:
+    category: amino-acid-with-thiol-side-chain
+  relational:
+  - predicate: forms
+    object: disulfide-bonds
+  - predicate: participates-in
+    object: enzymatic-reactions
+  composed_of:
+  - element.hydrogen
+  - element.carbon
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.lysine
+  category: compound
+  entity:
+    name: Lysine
+    kind: compound
+    subkind: amino acid
+  semantic:
+    category: basic-aliphatic-amino-acid
+  relational:
+  - predicate: precursor-to
+    object: proteins
+  - predicate: encoded-by
+    object: codons AAA and AAG
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+- key: compound.carbohydrate
+  category: compound
+  entity:
+    name: carbohydrate
+    kind: compound
+    subkind: saccharide
+  semantic:
+    category: organic-sugar-derivative
+  relational:
+  - predicate: empirical-formula
+    object: CH2O
+  - predicate: major-family
+    object: biomolecules
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.glutamic-acid
+  category: compound
+  entity:
+    name: Glutamic acid
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: neurotransmitter-amino-acid
+  relational:
+  - predicate: is-precursor-for
+    object: compound.gaba
+  - predicate: used-in
+    object: reaction.protein-biosynthesis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+- key: compound.mannose
+  category: compound
+  entity:
+    name: mannose
+    kind: compound
+    subkind: aldohexose
+  semantic:
+    category: monosaccharide-sugar
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.aldehyde
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.glucose
+  category: compound
+  entity:
+    name: Glucose
+    kind: compound
+    subkind: monosaccharide
+  semantic:
+    category: sugar-monosaccharide
+  relational:
+  - predicate: produced-by
+    object: reaction.photosynthesis
+  - predicate: used-to-make
+    object: compound.atp
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.carbonyl
+- key: compound.aspartic-acid
+  category: compound
+  entity:
+    name: aspartic acid
+    kind: compound
+    subkind: amino acid
+  semantic:
+    category: proteinogenic-amino-acid
+  relational:
+  - predicate: building-block-of
+    object: proteins
+  - predicate: acts-as
+    object: neurotransmitter
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+- key: compound.fructose
+  category: compound
+  entity:
+    name: fructose
+    kind: compound
+    subkind: monosaccharide
+  perceptual:
+    color: white
+  semantic:
+    category: ketonic-simple-sugar
+  relational:
+  - predicate: bonded-to
+    object: compound.glucose
+  - predicate: forms
+    object: compound.sucrose
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ketone
+  - group.hydroxyl
+- key: compound.histidine
+  category: compound
+  entity:
+    name: histidine
+    kind: compound
+    subkind: amino-acid
+  semantic:
+    category: essential-amino-acid
+  relational:
+  - predicate: contains
+    object: group.amino
+  - predicate: contains
+    object: group.carboxyl
+  - predicate: has-property
+    object: positively-charged-at-physiological-pH
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.arginine
+  category: compound
+  entity:
+    name: arginine
+    kind: compound
+    subkind: amino-acid
+  perceptual:
+    color: color.white
+  semantic:
+    category: protein-building-block
+  relational:
+  - predicate: contains-group
+    object: group.amino
+  - predicate: contains-group
+    object: group.carboxyl
+  - predicate: water-soluble
+    object: prime.true
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+- key: compound.deoxyribose
+  category: compound
+  entity:
+    name: 2-deoxyribose
+    kind: compound
+    subkind: monosaccharide
+  semantic:
+    category: pentose-sugar
+  relational:
+  - predicate: constituent-of
+    object: compound.dna
+  - predicate: derived-from
+    object: ribose
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carbonyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.sucrose
+  category: compound
+  entity:
+    name: sucrose
+    kind: compound
+    subkind: disaccharide
+  semantic:
+    category: sugar-disaccharide
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.sugar
+  category: compound
+  entity:
+    name: Sugar
+    kind: compound
+    subkind: carbohydrate
+  perceptual:
+    color: white
+    taste: sweet
+  semantic:
+    category: water-soluble-carbohydrate
+  relational:
+    predicate: dissolves-in
+    object: compound.water
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.ribose
+  category: compound
+  entity:
+    name: ribose
+    kind: compound
+    subkind: simple-sugar
+  semantic:
+    category: carbohydrate-pentose
+  relational:
+  - predicate: component-of
+    object: compound.dna
+  - predicate: component-of
+    object: compound.rna
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carbonyl
+  - group.hydroxyl
+- key: compound.maltose
+  category: compound
+  entity:
+    name: maltose
+    kind: compound
+    subkind: disaccharide
+  semantic:
+    category: reducing-sugar
+  relational:
+  - predicate: formed-from
+    object: glucose
+  - predicate: joined-by
+    object: bond.glycosidic
+  - predicate: member-of
+    object: amylose-homologous-series
+  - predicate: produced-by
+    object: reaction.starch-breakdown
+  composed_of:
+  - compound.glucose
+  - compound.glucose
+  - bond.covalent
+- key: compound.starch
+  category: compound
+  entity:
+    name: starch
+    kind: compound
+    subkind: polysaccharide
+  semantic:
+    category: carbohydrate-polymer
+  relational:
+    predicate: energy-storage-in
+    object: plants
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - compound.glucose
+  - bond.covalent
+- key: compound.lactose
+  category: compound
+  entity:
+    name: lactose
+    kind: compound
+    subkind: disaccharide
+  perceptual:
+    color: white
+    taste: mildly sweet
+  quantitative:
+    magnitude: C12H22O11
+    unit: molecular formula
+  semantic:
+    category: carbohydrate-disaccharide
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+- key: compound.cellulose
+  category: compound
+  entity:
+    name: cellulose
+    kind: compound
+    subkind: polysaccharide
+  semantic:
+    category: polymer-glucose
+  relational:
+  - predicate: structural-component-of
+    object: cell-wall
+  - predicate: found-in
+    object: plants
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - compound.glucose
+  - bond.covalent
+- key: compound.glycogen
+  category: compound
+  entity:
+    name: glycogen
+    kind: compound
+    subkind: polysaccharide
+  semantic:
+    category: energy-storage-polymer
+  relational:
+    predicate: polymer-of
+    object: compound.glucose
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.lipid
+  category: compound
+  entity:
+    name: Lipid
+    kind: compound
+    subkind: organic-compound-class
+  semantic:
+    category: biological-organic-soluble-nonpolar
+  relational:
+  - predicate: soluble-in
+    object: nonpolar-solvents
+  - predicate: function
+    object: energy-storage
+  - predicate: function
+    object: cell-membrane-component
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.chitin
+  category: compound
+  entity:
+    name: chitin
+    kind: compound
+    subkind: polysaccharide-polymer
+  semantic:
+    category: long-chain-polymer
+  relational:
+  - predicate: is-polymer-of
+    object: n-acetylglucosamine
+  - predicate: found-in
+    object: fungal-cell-walls
+  - predicate: found-in
+    object: arthropod-exoskeletons
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - group.amino
+  - group.ester
+- key: compound.palmitic-acid
+  category: compound
+  entity:
+    name: palmitic acid
+    kind: compound
+    subkind: fatty acid
+  semantic:
+    category: saturated-fatty-acid
+  relational:
+  - predicate: found in
+    object: animals, plants, microorganisms
+  - predicate: major component of
+    object: palm oil
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.amylopectin
+  category: compound
+  entity:
+    name: amylopectin
+    kind: compound
+    subkind: polysaccharide
+  semantic:
+    category: branched-polymer
+  relational:
+  - predicate: is-component-of
+    object: starch
+  - predicate: polymer-of
+    object: glucose
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.amylose
+  category: compound
+  entity:
+    name: amylose
+    kind: compound
+    subkind: polysaccharide
+  semantic:
+    category: resistant-starch
+  relational:
+  - predicate: component-of
+    object: starch
+  - predicate: percentage-composition
+    object: 20-25%
+  composed_of:
+  - compound.glucose
+  - bond.covalent
+  - group.ether
+- key: compound.triglyceride
+  category: compound
+  entity:
+    name: triglyceride
+    kind: compound
+    subkind: lipid-ester
+  semantic:
+    category: lipid-energy-storage
+  relational:
+  - predicate: derived-from
+    object: glycerol
+  - predicate: contains
+    object: fatty-acids
+  composed_of:
+  - compound.glycerol
+  - group.ester
+  - bond.covalent
+- key: compound.galactose
+  category: compound
+  entity:
+    name: galactose
+    kind: compound
+    subkind: monosaccharide
+  perceptual:
+    color: white
+  semantic:
+    category: aldohexose-sugar
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.aldehyde
+  - group.hydroxyl
+- key: compound.cellobiose
+  category: compound
+  entity:
+    name: Cellobiose
+    kind: compound
+    subkind: disaccharide
+  perceptual:
+    color: white
+  semantic:
+    category: reducing-sugar
+  relational:
+  - predicate: derived-from
+    object: compound.glucose
+  - predicate: contains
+    object: bond.glycosidic
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.oleic-acid
+  category: compound
+  entity:
+    name: oleic acid
+    kind: compound
+    subkind: monounsaturated fatty acid
+  perceptual:
+    color: colorless to yellowish
+  semantic:
+    category: omega-9-fatty-acid
+  relational:
+  - predicate: contains functional group
+    object: group.carboxyl
+  - predicate: contains bond type
+    object: bond.double-covalent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+  - group.carboxyl
+- key: compound.cholesterol
+  category: compound
+  entity:
+    name: cholesterol
+    kind: compound
+    subkind: sterol
+  semantic:
+    category: lipid-sterol
+  relational:
+  - predicate: biosynthesized-by
+    object: animal cells
+  - predicate: found-in
+    object: body tissues
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+- key: compound.linoleic-acid
+  category: compound
+  entity:
+    name: linoleic acid
+    kind: compound
+    subkind: polyunsaturated fatty acid
+  semantic:
+    category: omega-6-fatty-acid
+  relational:
+  - predicate: has-double-bonds
+    object: cis-configuration
+  - predicate: carbon-chain-length
+    object: '18'
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+  - group.carboxyl
+- key: compound.prostaglandin
+  category: compound
+  entity:
+    name: Prostaglandin
+    kind: compound
+    subkind: lipid-eicosanoid
+  semantic:
+    category: physiologically-active-lipid
+  quantitative:
+    magnitude: '20'
+    unit: carbon-atoms
+  relational:
+  - predicate: derived-from
+    object: arachidonic-acid
+  - predicate: contains
+    object: 5-carbon-ring
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.arachidonic-acid
+  category: compound
+  entity:
+    name: arachidonic acid
+    kind: compound
+    subkind: polyunsaturated fatty acid
+  semantic:
+    category: omega-6-fatty-acid
+  relational:
+    predicate: precursor-for
+    object: leukotrienes, prostaglandins, thromboxanes
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+  - group.carboxyl
+- key: compound.steroid
+  category: compound
+  entity:
+    name: steroid
+    kind: compound
+    subkind: polycyclic-organic
+  semantic:
+    category: four-fused-ring-structure
+  relational:
+  - predicate: composed-of
+    object: element.carbon
+  - predicate: composed-of
+    object: element.hydrogen
+  - predicate: contains
+    object: bond.covalent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.nucleotide
+  category: compound
+  entity:
+    name: Nucleotide
+    kind: compound
+    subkind: biological-monomer
+  semantic:
+    category: organic-biological-molecule
+  relational:
+  - predicate: constituent-of
+    object: compound.dna
+  - predicate: constituent-of
+    object: compound.atp
+  - predicate: contains
+    object: nitrogenous-base
+  - predicate: contains
+    object: pentose-sugar
+  - predicate: contains
+    object: phosphate-group
+  composed_of:
+  - group.phosphate
+  - element.nitrogen
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.phosphorus
+- key: compound.guanine
+  category: compound
+  entity:
+    name: guanine
+    kind: compound
+    subkind: nucleobase
+  semantic:
+    category: dna-rna-nucleobase
+  relational:
+  - predicate: found-in
+    object: dna
+  - predicate: found-in
+    object: rna
+  - predicate: pairs-with
+    object: cytosine
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.stearic-acid
+  category: compound
+  entity:
+    name: stearic acid
+    kind: compound
+    subkind: saturated-fatty-acid
+  perceptual:
+    color: white
+    temperature: "69.4\xB0C (melting point)"
+  quantitative:
+    magnitude: '4.50'
+    unit: pKa
+  semantic:
+    category: saturated-fatty-acid
+  relational:
+    predicate: has-carbon-chain-length
+    object: '18'
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.methyl
+- key: compound.cytosine
+  category: compound
+  entity:
+    name: cytosine
+    kind: compound
+    subkind: nucleobase
+  semantic:
+    category: pyrimidine-nucleobase
+  relational:
+  - predicate: forms-hydrogen-bonds-with
+    object: guanine
+  - predicate: found-in
+    object: DNA
+  - predicate: found-in
+    object: RNA
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.adenine
+  category: compound
+  entity:
+    name: adenine
+    kind: compound
+    subkind: purine-nucleobase
+  perceptual:
+    color: white
+  semantic:
+    category: nucleotide-base
+  relational:
+  - predicate: found-in
+    object: compound.dna
+  - predicate: found-in
+    object: compound.atp
+  - predicate: pairs-with
+    object: thymine
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+- key: group.nucleobase
+  category: group
+  entity:
+    name: nucleobases
+    kind: group
+    subkind: heterocyclic-nitrogen-compound
+  semantic:
+    category: genetic-code-building-block
+  relational:
+  - predicate: component-of
+    object: nucleoside
+  - predicate: component-of
+    object: nucleotide
+  - predicate: component-of
+    object: dna
+  composed_of:
+  - element.nitrogen
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - group.amino
+- key: compound.adenosine
+  category: compound
+  entity:
+    name: adenosine
+    kind: compound
+    subkind: nucleoside
+  semantic:
+    category: rna-building-block, energy-carrier-precursor, signaling-molecule
+  relational:
+  - predicate: component-of
+    object: compound.atp
+  - predicate: precursor-to
+    object: compound.atp
+  - predicate: used-in
+    object: reaction.cellular-respiration
+  composed_of:
+  - compound.adenine
+  - compound.ribose
+  - bond.glycosidic
+- key: compound.thymidine
+  category: compound
+  entity:
+    name: thymidine
+    kind: compound
+    subkind: deoxynucleoside
+  semantic:
+    category: pyrimidine-deoxynucleoside
+  relational:
+  - predicate: pairs-with
+    object: deoxyadenosine
+  - predicate: component-of
+    object: DNA
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.methyl
+- key: compound.uracil
+  category: compound
+  entity:
+    name: uracil
+    kind: compound
+    subkind: nucleobase
+  semantic:
+    category: rna-nucleobase
+  relational:
+  - predicate: component-of
+    object: compound.rna
+  - predicate: binds-to
+    object: compound.adenine
+  - predicate: replaced-by-in-dna
+    object: thymine
+  composed_of:
+  - element.carbon
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+  - group.carbonyl
+  - bond.hydrogen
+- key: compound.cytidine
+  category: compound
+  entity:
+    name: cytidine
+    kind: compound
+    subkind: nucleoside
+  perceptual:
+    color: white
+    solubility: water-soluble
+  semantic:
+    category: rna-component
+  relational:
+  - predicate: formed from
+    object: cytosine
+  - predicate: attached to
+    object: ribose
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.glycosidic
+- key: compound.thymine
+  category: compound
+  entity:
+    name: Thymine
+    kind: compound
+    subkind: nucleobase
+  semantic:
+    category: dna-nucleotide-base
+  relational:
+  - predicate: component-of
+    object: compound.dna
+  - predicate: is-a
+    object: pyrimidine
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+  - group.methyl
+- key: compound.guanosine
+  category: compound
+  entity:
+    name: guanosine
+    kind: compound
+    subkind: nucleoside
+  semantic:
+    category: purine-nucleoside
+  relational:
+  - predicate: comprises
+    object: guanine
+  - predicate: attached-to
+    object: ribose
+  - predicate: can-phosphorylate-to
+    object: GMP, GDP, GTP
+  - predicate: involved-in
+    object: nucleic-acid-synthesis, protein-synthesis, photosynthesis, signal-transduction
+  composed_of:
+  - element.carbon
+  - element.nitrogen
+  - element.oxygen
+  - element.hydrogen
+  - bond.glycosidic
+  - bond.covalent
+- key: compound.adenosine-diphosphate
+  category: compound
+  entity:
+    name: adenosine diphosphate
+    kind: compound
+    subkind: nucleotide
+  semantic:
+    category: energy-metabolism-cofactor
+  relational:
+    predicate: essential_to
+    object: cellular-energy-flow
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.phosphorus
+  - group.phosphate
+  - bond.covalent
+  - bond.ionic
+- key: compound.uridine
+  category: compound
+  entity:
+    name: uridine
+    kind: compound
+    subkind: nucleoside
+  semantic:
+    category: rna-nucleoside
+  relational:
+  - predicate: contains
+    object: uracil
+  - predicate: contains
+    object: ribose
+  - predicate: found-in
+    object: RNA
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - bond.glycosidic
+- key: compound.dna
+  category: compound
+  entity:
+    name: deoxyribonucleic acid
+    kind: compound
+    subkind: nucleic acid polymer
+  semantic:
+    category: genetic-information-carrier
+  relational:
+  - predicate: composed_of
+    object: polynucleotide chains
+  - predicate: structure
+    object: double helix
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.phosphorus
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.vitamins
+  category: compound
+  entity:
+    name: Vitamins
+    kind: compound
+    subkind: organic-nutrient-group
+  semantic:
+    category: essential-micronutrients
+  relational:
+  - predicate: required-for
+    object: metabolic-function
+  - predicate: obtained-through
+    object: consumption
+  - predicate: exists-in-small-quantities
+    object: organism
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+- key: compound.messenger-rna
+  category: compound
+  entity:
+    name: messenger RNA
+    kind: compound
+    subkind: nucleic-acid
+  semantic:
+    category: genetic-information-carrier
+  relational:
+  - predicate: read-by
+    object: ribosome
+  - predicate: encodes
+    object: protein
+  - predicate: transcribed-from
+    object: gene
+  composed_of:
+  - element.carbon
+  - element.nitrogen
+  - element.oxygen
+  - element.hydrogen
+  - element.phosphorus
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.rna
+  category: compound
+  entity:
+    name: Ribonucleic acid
+    kind: compound
+    subkind: nucleic-acid-polymer
+  semantic:
+    category: biological-macromolecule
+  relational:
+  - predicate: composed_of
+    object: nucleotides
+  - predicate: essential_for
+    object: biological-functions
+  - predicate: directs
+    object: protein-synthesis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.phosphorus
+  - bond.covalent
+  - group.phosphate
+- key: compound.cholecalciferol
+  category: compound
+  entity:
+    name: cholecalciferol
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: essential-nutrient-vitamin-d3
+  relational:
+  - predicate: also-known-as
+    object: vitamin D3
+  - predicate: used-as
+    object: dietary-supplement
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+- key: compound.tocopherol
+  category: compound
+  entity:
+    name: tocopherol
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: antioxidant-vitamin-e
+  relational:
+  - predicate: has-vitamin-activity
+    object: vitamin E
+  - predicate: contains-functional-group
+    object: phenol
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.methyl
+- key: compound.transfer-rna
+  category: compound
+  entity:
+    name: transfer RNA
+    kind: compound
+    subkind: nucleic-acid
+  semantic:
+    category: protein-synthesis-adaptor
+  relational:
+  - predicate: carries
+    object: amino-acids
+  - predicate: links
+    object: genetic-code-and-protein-sequence
+  - predicate: component-of
+    object: translation-process
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.phosphorus
+- key: compound.atp
+  category: compound
+  entity:
+    name: adenosine triphosphate
+    kind: compound
+    subkind: nucleoside triphosphate
+  quantitative:
+    magnitude: '58'
+    unit: kJ/mol
+  semantic:
+    category: energy-carrier
+  relational:
+  - predicate: found_in
+    object: living cells
+  - predicate: enables
+    object: muscle contraction
+  - predicate: enables
+    object: nerve impulse propagation
+  - predicate: enables
+    object: chemical synthesis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.phosphorus
+  - bond.covalent
+  - group.phosphate
+- key: compound.retinol
+  category: compound
+  entity:
+    name: retinol
+    kind: compound
+    subkind: vitamin-a1-alcohol
+  perceptual:
+    color: yellow
+  semantic:
+    category: fat-soluble-vitamin
+  relational:
+  - predicate: used-for
+    object: vision
+  - predicate: used-for
+    object: cellular-development
+  - predicate: used-for
+    object: immune-function
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+- key: compound.thiamine
+  category: compound
+  entity:
+    name: thiamine
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: essential-micronutrient
+  relational:
+  - predicate: required-for
+    object: glucose-breakdown
+  - predicate: required-for
+    object: amino-acid-breakdown
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - group.amino
+  - bond.covalent
+- key: compound.ascorbic-acid
+  category: compound
+  entity:
+    name: ascorbic acid
+    kind: compound
+    subkind: organic acid
+  perceptual:
+    color: white
+  semantic:
+    category: reducing-agent
+  relational:
+  - predicate: dissolves-in
+    object: compound.water
+  - predicate: produces
+    object: mildly-acidic-solution
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.carboxyl
+- key: compound.riboflavin
+  category: compound
+  entity:
+    name: Riboflavin
+    kind: compound
+    subkind: vitamin
+  perceptual:
+    color: color.yellow
+  semantic:
+    category: vitamin-b2-dietary-supplement
+  relational:
+  - predicate: involved_in
+    object: reaction.cellular-respiration
+  - predicate: cofactor_for
+    object: energy-metabolism
+  - predicate: required_for
+    object: normal-growth-and-development
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+- key: compound.folate
+  category: compound
+  entity:
+    name: folate
+    kind: compound
+    subkind: vitamin-B9
+  semantic:
+    category: essential-nutrient
+  relational:
+  - predicate: required-for
+    object: DNA synthesis
+  - predicate: required-for
+    object: RNA synthesis
+  - predicate: required-for
+    object: amino-acid metabolism
+  composed_of:
+  - element.carbon
+  - element.nitrogen
+  - element.oxygen
+  - element.hydrogen
+- key: compound.pantothenic-acid
+  category: compound
+  entity:
+    name: Pantothenic Acid
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: b-vitamin-essential-nutrient
+  relational:
+  - predicate: precursor-to
+    object: compound.atp
+  - predicate: required-for
+    object: reaction.cellular-respiration
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.carboxyl
+- key: compound.phylloquinone
+  category: compound
+  entity:
+    name: phylloquinone
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: essential-vitamin
+  relational:
+    predicate: found-in
+    object: food
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carbonyl
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.pyridoxine
+  category: compound
+  entity:
+    name: pyridoxine
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: vitamin-b6-form
+  relational:
+  - predicate: is-form-of
+    object: vitamin-b6
+  - predicate: treats
+    object: pyridoxine-deficiency
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.methyl
+- key: compound.biotin
+  category: compound
+  entity:
+    name: biotin
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: essential-nutrient-cofactor
+  relational:
+  - predicate: metabolic-role
+    object: fat-carbohydrate-amino-acid-metabolism
+  - predicate: enzyme-cofactor
+    object: metabolic-enzymes
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - bond.covalent
+  - group.carboxyl
+- key: compound.niacin
+  category: compound
+  entity:
+    name: niacin
+    kind: compound
+    subkind: vitamin
+  semantic:
+    category: organic-compound, vitamin-b3, essential-nutrient
+  relational:
+    predicate: produced-from
+    object: amino-acid-tryptophan
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.carboxyl
+- key: compound.ibuprofen
+  category: compound
+  entity:
+    name: ibuprofen
+    kind: compound
+    subkind: nonsteroidal anti-inflammatory drug
+  semantic:
+    category: analgesic-anti-inflammatory
+  relational:
+  - predicate: treats
+    object: pain
+  - predicate: treats
+    object: fever
+  - predicate: treats
+    object: inflammation
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+  - group.methyl
+- key: compound.acetaminophen
+  category: compound
+  entity:
+    name: acetaminophen
+    kind: compound
+    subkind: analgesic-antipyretic
+  semantic:
+    category: pain-fever-medication
+  relational:
+  - predicate: treats
+    object: fever
+  - predicate: treats
+    object: pain
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.amino
+  - group.carbonyl
+- key: compound.naproxen
+  category: compound
+  entity:
+    name: naproxen
+    kind: compound
+    subkind: nonsteroidal anti-inflammatory drug
+  semantic:
+    category: pain-relief-anti-inflammatory
+  relational:
+  - predicate: used-to-treat
+    object: pain
+  - predicate: used-to-treat
+    object: menstrual-cramps
+  - predicate: used-to-treat
+    object: rheumatoid-arthritis
+  - predicate: administration-route
+    object: oral
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.carboxyl
+- key: compound.theophylline
+  category: compound
+  entity:
+    name: theophylline
+    kind: compound
+    subkind: methylxanthine-alkaloid
+  semantic:
+    category: respiratory-bronchodilator-drug
+  relational:
+  - predicate: inhibits
+    object: phosphodiesterase
+  - predicate: blocks
+    object: adenosine-receptors
+  - predicate: treats
+    object: COPD-asthma
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.methyl
+- key: compound.theobromine
+  category: compound
+  entity:
+    name: theobromine
+    kind: compound
+    subkind: alkaloid
+  perceptual:
+    color: white
+    taste: bitter
+  quantitative:
+    magnitude: '330'
+    unit: mg/L
+  semantic:
+    category: alkaloid-xanthine
+  relational:
+  - predicate: found-in
+    object: cacao plant
+  - predicate: found-in
+    object: chocolate
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.methyl
+- key: compound.nicotine
+  category: compound
+  entity:
+    name: nicotine
+    kind: compound
+    subkind: alkaloid
+  perceptual:
+    color: colorless to yellowish
+    state: oily liquid
+  semantic:
+    category: alkaloid-stimulant-neurotoxin
+  relational:
+  - predicate: found in
+    object: nightshade family plants
+  - predicate: used as
+    object: recreational stimulant
+  - predicate: acts as
+    object: neurotoxin
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.morphine
+  category: compound
+  entity:
+    name: morphine
+    kind: compound
+    subkind: opiate-alkaloid
+  perceptual:
+    color: colorless to white (pure form)
+  semantic:
+    category: analgesic-medication
+  relational:
+  - predicate: used_for
+    object: pain-relief
+  - predicate: derived_from
+    object: opium-poppy
+  - predicate: acts_on
+    object: central-nervous-system
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.ether
+- key: compound.caffeine
+  category: compound
+  entity:
+    name: caffeine
+    kind: compound
+    subkind: methylxanthine alkaloid
+  semantic:
+    category: central-nervous-system-stimulant
+  relational:
+  - predicate: blocks
+    object: adenosine receptors
+  - predicate: inhibits
+    object: phosphodiesterase
+  - predicate: antagonizes
+    object: GABA receptors
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.methyl
+- key: compound.penicillin
+  category: compound
+  entity:
+    name: penicillin
+    kind: compound
+    subkind: "\u03B2-lactam antibiotic"
+  semantic:
+    category: antibiotic-from-fungi
+  relational:
+  - predicate: derived-from
+    object: Penicillium-mould
+  - predicate: contains
+    object: "\u03B2-lactam-ring"
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - bond.covalent
+  - bond.double-covalent
+  - group.carboxyl
+  - group.amino
+- key: compound.amoxicillin
+  category: compound
+  entity:
+    name: amoxicillin
+    kind: compound
+    subkind: beta-lactam-antibiotic
+  semantic:
+    category: aminopenicillin-antibiotic
+  relational:
+  - predicate: treats
+    object: bacterial-infections
+  - predicate: contains-functional-group
+    object: group.amino
+  - predicate: contains-functional-group
+    object: group.carboxyl
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - bond.covalent
+  - bond.double-covalent
+  - group.amino
+  - group.carboxyl
+- key: compound.insulin
+  category: compound
+  entity:
+    name: insulin
+    kind: compound
+    subkind: peptide-hormone
+  semantic:
+    category: anabolic-hormone
+  relational:
+  - predicate: regulates
+    object: glucose-metabolism
+  - predicate: promotes
+    object: glucose-absorption
+  - predicate: produced-by
+    object: pancreatic-beta-cells
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - group.amino
+  - bond.covalent
+  - bond.peptide
+- key: compound.codeine
+  category: compound
+  entity:
+    name: codeine
+    kind: compound
+    subkind: opiate-alkaloid
+  semantic:
+    category: pain-relief-medication
+  relational:
+  - predicate: is-prodrug-of
+    object: morphine
+  - predicate: treats
+    object: pain
+  - predicate: found-in
+    object: opium-poppy
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.methyl
+  - group.ether
+- key: compound.epinephrine
+  category: compound
+  entity:
+    name: epinephrine
+    kind: compound
+    subkind: hormone-medication
+  perceptual:
+    color: white
+    texture: microcrystalline granule
+  semantic:
+    category: stress-hormone-neurotransmitter
+  relational:
+  - predicate: produced-by
+    object: adrenal-glands
+  - predicate: involved-in
+    object: fight-or-flight-response
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.amino
+  - bond.covalent
+- key: compound.norepinephrine
+  category: compound
+  entity:
+    name: norepinephrine
+    kind: compound
+    subkind: catecholamine
+  semantic:
+    category: hormone-neurotransmitter
+  relational:
+  - predicate: is-a
+    object: catecholamine
+  - predicate: functions-as
+    object: neurotransmitter
+  - predicate: functions-as
+    object: hormone
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.amino
+  - bond.covalent
+- key: compound.cephalexin
+  category: compound
+  entity:
+    name: cephalexin
+    kind: compound
+    subkind: beta-lactam-antibiotic
+  semantic:
+    category: antibiotic-beta-lactam
+  relational:
+  - predicate: kills
+    object: gram-positive-bacteria
+  - predicate: disrupts
+    object: bacterial-cell-wall
+  - predicate: member-of
+    object: first-generation-cephalosporins
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - group.carboxyl
+  - group.amino
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.tetracycline
+  category: compound
+  entity:
+    name: Tetracycline
+    kind: compound
+    subkind: antibiotic
+  semantic:
+    category: antibiotic-tetracycline-family
+  relational:
+  - predicate: treats
+    object: bacterial-infections
+  - predicate: formulation
+    object: oral-and-topical
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.hydroxyl
+  - group.carbonyl
+  - group.amino
+- key: compound.melatonin
+  category: compound
+  entity:
+    name: Melatonin
+    kind: compound
+    subkind: indoleamine
+  semantic:
+    category: hormone-circadian-regulator
+  relational:
+  - predicate: secreted_by
+    object: pineal-gland
+  - predicate: regulates
+    object: sleep-wake-cycle
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.hydroxyl
+  - group.methyl
+- key: compound.serotonin
+  category: compound
+  entity:
+    name: serotonin
+    kind: compound
+    subkind: monoamine-neurotransmitter
+  semantic:
+    category: neurotransmitter-monoamine
+  relational:
+  - predicate: regulates
+    object: mood
+  - predicate: regulates
+    object: appetite
+  - predicate: regulates
+    object: sleep
+  - predicate: involved-in
+    object: cognition
+  - predicate: involved-in
+    object: memory
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.amino
+  - bond.covalent
+- key: compound.methadone
+  category: compound
+  entity:
+    name: methadone
+    kind: compound
+    subkind: synthetic-opioid
+  semantic:
+    category: opioid-analgesic
+  relational:
+  - predicate: used-to-treat
+    object: chronic-pain
+  - predicate: used-to-treat
+    object: opioid-use-disorder
+  - predicate: relieves
+    object: withdrawal-symptoms
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+- key: compound.thc
+  category: compound
+  entity:
+    name: Tetrahydrocannabinol
+    kind: compound
+    subkind: cannabinoid
+  perceptual:
+    color: colorless
+  semantic:
+    category: psychoactive-cannabinoid
+  relational:
+    predicate: found-in
+    object: cannabis
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.acetylcholine
+  category: compound
+  entity:
+    name: acetylcholine
+    kind: compound
+    subkind: neurotransmitter
+  semantic:
+    category: organic-ester-neurotransmitter
+  relational:
+  - predicate: derived-from
+    object: compound.acetic-acid
+  - predicate: contains
+    object: group.ester
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.ester
+  - group.hydroxyl
+- key: compound.mdma
+  category: compound
+  entity:
+    name: MDMA
+    kind: compound
+    subkind: psychoactive drug
+  semantic:
+    category: entactogen-stimulant-psychedelic
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.methyl
+  - group.ether
+- key: compound.cannabidiol
+  category: compound
+  entity:
+    name: cannabidiol
+    kind: compound
+    subkind: phytocannabinoid
+  semantic:
+    category: organic-plant-alkaloid
+  relational:
+  - predicate: found-in
+    object: Cannabis plant
+  - predicate: discovered
+    object: '1940'
+  - predicate: used-to-treat
+    object: childhood epilepsy
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+  - group.hydroxyl
+- key: compound.amphetamine
+  category: compound
+  entity:
+    name: amphetamine
+    kind: compound
+    subkind: phenethylamine-derivative
+  semantic:
+    category: central-nervous-system-stimulant
+  relational:
+  - predicate: used-to-treat
+    object: attention-deficit-hyperactivity-disorder
+  - predicate: used-to-treat
+    object: narcolepsy
+  - predicate: used-to-treat
+    object: binge-eating-disorder
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+  - group.methyl
+  - bond.covalent
+- key: compound.methamphetamine
+  category: compound
+  entity:
+    name: Methamphetamine
+    kind: compound
+    subkind: central-nervous-system-stimulant
+  semantic:
+    category: psychoactive-drug
+  relational:
+  - predicate: is-a
+    object: CNS-stimulant
+  - predicate: exists-as
+    object: enantiomer-pair
+  - predicate: forms-salt-with
+    object: hydrochloride
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - group.amino
+  - group.methyl
+- key: compound.fluoxetine
+  category: compound
+  entity:
+    name: fluoxetine
+    kind: compound
+    subkind: pharmaceutical
+  semantic:
+    category: ssri-antidepressant
+  relational:
+  - predicate: treats
+    object: major-depressive-disorder
+  - predicate: treats
+    object: anxiety
+  - predicate: treats
+    object: obsessive-compulsive-disorder
+  - predicate: mechanism
+    object: serotonin-reuptake-inhibition
+  - predicate: administration
+    object: oral
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.fluorine
+  - bond.covalent
+- key: compound.sertraline
+  category: compound
+  entity:
+    name: Sertraline
+    kind: compound
+    subkind: pharmaceutical-ssri
+  semantic:
+    category: antidepressant-medication
+  relational:
+  - predicate: treats
+    object: major-depressive-disorder
+  - predicate: inhibits
+    object: serotonin-reuptake
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.chlorine
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.atorvastatin
+  category: compound
+  entity:
+    name: atorvastatin
+    kind: compound
+    subkind: statin
+  semantic:
+    category: cholesterol-lowering-medication
+  relational:
+  - predicate: treats
+    object: abnormal-lipid-levels
+  - predicate: prevents
+    object: cardiovascular-disease
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.fluorine
+  - group.hydroxyl
+  - group.carboxyl
+- key: compound.ethanol
+  category: compound
+  entity:
+    name: ethanol
+    kind: compound
+    subkind: alcohol
+  semantic:
+    category: psychoactive-cns-depressant
+  relational:
+  - predicate: active-ingredient-in
+    object: fermented-drinks
+  - predicate: causes
+    object: intoxication
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.polyethylene
+  category: compound
+  entity:
+    name: polyethylene
+    kind: compound
+    subkind: polymer
+  semantic:
+    category: thermoplastic-polymer
+  relational:
+    predicate: used_for
+    object: packaging
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: compound.dopamine
+  category: compound
+  entity:
+    name: dopamine
+    kind: compound
+    subkind: neurotransmitter
+  semantic:
+    category: catecholamine-phenethylamine
+  relational:
+  - predicate: functions-as
+    object: neurotransmitter
+  - predicate: functions-as
+    object: hormone
+  - predicate: derived-from
+    object: compound.l-dopa
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - group.hydroxyl
+  - group.amino
+  - bond.covalent
+- key: compound.omeprazole
+  category: compound
+  entity:
+    name: omeprazole
+    kind: compound
+    subkind: proton-pump-inhibitor
+  semantic:
+    category: pharmaceutical-compound
+  relational:
+  - predicate: treats
+    object: gastroesophageal-reflux-disease
+  - predicate: treats
+    object: peptic-ulcer-disease
+  - predicate: inhibits
+    object: proton-pump
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - element.sulfur
+  - bond.covalent
+  - group.methyl
+- key: compound.polyethylene-terephthalate
+  category: compound
+  entity:
+    name: Polyethylene terephthalate
+    kind: compound
+    subkind: polymer
+  semantic:
+    category: thermoplastic-polyester
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.ester
+  - bond.covalent
+- key: compound.polystyrene
+  category: compound
+  entity:
+    name: polystyrene
+    kind: compound
+    subkind: polymer
+  perceptual:
+    color: clear (naturally transparent, can be colored)
+    texture: hard, brittle
+  quantitative:
+    magnitude: several million
+    unit: tonnes per year
+  semantic:
+    category: synthetic-polymer-resin
+  relational:
+  - predicate: made_from_monomers_of
+    object: styrene
+  - predicate: used_in
+    object: packaging
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - group.methyl
+- key: compound.metformin
+  category: compound
+  entity:
+    name: Metformin
+    kind: compound
+    subkind: pharmaceutical
+  semantic:
+    category: diabetes-medication
+  relational:
+  - predicate: treats
+    object: type-2-diabetes
+  - predicate: inhibits
+    object: inflammation
+  - predicate: administration-route
+    object: oral
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+- key: compound.polyvinyl-chloride
+  category: compound
+  entity:
+    name: Polyvinyl chloride
+    kind: compound
+    subkind: synthetic polymer
+  semantic:
+    category: plastic-polymer
+  quantitative:
+    magnitude: '40'
+    unit: million tons per year
+  relational:
+    predicate: widely-produced
+    object: third-most among synthetic polymers
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.chlorine
+  - bond.covalent
+- key: compound.polytetrafluoroethylene
+  category: compound
+  entity:
+    name: Polytetrafluoroethylene (PTFE/Teflon)
+    kind: compound
+    subkind: fluoropolymer
+  semantic:
+    category: synthetic-polymer
+  relational:
+    predicate: has-property
+    object: chemically-inert
+  composed_of:
+  - element.carbon
+  - element.fluorine
+  - bond.covalent
+- key: compound.dna
+  category: compound
+  entity:
+    name: DNA (Deoxyribonucleic acid)
+    kind: compound
+    subkind: polymer-macromolecule
+  semantic:
+    category: genetic-information-carrier
+  relational:
+  - predicate: carries
+    object: genetic-instructions
+  - predicate: essential-for
+    object: life
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.phosphorus
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.nylon
+  category: compound
+  entity:
+    name: nylon
+    kind: compound
+    subkind: synthetic-polymer
+  semantic:
+    category: textile-fiber
+  relational:
+    predicate: characterized-by
+    object: amide-linkages
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+  - group.amino
+- key: compound.protein
+  category: compound
+  entity:
+    name: Protein
+    kind: compound
+    subkind: biomacromolecule
+  semantic:
+    category: amino-acid-polymer
+  relational:
+  - predicate: composed-of
+    object: amino-acid-chains
+  - predicate: performs
+    object: catalysis-structure-transport
+  composed_of:
+  - group.amino
+  - group.carboxyl
+  - bond.peptide
+  - compound.alanine
+  - compound.glycine
+  - element.carbon
+  - element.nitrogen
+  - element.oxygen
+  - element.hydrogen
+- key: compound.bakelite
+  category: compound
+  entity:
+    name: Bakelite
+    kind: compound
+    subkind: synthetic polymer
+  perceptual:
+    color: color.brown
+  semantic:
+    category: synthetic-plastic
+  relational:
+    predicate: made from
+    object: phenol and formaldehyde
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.rna
+  category: compound
+  entity:
+    name: Ribonucleic acid
+    kind: compound
+    subkind: nucleic-acid-polymer
+  semantic:
+    category: biological-macromolecule
+  relational:
+  - predicate: is-polymer-of
+    object: nucleotide
+  - predicate: essential-for
+    object: protein-synthesis
+  - predicate: related-to
+    object: compound.dna
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.phosphorus
+  - bond.covalent
+  - bond.hydrogen
+- key: compound.polypropylene
+  category: compound
+  entity:
+    name: polypropylene
+    kind: compound
+    subkind: polymer
+  semantic:
+    category: thermoplastic-polymer
+  relational:
+    predicate: polymerized-from
+    object: propylene
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: group.functional
+  category: group
+  entity:
+    name: Functional Group
+    kind: group
+    subkind: molecular-substructure
+  semantic:
+    category: atoms-bonded-together
+  relational:
+    predicate: component-of
+    object: organic-molecules
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.sulfur
+  - bond.covalent
+- key: category.polymers
+  category: group
+  entity:
+    name: Polymers
+    kind: category
+    subkind: macromolecular-substances
+  semantic:
+    category: large-repeating-structural-units
+  relational:
+  - predicate: composed-of
+    object: monomers
+  - predicate: includes
+    object: compound.dna
+  perceptual:
+    property: tough, elastic, viscoelastic
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.nitrogen
+  - element.oxygen
+  - bond.covalent
+- key: prime.part
+  category: group
+  entity:
+    name: motif
+    kind: concept
+    subkind: recurring-element
+  semantic:
+    category: recurring-pattern-or-theme
+  relational:
+    predicate: appears-in
+    object: work-of-art
+  composed_of:
+  - prime.part
+  - prime.more
+  - prime.this
+- key: group.carbonyl
+  category: group
+  entity:
+    name: carbonyl group
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: organic-functional-group
+  relational:
+    predicate: composed-of
+    object: carbon-oxygen-double-bond
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.double-covalent
+- key: group.ester
+  category: group
+  entity:
+    name: ester
+    kind: functional group
+    subkind: oxygen-containing
+  semantic:
+    category: acid-derivative
+  relational:
+  - predicate: derived-from
+    object: acid
+  - predicate: contains-functional-group
+    object: carbonyl
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.covalent
+  - group.carbonyl
+- key: group.hydroxyl
+  category: group
+  entity:
+    name: hydroxyl group
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: functional-group-organic-chemistry
+  relational:
+    predicate: composed-of
+    object: oxygen-and-hydrogen
+  composed_of:
+  - element.oxygen
+  - element.hydrogen
+  - bond.covalent
+- key: group.ether
+  category: group
+  entity:
+    name: ether
+    kind: functional group
+    subkind: organic
+  semantic:
+    category: oxygen-linked-carbon-groups
+  relational:
+    predicate: contains
+    object: single oxygen atom bonded to two carbon atoms
+  composed_of:
+  - element.oxygen
+  - element.carbon
+  - bond.covalent
+- key: group.ketone
+  category: group
+  entity:
+    name: ketone
+    kind: group
+    subkind: carbonyl-functional-group
+  semantic:
+    category: organic-carbonyl-compound
+  relational:
+    predicate: contains
+    object: group.carbonyl
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.double-covalent
+- key: group.aldehyde
+  category: group
+  entity:
+    name: aldehyde
+    kind: functional group
+    subkind: carbonyl-derived
+  semantic:
+    category: organic-functional-group
+  relational:
+    predicate: contains
+    object: carbonyl-carbon-bonded-to-hydrogen
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - bond.double-covalent
+- key: group.carboxyl
+  category: group
+  entity:
+    name: carboxyl group
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: polar-organic-acid-group
+  relational:
+    predicate: contains
+    object: carbon-oxygen double bond and hydroxyl
+  composed_of:
+  - element.carbon
+  - group.carbonyl
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.peptide
+  category: compound
+  entity:
+    name: peptide
+    kind: compound
+    subkind: polypeptide
+  semantic:
+    category: amino-acid-chain
+  relational:
+  - predicate: composed-of
+    object: amino acids
+  - predicate: linked-by
+    object: peptide bonds
+  - predicate: chain-length
+    object: 2-50 residues
+  composed_of:
+  - group.amino
+  - group.carboxyl
+  - bond.covalent
+  - reaction.peptide-bond-formation
+- key: group.amino
+  category: group
+  entity:
+    name: amine
+    kind: group
+    subkind: organic-nitrogen-group
+  semantic:
+    category: organic-nitrogen-functional-group
+  relational:
+    predicate: contains
+    object: lone-pair-electrons
+  composed_of:
+  - element.nitrogen
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: group.methyl
+  category: group
+  entity:
+    name: methyl group
+    kind: group
+    subkind: alkyl
+  semantic:
+    category: organic-functional-group
+  relational:
+    predicate: derived-from
+    object: compound.methane
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: group.amide
+  category: group
+  entity:
+    name: amide
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: organic-functional-group
+  relational:
+    predicate: links
+    object: amino-acids
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - element.nitrogen
+  - bond.double-covalent
+  - bond.covalent
+- key: group.amino
+  category: group
+  entity:
+    name: amino group
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: nitrogen-containing-functional-group
+  relational:
+    predicate: contains
+    object: lone-pair-electrons
+  composed_of:
+  - element.nitrogen
+  - element.hydrogen
+  - bond.covalent
+- key: group.phosphate
+  category: group
+  entity:
+    name: phosphate
+    kind: group
+    subkind: functional-group-and-anion
+  semantic:
+    category: anion-derived-from-phosphoric-acid
+  relational:
+    predicate: derived-from
+    object: phosphoric-acid
+  composed_of:
+  - element.phosphorus
+  - element.oxygen
+- key: group.sulfonate
+  category: group
+  entity:
+    name: sulfonate
+    kind: group
+    subkind: functional-group
+  perceptual:
+    color: colorless
+  semantic:
+    category: salt-anion-ester-sulfonic-acid
+  relational:
+  - predicate: conjugate-base-of
+    object: sulfonic-acid
+  - predicate: found-in
+    object: detergents-surfactants
+  composed_of:
+  - element.sulfur
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+- key: group.nitro
+  category: group
+  entity:
+    name: nitro group
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: electron-withdrawing-functional-group
+  relational:
+  - predicate: contains
+    object: element.nitrogen
+  - predicate: contains
+    object: element.oxygen
+  - predicate: property
+    object: electron-withdrawing
+  - predicate: used-in
+    object: reaction.nitration
+  composed_of:
+  - element.nitrogen
+  - element.oxygen
+  - bond.double-covalent
+- key: group.ethyl
+  category: group
+  entity:
+    name: ethyl group
+    kind: group
+    subkind: alkyl
+  semantic:
+    category: alkyl-substituent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: group.vinyl
+  category: group
+  entity:
+    name: vinyl group
+    kind: group
+    subkind: functional
+  semantic:
+    category: unsaturated-hydrocarbon-group
+  relational:
+    predicate: is-derived-from
+    object: compound.ethylene
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.double-covalent
+- key: group.allyl
+  category: group
+  entity:
+    name: allyl group
+    kind: group
+    subkind: unsaturated-hydrocarbon
+  semantic:
+    category: organic-substituent
+  relational:
+    predicate: contains
+    object: vinyl-group
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: group.alkene
+  category: group
+  entity:
+    name: alkene
+    kind: functional group
+    subkind: carbon-carbon double bond
+  semantic:
+    category: hydrocarbon-with-double-bond
+  relational:
+    predicate: contains
+    object: carbon-carbon double bond
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.double-covalent
+- key: group.benzyl
+  category: group
+  entity:
+    name: benzyl
+    kind: group
+    subkind: aromatic-alkyl
+  semantic:
+    category: aromatic-alkyl-substituent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - compound.benzene
+  - group.methyl
+- key: compound.ethanol
+  category: compound
+  entity:
+    name: alcohol
+    kind: compound
+    subkind: organic-compound
+  semantic:
+    category: functional-group-containing-hydroxyl
+  relational:
+    predicate: primary-example-of
+    object: alcohol-class
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - group.hydroxyl
+- key: group.alkyne
+  category: group
+  entity:
+    name: alkyne
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: unsaturated-hydrocarbon
+  relational:
+    predicate: contains
+    object: carbon-carbon-triple-bond
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.triple-covalent
+- key: bond.peptide
+  category: bond
+  entity:
+    name: peptide bond
+    kind: bond
+    subkind: covalent
+  semantic:
+    category: amide-covalent-linkage
+  relational:
+    predicate: links
+    object: amino acids
+  composed_of:
+  - bond.covalent
+  - group.carboxyl
+  - group.amino
+- key: compound.arene
+  category: compound
+  entity:
+    name: arene
+    kind: compound
+    subkind: aromatic-organic-compound
+  perceptual:
+    color: color.yellow
+  semantic:
+    category: cyclic-conjugated-pi-electrons
+  relational:
+  - predicate: satisfies
+    object: "H\xFCckel's rule"
+  - predicate: undergoes
+    object: electrophilic-substitution
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: group.bonds
+  category: group
+  entity:
+    name: Bonds
+    kind: group
+    subkind: disambiguation
+  semantic:
+    category: chemical-linkage
+  relational:
+    predicate: encompasses
+    object: covalent-ionic-hydrogen-metallic
+  composed_of:
+  - bond.covalent
+  - bond.ionic
+  - bond.hydrogen
+  - bond.metallic
+  - bond.double-covalent
+  - bond.triple-covalent
+- key: bond.glycosidic
+  category: bond
+  entity:
+    name: glycosidic bond
+    kind: bond
+    subkind: ether
+  semantic:
+    category: covalent-ether-linkage
+  relational:
+  - predicate: joins
+    object: carbohydrate
+  - predicate: joins
+    object: organic-group
+  composed_of:
+  - bond.covalent
+  - group.ether
+- key: compound.aromatic-hydrocarbon
+  category: compound
+  entity:
+    name: aromatic hydrocarbon
+    kind: compound
+    subkind: organic-cyclic
+  perceptual:
+    color: yellow (flame)
+  semantic:
+    category: cyclic-conjugated-pi-electrons
+  relational:
+  - predicate: undergoes
+    object: electrophilic-substitution
+  - predicate: satisfies
+    object: "H\xFCckel's-rule"
+  - predicate: has-property
+    object: hydrophobic
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.alkane
+  category: compound
+  entity:
+    name: alkane
+    kind: compound
+    subkind: saturated-hydrocarbon
+  semantic:
+    category: saturated-hydrocarbon
+  relational:
+  - predicate: general-formula
+    object: CnH2n+2
+  - predicate: contains
+    object: carbon-carbon-single-bonds
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+- key: group.ester
+  category: group
+  entity:
+    name: ester
+    kind: functional-group
+    subkind: carbonyl-derivative
+  semantic:
+    category: organic-functional-group
+  relational:
+  - predicate: derived-from
+    object: group.carboxyl
+  - predicate: contains
+    object: group.carbonyl
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+- key: bond.hydrogen
+  category: bond
+  entity:
+    name: hydrogen bond
+    kind: bond
+    subkind: intermolecular-interaction
+  semantic:
+    category: partial-covalent-electrostatic-attraction
+  relational:
+  - predicate: occurs-between
+    object: hydrogen-donor
+  - predicate: occurs-between
+    object: electronegative-acceptor
+  - predicate: involves-charge-transfer
+    object: quantum-mechanical-delocalization
+  composed_of:
+  - element.hydrogen
+  - bond.covalent
+- key: compound.chem
+  category: compound
+  entity:
+    name: chem
+    kind: compound
+    subkind: generic-reference
+  semantic:
+    category: chemistry-general-term
+  relational:
+  - predicate: refers-to
+    object: chemistry
+  - predicate: refers-to
+    object: chemical-substances
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+- key: group.disulfide
+  category: group
+  entity:
+    name: disulfide bond
+    kind: group
+    subkind: functional-group
+  semantic:
+    category: sulfur-sulfur-covalent-linkage
+  relational:
+    predicate: connects
+    object: organic-molecules
+  composed_of:
+  - element.sulfur
+  - bond.covalent
+- key: bond.pi
+  category: bond
+  entity:
+    name: pi bond
+    kind: bond
+    subkind: covalent
+  semantic:
+    category: lateral-orbital-overlap
+  relational:
+  - predicate: type-of
+    object: bond.covalent
+  - predicate: occurs-in
+    object: double-and-triple-bonds
+  composed_of:
+  - bond.covalent
+- key: bond.dipole-dipole
+  category: property
+  entity:
+    name: dipole-dipole interaction
+    kind: intermolecular force
+    subkind: electromagnetic interaction
+  semantic:
+    category: intermolecular-force
+  relational:
+  - predicate: weaker-than
+    object: bond.covalent
+  - predicate: acts-between
+    object: prime.two
+  composed_of:
+  - bond.hydrogen
+- key: property.electronegativity
+  category: property
+  entity:
+    name: electronegativity
+    kind: property
+    subkind: atomic-tendency
+  semantic:
+    category: electron-attraction-tendency
+  relational:
+  - predicate: affects
+    object: bond-polarity
+  - predicate: depends-on
+    object: atomic-number
+  - predicate: depends-on
+    object: valence-electron-distance
+  - predicate: quantifies
+    object: bond-energy
+  composed_of:
+  - prime.have
+  - prime.part
+  - element.hydrogen
+  - bond.covalent
+  - bond.ionic
+- key: property.solubility
+  category: property
+  entity:
+    name: solubility
+    kind: property
+    subkind: physical-property
+  semantic:
+    category: capacity-to-dissolve
+  relational:
+  - predicate: describes
+    object: solute
+  - predicate: depends-on
+    object: solvent
+  composed_of:
+  - prime.part
+  - prime.like
+- key: compound.base
+  category: compound
+  entity:
+    name: base
+    kind: compound
+    subkind: chemical-base
+  semantic:
+    category: proton-acceptor
+  relational:
+    predicate: opposite-of
+    object: acid
+  composed_of:
+  - element.hydrogen
+  - element.oxygen
+  - bond.covalent
+- key: compound.acid
+  category: compound
+  entity:
+    name: acid
+    kind: compound
+    subkind: functional-class
+  semantic:
+    category: proton-donor-or-electron-pair-acceptor
+  relational:
+  - predicate: donates
+    object: element.hydrogen
+  - predicate: accepts
+    object: electron-pair
+  composed_of:
+  - element.hydrogen
+  - bond.covalent
+- key: property.ph
+  category: property
+  entity:
+    name: pH
+    kind: property
+    subkind: logarithmic-scale
+  semantic:
+    category: acidity-basicity-measure
+  relational:
+  - predicate: measures
+    object: aqueous-solutions
+  - predicate: relates-to
+    object: element.hydrogen
+  composed_of:
+  - element.hydrogen
+  - logic.greater
+  - logic.less
+- key: reaction.redox
+  category: reaction
+  entity:
+    name: redox reaction
+    kind: reaction
+    subkind: oxidation-reduction
+  semantic:
+    category: electron-transfer-process
+  relational:
+  - predicate: involves
+    object: oxidation
+  - predicate: involves
+    object: reduction
+  - predicate: involves
+    object: electron-transfer
+  composed_of:
+  - element.carbon
+  - element.oxygen
+  - bond.covalent
+- key: bond.sigma
+  category: bond
+  entity:
+    name: sigma bond
+    kind: bond
+    subkind: covalent
+  semantic:
+    category: strongest-covalent-bond
+  relational:
+  - predicate: formed-by
+    object: head-on orbital overlap
+  - predicate: symmetrical-about
+    object: bond axis
+  - predicate: involves
+    object: atomic orbital mixing
+  composed_of:
+  - bond.covalent
+- key: prime.not
+  category: property
+  entity:
+    name: reduction
+    kind: abstract-process
+  semantic:
+    category: decrease-or-reversal
+  relational:
+    predicate: antonym-of
+    object: oxidation
+  composed_of:
+  - prime.not
+  - prime.more
+- key: compound.ester
+  category: compound
+  entity:
+    name: ester
+    kind: compound
+    subkind: functional group derivative
+  semantic:
+    category: acid-derived-compound
+  relational:
+  - predicate: formed-by
+    object: reaction.esterification
+  - predicate: contains
+    object: group.ester
+  composed_of:
+  - group.ester
+  - group.hydroxyl
+  - bond.covalent
+- key: compound.buffer-solution
+  category: compound
+  entity:
+    name: buffer solution
+    kind: compound
+    subkind: aqueous-solution
+  semantic:
+    category: weak-acid-conjugate-base-system
+  relational:
+  - predicate: resists-pH-change
+    object: prime.this
+  - predicate: contains
+    object: compound.water
+  composed_of:
+  - compound.water
+  - bond.ionic
+  - bond.hydrogen
+  - group.carboxyl
+- key: reaction.cellular-respiration
+  category: reaction
+  entity:
+    name: Cellular Respiration
+    kind: reaction
+    subkind: metabolic-process
+  semantic:
+    category: energy-conversion-oxidation
+  relational:
+  - predicate: produces
+    object: compound.atp
+  - predicate: consumes
+    object: element.oxygen
+  - predicate: involves
+    object: bond.covalent
+  composed_of:
+  - compound.glucose
+  - element.oxygen
+  - compound.atp
+  - compound.carbon-dioxide
+  - element.hydrogen
+  - bond.covalent
+- key: reaction.redox
+  category: reaction
+  entity:
+    name: Redox Reaction
+    kind: reaction
+    subkind: electron-transfer
+  semantic:
+    category: oxidation-reduction
+  relational:
+  - predicate: involves
+    object: oxidation
+  - predicate: involves
+    object: reduction
+  - predicate: involves
+    object: electron-transfer
+  composed_of:
+  - logic.and
+- key: reaction.photosynthesis
+  category: reaction
+  entity:
+    name: Photosynthesis
+    kind: reaction
+    subkind: biological-energy-conversion
+  semantic:
+    category: light-to-chemical-energy-conversion
+  relational:
+  - predicate: converts
+    object: light-energy
+  - predicate: produces
+    object: compound.glucose
+  - predicate: releases
+    object: element.oxygen
+  - predicate: consumes
+    object: compound.water
+  - predicate: consumes
+    object: compound.carbon-dioxide
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - compound.water
+  - compound.carbon-dioxide
+  - compound.glucose
+  - bond.covalent
+  - group.hydroxyl
+  - reaction.cellular-respiration
+- key: reaction.glycolysis
+  category: reaction
+  entity:
+    name: Glycolysis
+    kind: reaction
+    subkind: metabolic-pathway
+  semantic:
+    category: glucose-to-pyruvate-conversion
+  relational:
+  - predicate: converts
+    object: compound.glucose
+  - predicate: produces
+    object: compound.atp
+  - predicate: occurs-in
+    object: prime.part
+  composed_of:
+  - compound.glucose
+  - compound.atp
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.phosphorus
+  - bond.covalent
+  - bond.hydrogen
+- key: reaction.hydrolysis
+  category: reaction
+  entity:
+    name: Hydrolysis
+    kind: reaction
+    subkind: bond-cleavage
+  semantic:
+    category: water-mediated-bond-breaking
+  relational:
+  - predicate: involves
+    object: compound.water
+  - predicate: causes
+    object: bond-cleavage
+  - predicate: nucleophile
+    object: compound.water
+  composed_of:
+  - compound.water
+  - bond.covalent
+  - bond.ionic
+- key: material.substance
+  category: material
+  entity:
+    name: Material
+    kind: material
+    subkind: substance-or-mixture
+  semantic:
+    category: substance-mixture-constituent
+  relational:
+  - predicate: can-be
+    object: pure-or-impure
+  - predicate: can-be
+    object: living-or-non-living
+  - predicate: classified-by
+    object: physical-chemical-properties
+  - predicate: classified-by
+    object: geological-origin
+  - predicate: classified-by
+    object: biological-function
+  composed_of:
+  - prime.something
+  - prime.part
+- key: reaction.fermentation
+  category: reaction
+  entity:
+    name: fermentation
+    kind: reaction
+    subkind: anaerobic-metabolism
+  semantic:
+    category: redox-process-producing-atp
+  relational:
+  - predicate: produces
+    object: compound.atp
+  - predicate: consumes
+    object: compound.glucose
+  - predicate: occurs-without
+    object: element.oxygen
+  - predicate: involves
+    object: bond.covalent
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+  - element.nitrogen
+  - element.phosphorus
+  - bond.covalent
+  - compound.glucose
+  - compound.atp
+- key: compound.diamond
+  category: compound
+  entity:
+    name: diamond
+    kind: compound
+    subkind: allotrope
+  perceptual:
+    color: color.white
+    hardness: very high
+    conductivity: thermal high, electrical low
+  semantic:
+    category: carbon-allotrope-crystalline
+  relational:
+  - predicate: form-of
+    object: element.carbon
+  - predicate: crystal-structure
+    object: diamond-cubic
+  - predicate: property
+    object: highest-hardness
+  - predicate: property
+    object: highest-thermal-conductivity
+  composed_of:
+  - element.carbon
+  - bond.covalent
+- key: compound.graphene
+  category: compound
+  entity:
+    name: graphene
+    kind: compound
+    subkind: allotrope
+  semantic:
+    category: carbon-allotrope
+  relational:
+    predicate: forms-structure
+    object: hexagonal-lattice
+  composed_of:
+  - element.carbon
+  - bond.covalent
+- key: compound.steel
+  category: material
+  entity:
+    name: steel
+    kind: compound
+    subkind: alloy
+  semantic:
+    category: iron-carbon-alloy
+  relational:
+  - predicate: has-property
+    object: high-elastic-modulus
+  - predicate: has-property
+    object: high-yield-strength
+  - predicate: has-property
+    object: high-fracture-strength
+  - predicate: used-in
+    object: structures-bridges-tools-vehicles
+  composed_of:
+  - element.iron
+  - element.carbon
+- key: reaction.krebs-cycle
+  category: reaction
+  entity:
+    name: Krebs cycle
+    kind: reaction
+    subkind: metabolic-pathway
+  semantic:
+    category: energy-release-oxidation
+  relational:
+  - predicate: releases-energy-as
+    object: compound.atp
+  - predicate: involves-oxidation-of
+    object: compound.acetyl-coa
+  - predicate: produces
+    object: group.amino
+  composed_of:
+  - reaction.cellular-respiration
+  - compound.atp
+  - element.carbon
+  - element.oxygen
+  - element.hydrogen
+  - bond.covalent
+- key: reaction.neutralization
+  category: reaction
+  entity:
+    name: Neutralization
+    kind: reaction
+    subkind: acid-base
+  semantic:
+    category: acid-base-reaction
+  relational:
+  - predicate: involves
+    object: acid
+  - predicate: involves
+    object: base
+  - predicate: produces
+    object: salt
+  composed_of:
+  - element.hydrogen
+  - element.oxygen
+  - bond.ionic
+- key: compound.concrete
+  category: material
+  entity:
+    name: concrete
+    kind: compound
+    subkind: composite
+  semantic:
+    category: construction-material
+  relational:
+  - predicate: composed_of
+    object: aggregate
+  - predicate: bound_by
+    object: cement
+  composed_of:
+  - element.calcium
+  - element.silicon
+  - element.aluminum
+  - element.iron
+  - element.oxygen
+- key: compound.fullerene
+  category: compound
+  entity:
+    name: fullerene
+    kind: compound
+    subkind: allotrope
+  semantic:
+    category: carbon-allotrope-polyhedral-cage
+  relational:
+  - predicate: composed-of
+    object: element.carbon
+  - predicate: has-structure
+    object: polyhedral-closed-cage
+  - predicate: contains-rings
+    object: 5-and-6-membered-carbon-rings
+  composed_of:
+  - element.carbon
+  - bond.covalent
+- key: compound.graphite
+  category: compound
+  entity:
+    name: graphite
+    kind: compound
+    subkind: allotrope
+  semantic:
+    category: crystalline-carbon-allotrope
+  relational:
+  - predicate: most-stable-form-of
+    object: element.carbon
+  - predicate: conducts
+    object: heat-and-electricity
+  - predicate: converts-to
+    object: compound.diamond
+  composed_of:
+  - element.carbon
+  - bond.covalent
+- key: compound.glass
+  category: material
+  entity:
+    name: glass
+    kind: compound
+    subkind: amorphous-solid
+  perceptual:
+    color: color.white
+    transparency: transparent
+  semantic:
+    category: non-crystalline-solid
+  relational:
+  - predicate: is
+    object: chemically-inert
+  - predicate: is
+    object: transparent
+  composed_of:
+  - element.silicon
+  - element.oxygen
+  - bond.covalent
+- key: compound.carbon-nanotube
+  category: compound
+  entity:
+    name: carbon nanotube
+    kind: compound
+    subkind: allotrope
+  semantic:
+    category: cylindrical-nanostructure
+  relational:
+    predicate: is-allotrope-of
+    object: element.carbon
+  composed_of:
+  - element.carbon
+  - bond.covalent
+- key: reaction.combustion
+  category: reaction
+  entity:
+    name: combustion
+    kind: reaction
+    subkind: redox
+  perceptual:
+    temperature: high
+    color: orange
+  semantic:
+    category: exothermic-redox-reaction
+  relational:
+  - predicate: involves
+    object: element.oxygen
+  - predicate: produces
+    object: compound.carbon-dioxide
+  - predicate: produces
+    object: compound.water
+  composed_of:
+  - element.oxygen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.gypsum
+  category: compound
+  entity:
+    name: gypsum
+    kind: compound
+    subkind: mineral
+  perceptual:
+    color: color.white
+    texture: soft
+    transparency: translucent
+  quantitative:
+    magnitude: '2'
+    unit: Mohs hardness
+  semantic:
+    category: evaporite-mineral
+  composed_of:
+  - element.calcium
+  - element.sulfur
+  - element.oxygen
+  - compound.water
+- key: material.marble
+  category: material
+  entity:
+    name: Marble
+    kind: material
+    subkind: metamorphic-rock
+  perceptual:
+    texture: crystalline
+  semantic:
+    category: metamorphic-rock
+  relational:
+  - predicate: composed-of
+    object: compound.calcium-carbonate
+  - predicate: formed-by
+    object: heat-and-pressure
+  composed_of:
+  - compound.calcium-carbonate
+  - element.calcium
+  - element.carbon
+  - element.oxygen
+- key: compound.silicon-dioxide
+  category: compound
+  entity:
+    name: Quartz
+    kind: compound
+    subkind: mineral
+  semantic:
+    category: framework-silicate-oxide
+  composed_of:
+  - element.silicon
+  - element.oxygen
+  - bond.covalent
+- key: compound.rubber
+  category: compound
+  entity:
+    name: rubber
+    kind: compound
+    subkind: polymer
+  semantic:
+    category: natural-polymer
+  relational:
+    predicate: harvested-from
+    object: trees
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
+  - bond.double-covalent
+- key: compound.cement
+  category: material
+  entity:
+    name: cement
+    kind: compound
+    subkind: hydraulic-binder
+  semantic:
+    category: construction-binder
+  relational:
+  - predicate: binds
+    object: aggregate
+  - predicate: component-of
+    object: mortar
+  - predicate: component-of
+    object: concrete
+  composed_of:
+  - element.calcium
+  - element.silicon
+  - element.aluminum
+  - element.iron
+  - element.oxygen
+- key: compound.latex
+  category: compound
+  entity:
+    name: latex
+    kind: compound
+    subkind: emulsion
+  semantic:
+    category: polymer-dispersion
+  relational:
+    predicate: dispersed-in
+    object: water
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - compound.water
+- key: compound.copper-oxide
+  category: compound
+  entity:
+    name: copper oxide
+    kind: compound
+    subkind: binary oxide
+  semantic:
+    category: transition-metal-oxide
+  relational:
+  - predicate: includes
+    object: Cu2O (cuprite)
+  - predicate: includes
+    object: CuO (tenorite)
+  - predicate: includes
+    object: Cu4O3 (paramelaconite)
+  composed_of:
+  - element.copper
+  - element.oxygen
+- key: material.ceramic
+  category: material
+  entity:
+    name: ceramic
+    kind: material
+    subkind: inorganic-nonmetallic
+  perceptual:
+    color: brown
+    temperature: high
+  semantic:
+    category: heat-resistant-brittle-solid
+  relational:
+  - predicate: made-from
+    object: clay
+  - predicate: produced-by
+    object: firing-at-high-temperature
+  - predicate: has-property
+    object: heat-resistant
+  - predicate: has-property
+    object: corrosion-resistant
+  - predicate: has-property
+    object: brittle
+  composed_of:
+  - element.silicon
+  - element.oxygen
+  - element.aluminum
+- key: reaction.vulcanization
+  category: reaction
+  entity:
+    name: Vulcanization
+    kind: reaction
+    subkind: hardening-process
+  semantic:
+    category: polymer-crosslinking-hardening
+  relational:
+  - predicate: hardens
+    object: rubber
+  - predicate: uses-agent
+    object: sulfur
+  - predicate: requires
+    object: heat
+  composed_of:
+  - element.sulfur
+  - bond.covalent
+  - prime.happen
+- key: compound.silicon-dioxide
+  category: compound
+  entity:
+    name: silicon dioxide
+    kind: compound
+    subkind: oxide
+  perceptual:
+    color: white
+  semantic:
+    category: oxide-mineral
+  composed_of:
+  - element.silicon
+  - element.oxygen
+  - element.oxygen
+  - bond.covalent
+- key: prime.something
+  category: group
+  entity:
+    name: Trick
+    kind: concept
+    subkind: disambiguation
+  semantic:
+    category: polysemy-or-homonymy
+  relational:
+    predicate: refers-to
+    object: multiple-topics
+  composed_of:
+  - prime.words
+  - prime.think
+- key: compound.clay
+  category: material
+  entity:
+    name: clay
+    kind: compound
+    subkind: natural-soil-material
+  perceptual:
+    color: variable
+    texture: fine-grained
+  semantic:
+    category: natural-soil-material
+  relational:
+  - predicate: contains
+    object: clay-minerals
+  - predicate: may-contain
+    object: element.iron
+  composed_of:
+  - element.silicon
+  - element.oxygen
+  - element.aluminum
+  - element.hydrogen
+  - bond.covalent
+  - bond.ionic
+- key: compound.calcium-carbonate
+  category: compound
+  entity:
+    name: limestone
+    kind: compound
+    subkind: sedimentary rock
+  semantic:
+    category: carbonate-rock
+  relational:
+    predicate: is main source of
+    object: lime
+  composed_of:
+  - element.calcium
+  - element.carbon
+  - element.oxygen
+  - bond.ionic
+- key: compound.mercury-chloride
+  category: compound
+  entity:
+    name: mercury(II) chloride
+    kind: compound
+    subkind: inorganic
+  perceptual:
+    color: white
+    state: crystalline solid
+  semantic:
+    category: toxic-reagent
+  relational:
+  - predicate: contains
+    object: mercury
+  - predicate: contains
+    object: chlorine
+  composed_of:
+  - element.chlorine
+  - element.chlorine
+- key: prime.not
+  category: property
+  entity:
+    name: refusal
+    kind: concept
+    subkind: negation
+  semantic:
+    category: act-of-rejection
+  relational:
+  - predicate: exemplified-by
+    object: refusal-of-work
+  - predicate: exemplified-by
+    object: refusal-to-deal
+  - predicate: exemplified-by
+    object: refusal-medical-assistance
+  composed_of:
+  - prime.not
+- key: prime.have
+  category: property
+  entity:
+    name: has
+    kind: relational-predicate
+    subkind: possession
+  semantic:
+    category: possession-or-attribution
+  relational:
+    predicate: prime.have
+    object: prime.something
+  composed_of:
+  - prime.have
+- key: compound.substrate
+  category: compound
+  entity:
+    name: substrate
+    kind: compound
+    subkind: general
+  semantic:
+    category: chemical-reactant
+  relational:
+    predicate: reacts-in
+    object: reaction
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - element.oxygen
+- key: prime.not
+  category: semantic
+  entity:
+    name: 'no'
+    kind: negation
+    subkind: logical-operator
+  semantic:
+    category: negation-denial
+  relational:
+    predicate: equivalent-to
+    object: logic.not
+  composed_of:
+  - logic.not
+- key: prime.this
+  category: group
+  entity:
+    name: these
+    kind: demonstrative-plural
+    subkind: linguistic
+  semantic:
+    category: plural-proximal-demonstrative
+  relational:
+    predicate: is-form-of
+    object: prime.this
+  composed_of:
+  - prime.this
+- key: compound.gasoline
+  category: compound
+  entity:
+    name: gasoline
+    kind: compound
+    subkind: fuel-mixture
+  perceptual:
+    color: yellow
+    state: liquid
+  semantic:
+    category: petrochemical-fuel
+  relational:
+  - predicate: derived-from
+    object: petroleum
+  - predicate: used-for
+    object: internal-combustion-engines
+  composed_of:
+  - element.carbon
+  - element.hydrogen
+  - bond.covalent
