@@ -133,6 +133,110 @@ On a 77-fact corpus that fits in any LLM's window, a full-context LLM
 beats Ada 96–72 on accuracy. Ada's contribution is the **specific
 shape of queries the other architectures structurally cannot answer**.
 
+## Competitive landscape — honest comparisons
+
+The result table above used a *naive* RAG baseline (top-K cortex
+cosine on the substrate's own vectors, no separate embedding model).
+Several real-world competitors weren't directly tested. Where they
+sit, honestly:
+
+### vs. Claude / ChatGPT Memory (sliding-context injection)
+
+Both Claude and ChatGPT have "memory" features that detect noteworthy
+facts during conversation and inject them into future system prompts.
+This **works fine for ~30–100 facts per user** — the sliding-context
+budget. The honest comparison:
+
+- **At ≤100 facts per user**: their memory wins on simplicity. Ada is
+  overkill.
+- **At >1,000 facts per user**: their memory truncates or summarises,
+  losing precision. Ada's substrate stays addressable.
+- **At >10,000 facts per user** (the eventual fate of any deployed
+  assistant): the LLM Memory feature is the same structural bind as
+  full-context — facts evicted from the budget can't be queried. Ada
+  doesn't have an eviction budget.
+- **Versioning**: they don't expose drift trajectory queryable by key.
+  Ada does.
+- **Audit**: they don't expose which facts contributed to which answer.
+  Ada does.
+- **Cross-session continuity across model swaps**: their memory is
+  bound to their account/model. Ada is bipolar HDC on your disk.
+
+### vs. Neo4j / knowledge graphs (Cypher / SPARQL)
+
+A knowledge graph with a hand-designed schema would likely **handle
+queries A–E well** — Cypher is purpose-built for `MATCH` +
+aggregation + multi-hop traversal. We have not yet run a head-to-head
+benchmark against Neo4j; **this is the most defensible comparison we
+should add next**. Honest expectations:
+
+- **Queries A, B (counts)**: Neo4j likely wins on latency
+  (`MATCH (p:Person)-[:WORKS_AS]->(j:Job {name: 'engineer'}) RETURN count(*)`).
+  Both correct.
+- **Query C, D (distribution)**: Neo4j wins again — `GROUP BY` is
+  native. Both correct.
+- **Query E (multi-role intersection)**: Neo4j wins with native
+  `MATCH` + multiple `WHERE`. Both correct.
+
+Where Neo4j *loses* against Ada (so the comparison still favours Ada
+on architectural grounds):
+
+- **Schema design cost**: Neo4j requires hand-designing node and edge
+  types per domain. Ada's universal schema is fixed once, reused
+  forever, and the LLM (Haiku at build time) does the mapping.
+- **Versioning**: Neo4j doesn't natively version concepts with delta
+  vectors. Adding a temporal layer to a Cypher schema is real work.
+- **Cross-model substrate portability**: A Neo4j database is bound to
+  its schema; rewriting it under a new ontology is a migration. Ada's
+  2048-dim bipolar substrate doesn't care which LLM consumes it.
+- **Compositional algebra**: HDC's bind/bundle/unbind operations let
+  Ada *bind* `(perceptual.color, blue)` and search role-level
+  similarity natively. Neo4j has no comparable primitive.
+
+**Bottom line: Neo4j wins on aggregation latency; Ada wins on
+not-needing-hand-schema and on versioning + audit + compositional
+primitives. They're complementary, not redundant.** A future paper
+revision should include a Neo4j baseline.
+
+### vs. pgvector / Chroma / Pinecone (production vector DBs)
+
+The RAG baseline we ran used Ada's own cortex cosine for top-K
+retrieval — *not* a separate transformer-embedding vector DB. We
+**have not yet directly benchmarked against pgvector + sentence-
+transformers**. Honest expectation:
+
+A real vector DB with a real embedding model would likely **beat our
+naive RAG baseline on retrieval quality for queries A–D** (more
+semantically-tuned embeddings would surface more relevant facts in the
+top-K). But it would **still score 0/5 on aggregation and
+distribution queries** because:
+
+- Top-K returns at most K facts.
+- The count answer ("71 engineers exist") is **not a fact in any
+  retrievable form** — it's a *property of the whole corpus*.
+- Distribution ("top 5 cities") **requires the full distribution**, not
+  a sample. Top-K returns a biased sample.
+
+This is the structural argument repeating: RAG is the right tool for
+single-entity retrieval; *no implementation of RAG fixes aggregation*
+because aggregation isn't top-K. Adding pgvector to the bench would
+strengthen the report but not change the conclusion.
+
+**Bottom line: pgvector vs Ada is the same shape as our naive RAG vs
+Ada — pgvector improves retrieval *quality*, but the failure category
+on aggregation is implementation-independent.** Adding it is a
+defensiveness move, not a research move.
+
+### Summary table
+
+| System | Wins at | Loses at |
+|---|---|---|
+| **Ada** | aggregation, distribution, multi-role intersection at scale; versioning; audit; on-device | small-corpus retrieval accuracy, semantic synonymy |
+| **Full-context LLM** | small-corpus Q&A, synthesis | corpus > context window (structurally) |
+| **Claude/ChatGPT Memory** | small per-user fact budget (~30-100), zero-config | beyond eviction budget, no aggregation, no drift |
+| **Neo4j / KG** | aggregation latency, multi-hop traversal, typed relations | requires hand schema, no native versioning, no compositional algebra |
+| **pgvector / RAG** | semantic single-entity retrieval at scale | aggregation, distribution (top-K can't contain a count) |
+
 ## Architecture map
 
 ```
