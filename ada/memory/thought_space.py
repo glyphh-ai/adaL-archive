@@ -129,6 +129,15 @@ class ThoughtGlyphSpace:
         self._archive: list[StoredThought] = []  # cold storage
         self._primitives_version: int = primitives.version  # track for re-encoding
 
+        # ── Versioned-concept history ────────────────────────────────────
+        # Maps a stable key (e.g. "chris.age") to its full version chain in
+        # chronological order. Powers history() and drift() — the temporal
+        # math primitives in ada/temporal/delta.py wire into the absorb()
+        # path here so a `(key, version_of)` write builds a real chain.
+        self._history_by_key: dict[str, list[StoredThought]] = {}
+        from ada.temporal.delta import TemporalEncoder
+        self._temporal = TemporalEncoder()
+
     @property
     def primitives(self) -> PrimitiveSpace:
         return self._primitives
@@ -148,6 +157,7 @@ class ThoughtGlyphSpace:
         text: str,
         speaker: str = "incoming",
         metadata: dict[str, Any] | None = None,
+        key: str | None = None,
     ) -> StoredThought | None:
         """Encode a thought and store it in long-term memory.
 
@@ -157,6 +167,12 @@ class ThoughtGlyphSpace:
             text: Natural language text.
             speaker: "incoming" (user) or "outgoing" (Ada).
             metadata: Optional metadata.
+            key: Optional stable identifier ("chris.age", "ada.port"). When
+                provided, this absorb becomes the next version of that
+                key — a delta is computed from the prior version's cortex
+                via TemporalEncoder, and the chain is queryable via
+                history(key) / drift(key). The thought_id follows the
+                documented convention `key@iso_timestamp#v{version}`.
 
         Returns:
             StoredThought, or None if duplicate.
@@ -168,20 +184,92 @@ class ThoughtGlyphSpace:
             return None
 
         glyph = self._encoder.encode_thought(text, speaker=speaker, metadata=metadata)
-        thought_id = str(uuid.uuid4())[:12]
+
+        # ── Versioning ───────────────────────────────────────────────────
+        prev: StoredThought | None = None
+        version = 1
+        delta = None
+        if key is not None:
+            history = self._history_by_key.get(key, [])
+            if history:
+                prev = history[-1]
+                version = prev.metadata.get("_version", 1) + 1
+                # Delta from previous version's global cortex to this one.
+                try:
+                    delta = self._temporal.compute_temporal_delta(
+                        prev.glyph.global_cortex,
+                        glyph.global_cortex,
+                    )
+                except Exception:  # pragma: no cover — math primitive guards
+                    delta = None
+
+        if key is not None:
+            from datetime import datetime, timezone
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            thought_id = f"{key}@{stamp}#v{version}"
+        else:
+            thought_id = str(uuid.uuid4())[:12]
+
+        full_meta = (metadata or {}).copy()
+        if key is not None:
+            full_meta["_key"] = key
+            full_meta["_version"] = version
+            full_meta["_parent_id"] = prev.thought_id if prev else None
+            full_meta["_delta"] = delta
 
         stored = StoredThought(
             thought_id=thought_id,
             content=text,
             speaker=speaker,
             glyph=glyph,
-            metadata=metadata or {},
+            metadata=full_meta,
         )
 
         self._thoughts[thought_id] = stored
         self._absorbed_texts.add(text_key)
+        if key is not None:
+            self._history_by_key.setdefault(key, []).append(stored)
         logger.debug("Absorbed thought %s: %s", thought_id, text[:50])
         return stored
+
+    # ── Versioned-concept queries ──────────────────────────────────────────
+
+    def history(self, key: str) -> list[StoredThought]:
+        """Chronological version chain for a stable key. Empty if none."""
+        return list(self._history_by_key.get(key, []))
+
+    def drift(self, key: str) -> dict[str, Any]:
+        """How the substrate's representation of `key` has shifted over time.
+
+        Computes cosine similarity between consecutive versions' global
+        cortices and between first and last. drift_rate = 1 - sim(first, last).
+        Returns an empty result if fewer than 2 versions exist.
+        """
+        from ada.core.ops import cosine_similarity
+        hist = self.history(key)
+        if len(hist) < 2:
+            return {"key": key, "versions": len(hist), "drift": None}
+
+        consecutive: list[float] = []
+        for prev, cur in zip(hist, hist[1:]):
+            sim = float(cosine_similarity(
+                prev.glyph.global_cortex.data,
+                cur.glyph.global_cortex.data,
+            ))
+            consecutive.append(sim)
+
+        first_last = float(cosine_similarity(
+            hist[0].glyph.global_cortex.data,
+            hist[-1].glyph.global_cortex.data,
+        ))
+
+        return {
+            "key": key,
+            "versions": len(hist),
+            "consecutive_similarities": consecutive,
+            "first_to_last_similarity": first_last,
+            "drift_rate": 1.0 - first_last,
+        }
 
     # ── Recall ────────────────────────────────────────────────────────────
 
