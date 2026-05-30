@@ -77,3 +77,4 @@ ada/**/__pycache__/
 
 # Large capability data (pulled on demand)
 capabilities/code/hooks/
+corpus.json
