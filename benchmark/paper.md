@@ -299,7 +299,60 @@ For one fixed domain where you control the schema: KGs win on
 ergonomics. For a substrate that ingests heterogeneous facts and
 survives model swaps: Ada wins.
 
-### 4.6 Production-RAG baseline (real embeddings + vector DB)
+### 4.6 Cross-entity-type aggregation: the schema-design trap
+
+The Kùzu numbers in §4.5 hide an important architectural constraint:
+**they assume a single entity type (Person)**. Real corpora aren't
+homogeneous. The user accumulates facts about persons AND vehicles AND
+buildings AND projects AND decisions. We test what happens when a
+cross-type query meets a graph schema designed for one type.
+
+Setup: a mixed-entity-type corpus of 11,600 facts across **three
+entity kinds** — 500 persons + 250 vehicles + 150 buildings. Each
+fills `perceptual.color`, `spatial.location`, etc. We then ask three
+queries that should aggregate across *every* entity that fills the role:
+
+  - X1. How many entities (any type) are blue?
+  - X2. Top-5 most common colors across all entity types.
+  - X3. How many entities (any type) are in Austin?
+
+| Query | Truth | Ada | Kùzu (Person-only schema) | Kùzu (schema migrated + UNION) |
+|---|---|---|---|---|
+| X1. blue total | 94 | **94 ✓** | 50 ✗ (only persons) | 94 ✓ |
+| X2. top-5 colors | blue/white/red/black/pink | **exact ✓** | wrong ✗ (only persons) | exact ✓ |
+| X3. Austin total | 28 | **28 ✓** | 11 ✗ (only persons) | 28 ✓ |
+
+The architectural trap is clean:
+
+- **Ada handles cross-type aggregation natively.** Every entity —
+  person, vehicle, or building — fills the same `perceptual.color`
+  slot. The query is the same dict scan as the single-type version.
+  Zero schema work. Zero query rewriting. Same `tell_raw()` API for
+  all three entity kinds.
+
+- **Kùzu with the original (Person-only) schema is wrong by design.**
+  Vehicles and Buildings don't exist in the schema, so the cross-type
+  count returns only Person matches — silently undercounted by 53%
+  for X3. This is the *common* failure mode in production KGs: a
+  schema designed for one corpus shape silently undercounts when the
+  corpus grows new entity types.
+
+- **Kùzu with a migrated schema + manual UNION query gets the right
+  answer**, but only after **schema migration** (`CREATE NODE TABLE
+  Vehicle, Building` + 4 new relationship types) AND **query
+  rewriting** (every cross-type aggregation becomes a three-table
+  UNION). For every new entity type added to the corpus, both must
+  be repeated.
+
+**This is "two different object types in the same set" made
+empirical.** Ada's universal schema makes cross-type aggregation a
+one-line operation. KGs make it a schema-evolution problem AND a
+query-rewriting problem — for every new type. At small scale you can
+keep up; at production scale (with hundreds of entity kinds across
+many domains), the migration cost grows quadratically and queries
+silently undercount until someone notices.
+
+### 4.7 Production-RAG baseline (real embeddings + vector DB)
 
 The earlier RAG baseline used Ada's own bipolar cortex vectors for
 top-K retrieval — fair but not production-grade. We re-ran with a
@@ -339,7 +392,7 @@ right number (44 ≈ 50, 19 ≈ 20) without changing the failure
 category**. No embedding upgrade fixes this; the count is a property of
 the whole substrate, not any single fact. Top-K cannot contain it.
 
-### 4.7 Claude / ChatGPT Memory simulation
+### 4.8 Claude / ChatGPT Memory simulation
 
 The consumer-product Memory feature (Claude Memory, ChatGPT Memory)
 isn't directly accessible via API. What it does at runtime is well
@@ -384,7 +437,7 @@ a fix for the context-window bind — they're a UX wrapper around the
 same bind, applied per-user. Ada's value compounds at the per-user
 scale where the wrapper breaks.
 
-### 4.8 Honest small-corpus result (where the LLM still wins)
+### 4.9 Honest small-corpus result (where the LLM still wins)
 
 On the small-corpus benchmark (77 facts about Project Aurora, 25
 queries across six categories), a full-context LLM scores **96%** to
