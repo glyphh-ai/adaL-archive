@@ -12,7 +12,7 @@ Run:
 
 from __future__ import annotations
 
-from ada.cognitive.generate import GlyphGenerator, build_llm_renderer
+from ada.cognitive.generate import GlyphGenerator, build_llm_renderer, build_qwen_renderer
 from ada.memory.glyph_cognitive import GlyphCognitiveLoop
 from ada.memory.thought_space import ThoughtGlyphSpace
 
@@ -46,7 +46,8 @@ QUERIES = [
 def main() -> None:
     space = ThoughtGlyphSpace()
     cognitive = GlyphCognitiveLoop(space)
-    renderer = build_llm_renderer()
+    # Prefer Anthropic if a key is set, else local Qwen3.
+    renderer = build_llm_renderer() or build_qwen_renderer()
     gen = GlyphGenerator(space, cognitive, renderer=renderer)
 
     print("──────── ingesting facts ────────")
@@ -62,8 +63,11 @@ def main() -> None:
 
     for q in QUERIES:
         print("════════════════════════════════════════════════════════════════")
-        result = gen.generate(q, top_chains=3)
+        result = gen.generate(q, top_chains=3, absorb_response=False)
         print(result.context)
+        print(f"\n  facts to renderer:")
+        for line in result.render_facts.split("\n"):
+            print(f"    {line}")
         if result.response:
             print(f"\n  → renderer: {result.response}")
         else:

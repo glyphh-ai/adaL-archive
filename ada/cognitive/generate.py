@@ -45,7 +45,8 @@ class GenerationResult:
     """Output of one generate() call."""
     query: str
     chains: list[GlyphReasoningChain] = field(default_factory=list)
-    context: str = ""
+    context: str = ""             # the rich debug view (substrate output)
+    render_facts: str = ""        # the trimmed facts a renderer actually sees
     response: Optional[str] = None
     used_renderer: bool = False
 
@@ -103,15 +104,16 @@ class GlyphGenerator:
         # 1. Cognitive recall — multi-hop glyph reasoning.
         chains = self.cognitive.reason(query, top_k=top_chains)
 
-        # 2. Assemble the render context.
+        # 2. Assemble the render context (rich debug view + trimmed facts).
         context = self._build_context(query, chains)
+        render_facts = self._render_facts(chains)
 
-        # 3. Optional rendering via LLM.
+        # 3. Optional rendering via LLM. Renderer sees only the facts.
         response = None
         used_renderer = False
         if self.renderer is not None:
             try:
-                response = self.renderer(context, query)
+                response = self.renderer(render_facts, query)
                 used_renderer = True
             except Exception as e:
                 logger.warning("Renderer failed: %s", e)
@@ -128,11 +130,28 @@ class GlyphGenerator:
             query=query,
             chains=chains,
             context=context,
+            render_facts=render_facts,
             response=response,
             used_renderer=used_renderer,
         )
 
     # ── context assembly ────────────────────────────────────────────────
+
+    def _render_facts(self, chains: list[GlyphReasoningChain]) -> str:
+        """Trimmed deduped fact list — what the renderer actually sees."""
+        seen: set[str] = set()
+        facts: list[str] = []
+        for chain in chains:
+            for hop in chain.hops:
+                # Filter Ada's own past responses and duplicate query thoughts.
+                if hop.result.thought.speaker == "outgoing":
+                    continue
+                content = hop.result.thought.content
+                if content in seen:
+                    continue
+                seen.add(content)
+                facts.append(f"- {content}")
+        return "\n".join(facts) if facts else "(no memories)"
 
     def _build_context(self, query: str, chains: list[GlyphReasoningChain]) -> str:
         lines = [f"Query: {query!r}", ""]
@@ -197,5 +216,68 @@ def build_llm_renderer(
             }],
         )
         return resp.content[0].text.strip()
+
+    return _render
+
+
+def build_qwen_renderer(
+    model_path: str = "/tmp/qwen3-0.6b",
+    system: str = DEFAULT_SYSTEM,
+    max_tokens: int = 120,
+) -> Optional[Renderer]:
+    """Return a local Qwen3-backed renderer, or None if transformers isn't here.
+
+    Uses HuggingFace transformers with the model's chat template. Thinking
+    mode disabled for speed. Loads on first call, then reuses.
+    """
+    try:
+        from transformers import AutoTokenizer, AutoModelForCausalLM
+    except ImportError:
+        logger.info("transformers not installed — Qwen renderer unavailable.")
+        return None
+
+    import os.path
+    if not os.path.exists(model_path):
+        logger.info("Model path %s not found — Qwen renderer unavailable.", model_path)
+        return None
+
+    state: dict = {"tok": None, "model": None}
+
+    def _load() -> None:
+        if state["model"] is not None:
+            return
+        state["tok"] = AutoTokenizer.from_pretrained(model_path)
+        state["model"] = AutoModelForCausalLM.from_pretrained(model_path, dtype="float32")
+
+    def _render(context: str, query: str) -> str:
+        _load()
+        tok, model = state["tok"], state["model"]
+        user_msg = (
+            f"Use these facts to answer the question. If the facts don't "
+            f"contain the answer, say \"I don't know.\"\n\n"
+            f"Facts:\n{context}\n\nQuestion: {query}"
+        )
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_msg},
+        ]
+        text = tok.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
+        inputs = tok(text, return_tensors="pt")
+        out = model.generate(
+            **inputs,
+            max_new_tokens=max_tokens,
+            do_sample=False,
+            pad_token_id=tok.eos_token_id,
+        )
+        gen = tok.decode(
+            out[0][inputs.input_ids.shape[1]:],
+            skip_special_tokens=True,
+        )
+        return gen.strip()
 
     return _render
