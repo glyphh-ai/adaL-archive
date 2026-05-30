@@ -345,9 +345,10 @@ class ThoughtGlyphSpace:
         results.sort(key=lambda r: r.global_similarity, reverse=True)
         top_results = results[:top_k]
 
-        # ── Hebbian reinforcement — recalled memories get stronger ──
-        for r in top_results:
-            r.thought.reinforce(amount=0.1)
+        # Reinforcement happens via confirm() now, not on every recall.
+        # Every reason() call triggers a hop-1 recall plus up to 3 hop-2
+        # recalls; auto-reinforcing each would compound 4× per query and
+        # bias later recalls toward whichever facts surfaced first.
 
         return top_results
 

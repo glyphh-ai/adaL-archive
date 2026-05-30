@@ -154,7 +154,7 @@ def main() -> None:
     rows: list[tuple[str, str, str, bool, bool]] = []
     t0 = time.time()
     for i, (q, want_recall, want_answer) in enumerate(QUERIES, 1):
-        result = gen.generate(q, top_chains=3, absorb_response=False)
+        result = gen.generate(q, top_chains=3, absorb_response=False, reinforce=False)
         top = result.top_recall or ""
         ok_recall = want_recall.lower() in top.lower()
         ans = (result.response or "").strip()

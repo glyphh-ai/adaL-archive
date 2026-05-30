@@ -41,7 +41,17 @@ logger = logging.getLogger(__name__)
 # "but", "in", "at", "to", "for", "do", "it", "so", "if", "just",
 # etc. — killing structural differentiation.
 
-_FILLER = frozenset({"a", "an", "the"})
+# Stopwords stripped before content extraction. Articles, copulas, common
+# prepositions: they carry grammatical structure but no content for HDC
+# cosine similarity, and leak signal across templates ("the capital of X is Y"
+# shares 'of'/'is' with "the speed of light is Y"). Keep this short — only
+# words whose presence/absence shouldn't change a recall ranking.
+_FILLER = frozenset({
+    "a", "an", "the",
+    "is", "are", "was", "were", "be", "been", "being",
+    "of", "to", "in", "on", "at", "by", "for", "with", "from", "as",
+    "this", "that", "these", "those", "it", "its",
+})
 
 # ── Contraction expansion ─────────────────────────────────────────────────
 #
