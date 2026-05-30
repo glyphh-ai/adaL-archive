@@ -10,546 +10,324 @@ Format per entry:
 - the exemplar fact that introduced it
 - the meta-glyph thought_id that now lives in the substrate
 
-## 2026-05-30T05:30:12.030697+00:00
+## 2026-05-30T13:01:11.579440+00:00
 
-- **new predicate**: `lead_engineer_of`
-- **new topic**: `person.job`
+- **new predicate**: `relational.predicate`
+- **new topic**: `person.entity`
 - **exemplar**: Chris is the lead engineer of Project Aurora.
 - **subject** / **object**: `chris` / `project aurora`
-- **meta-glyph**: `schema.predicate.lead_engineer_of@20260530T053013Z#v1`
+- **meta-glyph**: `schema.predicate.relational.predicate@20260530T130112Z#v1`
 
-## 2026-05-30T05:30:13.903488+00:00
+## 2026-05-30T13:01:18.723624+00:00
 
-- **new predicate**: `project_manager_of`
-- **exemplar**: Brandi is the project manager of Project Aurora.
-- **subject** / **object**: `brandi` / `project aurora`
-- **meta-glyph**: `schema.predicate.project_manager_of@20260530T053014Z#v1`
-
-## 2026-05-30T05:30:15.600215+00:00
-
-- **new predicate**: `role_on_project`
-- **new topic**: `person.occupation`
-- **exemplar**: Jim is the navigation specialist on Project Aurora.
-- **subject** / **object**: `jim` / `navigation specialist on project aurora`
-- **meta-glyph**: `schema.predicate.role_on_project@20260530T053016Z#v1`
-
-## 2026-05-30T05:30:18.622438+00:00
-
-- **new predicate**: `job`
-- **exemplar**: Kira joined Project Aurora as the sensor engineer.
-- **subject** / **object**: `kira` / `sensor engineer`
-- **meta-glyph**: `schema.predicate.job@20260530T053022Z#v1`
-
-## 2026-05-30T05:30:23.798286+00:00
-
-- **new predicate**: `is_building`
-- **new topic**: `project.activity`
+- **new topic**: `project.entity`
 - **exemplar**: Project Aurora is building a self-driving boat.
-- **subject** / **object**: `project aurora` / `a self-driving boat`
-- **meta-glyph**: `schema.predicate.is_building@20260530T053025Z#v1`
+- **subject** / **object**: `project aurora` / `self-driving boat`
+- **meta-glyph**: `schema.topic.project_entity@20260530T130119Z#v1`
 
-## 2026-05-30T05:30:27.126080+00:00
+## 2026-05-30T13:01:21.383035+00:00
 
-- **new predicate**: `target_market`
-- **new topic**: `business.market_segment`
-- **exemplar**: Project Aurora targets the recreational sailing market.
-- **subject** / **object**: `project aurora` / `recreational sailing market`
-- **meta-glyph**: `schema.predicate.target_market@20260530T053028Z#v1`
-
-## 2026-05-30T05:30:28.881319+00:00
-
-- **new predicate**: `length`
-- **new topic**: `object.dimension`
+- **new predicate**: `perceptual.size`
+- **new topic**: `boat.entity`
 - **exemplar**: The Aurora boat is 32 feet long.
-- **subject** / **object**: `aurora boat` / `32 feet`
-- **meta-glyph**: `schema.predicate.length@20260530T053029Z#v1`
+- **subject** / **object**: `aurora` / `32 feet long`
+- **meta-glyph**: `schema.predicate.perceptual.size@20260530T130122Z#v1`
 
-## 2026-05-30T05:30:30.333459+00:00
+## 2026-05-30T13:01:23.380305+00:00
 
-- **new predicate**: `top_speed_target`
-- **new topic**: `vehicle.performance`
+- **new predicate**: `quantitative.magnitude`
+- **new topic**: `vessel.entity`
 - **exemplar**: Aurora's top speed target is 25 knots.
 - **subject** / **object**: `aurora` / `25 knots`
-- **meta-glyph**: `schema.predicate.top_speed_target@20260530T053031Z#v1`
+- **meta-glyph**: `schema.predicate.quantitative.magnitude@20260530T130128Z#v1`
 
-## 2026-05-30T05:30:31.830064+00:00
+## 2026-05-30T13:01:32.901188+00:00
 
-- **new predicate**: `hull_design`
-- **new topic**: `vehicle.design`
-- **exemplar**: The Aurora boat uses a single hull design.
-- **subject** / **object**: `aurora boat` / `single hull`
-- **meta-glyph**: `schema.predicate.hull_design@20260530T053035Z#v1`
-
-## 2026-05-30T05:30:36.856069+00:00
-
-- **new topic**: `transportation.boat_design`
-- **exemplar**: The Aurora boat uses a trimaran hull design.
-- **subject** / **object**: `aurora boat` / `trimaran`
-- **meta-glyph**: `schema.topic.transportation_boat_design@20260530T053037Z#v1`
-
-## 2026-05-30T05:30:41.344474+00:00
-
-- **new predicate**: `primary_sensor`
-- **new topic**: `technology.sensor`
+- **new topic**: `system.entity`
 - **exemplar**: Aurora's primary sensor is LIDAR.
 - **subject** / **object**: `aurora` / `lidar`
-- **meta-glyph**: `schema.predicate.primary_sensor@20260530T053042Z#v1`
+- **meta-glyph**: `schema.topic.system_entity@20260530T130133Z#v1`
 
-## 2026-05-30T05:30:43.454060+00:00
+## 2026-05-30T13:01:37.767225+00:00
 
-- **new predicate**: `propulsion_type`
-- **new topic**: `vehicle.propulsion`
+- **new topic**: `vehicle.entity`
 - **exemplar**: Aurora uses gasoline propulsion.
-- **subject** / **object**: `aurora` / `gasoline`
-- **meta-glyph**: `schema.predicate.propulsion_type@20260530T053044Z#v1`
+- **subject** / **object**: `aurora` / `gasoline propulsion`
+- **meta-glyph**: `schema.topic.vehicle_entity@20260530T130138Z#v1`
 
-## 2026-05-30T05:30:46.156272+00:00
+## 2026-05-30T13:01:40.339821+00:00
 
-- **new predicate**: `first_prototype_scheduled`
-- **new topic**: `product.timeline`
+- **new predicate**: `temporal.time`
+- **new topic**: `prototype.entity`
 - **exemplar**: Aurora's first prototype is scheduled for March 2026.
 - **subject** / **object**: `aurora` / `march 2026`
-- **meta-glyph**: `schema.predicate.first_prototype_scheduled@20260530T053046Z#v1`
+- **meta-glyph**: `schema.predicate.temporal.time@20260530T130141Z#v1`
 
-## 2026-05-30T05:30:47.597969+00:00
+## 2026-05-30T13:01:43.762010+00:00
 
-- **new predicate**: `first_prototype_scheduled_date`
-- **new topic**: `project.timeline`
-- **exemplar**: Aurora's first prototype is scheduled for June 2026.
-- **subject** / **object**: `aurora` / `june 2026`
-- **meta-glyph**: `schema.predicate.first_prototype_scheduled_date@20260530T053048Z#v1`
-
-## 2026-05-30T05:30:49.124321+00:00
-
-- **new predicate**: `commercial_launch_date`
-- **new topic**: `product.launch`
+- **new topic**: `commercial_project.entity`
 - **exemplar**: Aurora's commercial launch is scheduled for 2027.
 - **subject** / **object**: `aurora` / `2027`
-- **meta-glyph**: `schema.predicate.commercial_launch_date@20260530T053049Z#v1`
+- **meta-glyph**: `schema.topic.commercial_project_entity@20260530T130144Z#v1`
 
-## 2026-05-30T05:30:50.517197+00:00
+## 2026-05-30T13:01:45.572925+00:00
 
-- **new topic**: `technology.product_launch`
+- **new topic**: `commercial_product/service.entity`
 - **exemplar**: Aurora's commercial launch is scheduled for 2028.
 - **subject** / **object**: `aurora` / `2028`
-- **meta-glyph**: `schema.topic.technology_product_launch@20260530T053051Z#v1`
+- **meta-glyph**: `schema.topic.commercial_product/service_entity@20260530T130146Z#v1`
 
-## 2026-05-30T05:30:51.997309+00:00
+## 2026-05-30T13:01:48.958312+00:00
 
-- **new predicate**: `maximum_wave_height`
-- **new topic**: `vehicle.specification`
-- **exemplar**: Aurora must operate in waves up to 4 feet tall.
-- **subject** / **object**: `aurora` / `4 feet`
-- **meta-glyph**: `schema.predicate.maximum_wave_height@20260530T053052Z#v1`
-
-## 2026-05-30T05:30:54.070106+00:00
-
-- **new predicate**: `maximum_weight`
-- **new topic**: `object.weight_constraint`
+- **new topic**: `entity.entity`
 - **exemplar**: Aurora must remain under 250 kilograms total weight.
-- **subject** / **object**: `aurora` / `250 kilograms`
-- **meta-glyph**: `schema.predicate.maximum_weight@20260530T053055Z#v1`
+- **subject** / **object**: `aurora` / `total weight`
+- **meta-glyph**: `schema.topic.entity_entity@20260530T130149Z#v1`
 
-## 2026-05-30T05:30:55.881650+00:00
+## 2026-05-30T13:01:50.973601+00:00
 
-- **new predicate**: `minimum_battery_life`
-- **new topic**: `product.specification`
+- **new predicate**: `temporal.duration`
+- **new topic**: `battery.entity`
 - **exemplar**: Aurora's battery must last at least 6 hours.
-- **subject** / **object**: `aurora` / `6 hours`
-- **meta-glyph**: `schema.predicate.minimum_battery_life@20260530T053056Z#v1`
+- **subject** / **object**: `aurora` / `at least 6 hours`
+- **meta-glyph**: `schema.predicate.temporal.duration@20260530T130152Z#v1`
 
-## 2026-05-30T05:30:57.719875+00:00
+## 2026-05-30T13:01:54.893968+00:00
 
-- **new predicate**: `onboard_computer`
-- **new topic**: `system.hardware`
+- **new topic**: `computer.entity`
 - **exemplar**: Aurora's onboard computer must be Raspberry Pi 5.
 - **subject** / **object**: `aurora` / `raspberry pi 5`
-- **meta-glyph**: `schema.predicate.onboard_computer@20260530T053059Z#v1`
+- **meta-glyph**: `schema.topic.computer_entity@20260530T130155Z#v1`
 
-## 2026-05-30T05:30:59.753881+00:00
+## 2026-05-30T13:01:59.830369+00:00
 
-- **new predicate**: `budget`
-- **new topic**: `project.budget`
-- **exemplar**: Project Aurora has a budget of 200,000 dollars.
-- **subject** / **object**: `project aurora` / `200,000 dollars`
-- **meta-glyph**: `schema.predicate.budget@20260530T053100Z#v1`
-
-## 2026-05-30T05:31:02.548372+00:00
-
-- **new predicate**: `test_location`
-- **new topic**: `event.location`
+- **new predicate**: `spatial.location`
+- **new topic**: `test_subject.entity`
 - **exemplar**: Aurora will be tested at Lake Travis in Austin.
-- **subject** / **object**: `aurora` / `lake travis, austin`
-- **meta-glyph**: `schema.predicate.test_location@20260530T053103Z#v1`
+- **subject** / **object**: `aurora` / `lake travis in austin`
+- **meta-glyph**: `schema.predicate.spatial.location@20260530T130200Z#v1`
 
-## 2026-05-30T05:31:04.022417+00:00
+## 2026-05-30T13:02:02.158820+00:00
 
-- **new predicate**: `first_sea_trial_location`
-- **new topic**: `vehicle.sea_trial`
+- **new predicate**: `temporal.frequency`
 - **exemplar**: Aurora's first sea trial will happen at Galveston Bay.
-- **subject** / **object**: `aurora` / `galveston bay`
-- **meta-glyph**: `schema.predicate.first_sea_trial_location@20260530T053106Z#v1`
+- **subject** / **object**: `aurora` / `first`
+- **meta-glyph**: `schema.predicate.temporal.frequency@20260530T130203Z#v1`
 
-## 2026-05-30T05:31:07.018039+00:00
+## 2026-05-30T13:02:04.174001+00:00
 
-- **new predicate**: `seed_round_amount`
-- **new topic**: `company.funding`
+- **new topic**: `company.entity`
 - **exemplar**: The Aurora seed round closed at 500,000 dollars.
-- **subject** / **object**: `aurora` / `500,000 dollars`
-- **meta-glyph**: `schema.predicate.seed_round_amount@20260530T053107Z#v1`
+- **subject** / **object**: `aurora` / `seed round`
+- **meta-glyph**: `schema.topic.company_entity@20260530T130205Z#v1`
 
-## 2026-05-30T05:31:08.550939+00:00
+## 2026-05-30T13:02:06.515302+00:00
 
-- **new predicate**: `led_seed_round`
-- **new topic**: `business.investment`
+- **new topic**: `venture_capital_firm.entity`
 - **exemplar**: Andreessen Horowitz led the Aurora seed round.
-- **subject** / **object**: `andreessen horowitz` / `aurora`
-- **meta-glyph**: `schema.predicate.led_seed_round@20260530T053110Z#v1`
+- **subject** / **object**: `andreessen horowitz` / `aurora seed round`
+- **meta-glyph**: `schema.topic.venture_capital_firm_entity@20260530T130207Z#v1`
 
-## 2026-05-30T05:31:14.230911+00:00
+## 2026-05-30T13:02:08.530070+00:00
 
-- **new predicate**: `participated_in`
-- **new topic**: `organization.investment`
+- **new topic**: `organization.entity`
 - **exemplar**: Y Combinator participated in the Aurora seed round.
 - **subject** / **object**: `y combinator` / `aurora seed round`
-- **meta-glyph**: `schema.predicate.participated_in@20260530T053114Z#v1`
+- **meta-glyph**: `schema.topic.organization_entity@20260530T130209Z#v1`
 
-## 2026-05-30T05:31:15.764288+00:00
+## 2026-05-30T13:02:10.290534+00:00
 
-- **new predicate**: `filed_patent_on`
-- **new topic**: `technology.patent`
+- **new topic**: `patent.entity`
 - **exemplar**: Project Aurora filed a patent on its stereo-vision waypoint algorithm.
-- **subject** / **object**: `project aurora` / `stereo-vision waypoint algorithm`
-- **meta-glyph**: `schema.predicate.filed_patent_on@20260530T053116Z#v1`
+- **subject** / **object**: `project aurora` / `patent`
+- **meta-glyph**: `schema.topic.patent_entity@20260530T130211Z#v1`
 
-## 2026-05-30T05:31:17.464454+00:00
+## 2026-05-30T13:02:13.018448+00:00
 
-- **new topic**: `organization.patent`
-- **exemplar**: Project Aurora filed a patent on its low-power compute architecture.
-- **subject** / **object**: `project aurora` / `low-power compute architecture`
-- **meta-glyph**: `schema.topic.organization_patent@20260530T053118Z#v1`
-
-## 2026-05-30T05:31:19.712608+00:00
-
-- **new predicate**: `codebase_hosted_on`
-- **new topic**: `software.repository`
+- **new topic**: `codebase.entity`
 - **exemplar**: Aurora's codebase is hosted on GitHub at aurora-marine/aurora.
-- **subject** / **object**: `aurora` / `github at aurora-marine/aurora`
-- **meta-glyph**: `schema.predicate.codebase_hosted_on@20260530T053120Z#v1`
+- **subject** / **object**: `aurora-marine` / `github`
+- **meta-glyph**: `schema.topic.codebase_entity@20260530T130214Z#v1`
 
-## 2026-05-30T05:31:21.551042+00:00
+## 2026-05-30T13:02:15.171988+00:00
 
-- **new predicate**: `backend_cloud_provider_region`
-- **new topic**: `technology.infrastructure`
+- **new topic**: `backend_system.entity`
 - **exemplar**: Aurora's backend runs on AWS in us-east-1.
-- **subject** / **object**: `aurora` / `aws us-east-1`
-- **meta-glyph**: `schema.predicate.backend_cloud_provider_region@20260530T053122Z#v1`
+- **subject** / **object**: `aurora` / `aws`
+- **meta-glyph**: `schema.topic.backend_system_entity@20260530T130216Z#v1`
 
-## 2026-05-30T05:31:23.141328+00:00
+## 2026-05-30T13:02:17.240524+00:00
 
-- **new predicate**: `uses_for_telemetry_storage`
-- **new topic**: `technology.database`
+- **new topic**: `database_management_system.entity`
 - **exemplar**: Aurora uses PostgreSQL for telemetry storage.
 - **subject** / **object**: `aurora` / `postgresql`
-- **meta-glyph**: `schema.predicate.uses_for_telemetry_storage@20260530T053123Z#v1`
+- **meta-glyph**: `schema.topic.database_management_system_entity@20260530T130218Z#v1`
 
-## 2026-05-30T05:31:24.907304+00:00
+## 2026-05-30T13:02:26.066180+00:00
 
-- **new predicate**: `uses_for_real_time_event_streaming`
-- **new topic**: `technology.tools`
-- **exemplar**: Aurora uses Kafka for real-time event streaming.
-- **subject** / **object**: `aurora` / `kafka`
-- **meta-glyph**: `schema.predicate.uses_for_real_time_event_streaming@20260530T053125Z#v1`
-
-## 2026-05-30T05:31:26.819323+00:00
-
-- **new predicate**: `partnered_with`
-- **new topic**: `business.partnership`
-- **exemplar**: Project Aurora partnered with Garmin for marine GPS modules.
-- **subject** / **object**: `project aurora` / `garmin`
-- **meta-glyph**: `schema.predicate.partnered_with@20260530T053127Z#v1`
-
-## 2026-05-30T05:31:29.394681+00:00
-
-- **new predicate**: `completed_first_basin_test`
-- **new topic**: `event.milestone`
-- **exemplar**: Aurora completed its first basin test in November 2025.
-- **subject** / **object**: `aurora` / `november 2025`
-- **meta-glyph**: `schema.predicate.completed_first_basin_test@20260530T053130Z#v1`
-
-## 2026-05-30T05:31:31.662692+00:00
-
-- **new predicate**: `passed_certification`
-- **new topic**: `person.certification`
-- **exemplar**: Aurora passed Coast Guard preliminary certification in February 2026.
-- **subject** / **object**: `aurora` / `coast guard preliminary certification`
-- **meta-glyph**: `schema.predicate.passed_certification@20260530T053132Z#v1`
-
-## 2026-05-30T05:31:33.257733+00:00
-
-- **new predicate**: `press_mentions`
-- **new topic**: `event.coverage`
+- **new topic**: `demonstration.entity`
 - **exemplar**: Aurora's CES 2026 demo received 12 press mentions.
-- **subject** / **object**: `aurora's ces 2026 demo` / `12`
-- **meta-glyph**: `schema.predicate.press_mentions@20260530T053134Z#v1`
+- **subject** / **object**: `aurora's ces 2026 demo` / `ces 2026`
+- **meta-glyph**: `schema.topic.demonstration_entity@20260530T130227Z#v1`
 
-## 2026-05-30T05:31:35.140492+00:00
+## 2026-05-30T13:02:28.156357+00:00
 
-- **new predicate**: `initial_boat_count`
-- **new topic**: `product.beta_program`
+- **new topic**: `beta_program.entity`
 - **exemplar**: Aurora's beta program will have 50 boats in the first wave.
-- **subject** / **object**: `aurora's beta program` / `50`
-- **meta-glyph**: `schema.predicate.initial_boat_count@20260530T053135Z#v1`
+- **subject** / **object**: `aurora` / `first wave`
+- **meta-glyph**: `schema.topic.beta_program_entity@20260530T130229Z#v1`
 
-## 2026-05-30T05:31:36.843231+00:00
+## 2026-05-30T13:02:33.256537+00:00
 
-- **new predicate**: `rejected_hull_design`
-- **new topic**: `project.engineering_decision`
-- **exemplar**: Project Aurora considered a foiling hull design but rejected it for cost.
-- **subject** / **object**: `project aurora` / `foiling hull design`
-- **meta-glyph**: `schema.predicate.rejected_hull_design@20260530T053138Z#v1`
-
-## 2026-05-30T05:31:39.483965+00:00
-
-- **new predicate**: `rejected_propulsion_type`
-- **new topic**: `project.propulsion_decision`
-- **exemplar**: Project Aurora considered diesel propulsion but rejected it for emissions.
-- **subject** / **object**: `project aurora` / `diesel propulsion`
-- **meta-glyph**: `schema.predicate.rejected_propulsion_type@20260530T053140Z#v1`
-
-## 2026-05-30T05:31:42.617501+00:00
-
-- **new predicate**: `favorite_color`
-- **new topic**: `person.preference`
+- **new predicate**: `perceptual.color`
 - **exemplar**: Chris's favorite color is blue.
 - **subject** / **object**: `chris` / `blue`
-- **meta-glyph**: `schema.predicate.favorite_color@20260530T053143Z#v1`
+- **meta-glyph**: `schema.predicate.perceptual.color@20260530T130234Z#v1`
 
-## 2026-05-30T05:31:44.053314+00:00
+## 2026-05-30T13:02:41.505854+00:00
 
-- **new predicate**: `residence`
-- **new topic**: `person.location`
-- **exemplar**: Chris lives in Austin, Texas.
-- **subject** / **object**: `chris` / `austin, texas`
-- **meta-glyph**: `schema.predicate.residence@20260530T053144Z#v1`
-
-## 2026-05-30T05:31:45.513009+00:00
-
-- **new predicate**: `previous_employer`
-- **new topic**: `person.work_history`
-- **exemplar**: Chris previously worked at Boomi.
-- **subject** / **object**: `chris` / `boomi`
-- **meta-glyph**: `schema.predicate.previous_employer@20260530T053146Z#v1`
-
-## 2026-05-30T05:31:46.944994+00:00
-
-- **new predicate**: `development_tool`
-- **new topic**: `person.work_equipment`
-- **exemplar**: Chris uses a Mac for development.
-- **subject** / **object**: `chris` / `mac`
-- **meta-glyph**: `schema.predicate.development_tool@20260530T053148Z#v1`
-
-## 2026-05-30T05:31:49.148088+00:00
-
-- **new predicate**: `prefers_language_for_new_projects`
-- **exemplar**: Chris prefers TypeScript over Python for new projects.
-- **subject** / **object**: `chris` / `typescript`
-- **meta-glyph**: `schema.predicate.prefers_language_for_new_projects@20260530T053149Z#v1`
-
-## 2026-05-30T05:31:50.572261+00:00
-
-- **new predicate**: `daughter_name`
-- **new topic**: `family.relation`
-- **exemplar**: Chris's daughter is named Jin.
-- **subject** / **object**: `chris` / `jin`
-- **meta-glyph**: `schema.predicate.daughter_name@20260530T053151Z#v1`
-
-## 2026-05-30T05:31:52.052930+00:00
-
-- **new predicate**: `drinks`
-- **exemplar**: Chris drinks coffee, not tea.
-- **subject** / **object**: `chris` / `coffee`
-- **meta-glyph**: `schema.predicate.drinks@20260530T053152Z#v1`
-
-## 2026-05-30T05:31:53.640436+00:00
-
-- **new predicate**: `average_depth`
-- **new topic**: `geography.water_body.depth`
+- **new topic**: `sea.entity`
 - **exemplar**: The Mediterranean Sea has an average depth of 1,500 meters.
 - **subject** / **object**: `mediterranean sea` / `1,500 meters`
-- **meta-glyph**: `schema.predicate.average_depth@20260530T053154Z#v1`
+- **meta-glyph**: `schema.topic.sea_entity@20260530T130242Z#v1`
 
-## 2026-05-30T05:31:55.137095+00:00
+## 2026-05-30T13:02:43.606856+00:00
 
-- **new predicate**: `covers_percent_of_earth_surface`
-- **new topic**: `geography.ocean`
+- **new topic**: `ocean.quantitative`
 - **exemplar**: The Pacific Ocean covers about 30 percent of Earth's surface.
-- **subject** / **object**: `pacific ocean` / `30`
-- **meta-glyph**: `schema.predicate.covers_percent_of_earth_surface@20260530T053155Z#v1`
+- **subject** / **object**: `pacific ocean` / `earth`
+- **meta-glyph**: `schema.topic.ocean_quantitative@20260530T130244Z#v1`
 
-## 2026-05-30T05:31:56.683676+00:00
+## 2026-05-30T13:02:45.800584+00:00
 
-- **new predicate**: `primary_transport_before`
-- **new topic**: `history.transportation`
+- **new topic**: `transportation_method.entity`
 - **exemplar**: Sailing was a primary form of transport before the steam engine.
-- **subject** / **object**: `sailing` / `steam engine`
-- **meta-glyph**: `schema.predicate.primary_transport_before@20260530T053157Z#v1`
+- **subject** / **object**: `sailing` / `was a primary form of transport`
+- **meta-glyph**: `schema.topic.transportation_method_entity@20260530T130246Z#v1`
 
-## 2026-05-30T05:31:58.650314+00:00
+## 2026-05-30T13:02:47.832657+00:00
 
-- **new predicate**: `is_oldest_international_sporting_trophy`
-- **new topic**: `sports.competition.history`
+- **new predicate**: `temporal.age`
+- **new topic**: `trophy.entity`
 - **exemplar**: The America's Cup is the oldest international sporting trophy.
-- **subject** / **object**: `america's cup` / `true`
-- **meta-glyph**: `schema.predicate.is_oldest_international_sporting_trophy@20260530T053159Z#v1`
+- **subject** / **object**: `america's cup` / `oldest international sporting trophy`
+- **meta-glyph**: `schema.predicate.temporal.age@20260530T130248Z#v1`
 
-## 2026-05-30T05:32:00.362065+00:00
+## 2026-05-30T13:02:50.032815+00:00
 
-- **new predicate**: `primary_chemistry`
-- **new topic**: `technology.battery`
+- **new topic**: `battery_chemistry.entity`
 - **exemplar**: Most marine batteries are lithium iron phosphate.
 - **subject** / **object**: `marine batteries` / `lithium iron phosphate`
-- **meta-glyph**: `schema.predicate.primary_chemistry@20260530T053201Z#v1`
+- **meta-glyph**: `schema.topic.battery_chemistry_entity@20260530T130251Z#v1`
 
-## 2026-05-30T05:32:02.186412+00:00
+## 2026-05-30T13:02:52.248220+00:00
 
-- **new predicate**: `has_shorter_range_than`
-- **new topic**: `technology.lidar.comparison`
+- **new topic**: `technology.entity`
 - **exemplar**: Marine LIDAR has shorter range than automotive LIDAR.
 - **subject** / **object**: `marine lidar` / `automotive lidar`
-- **meta-glyph**: `schema.predicate.has_shorter_range_than@20260530T053204Z#v1`
+- **meta-glyph**: `schema.topic.technology_entity@20260530T130253Z#v1`
 
-## 2026-05-30T05:32:05.931436+00:00
+## 2026-05-30T13:02:54.198827+00:00
 
-- **new predicate**: `computes_depth_from`
-- **new topic**: `computer_vision.depth_estimation`
+- **new topic**: `computational_technique.entity`
 - **exemplar**: Stereo vision computes depth from two parallel cameras.
-- **subject** / **object**: `stereo vision` / `two parallel cameras`
-- **meta-glyph**: `schema.predicate.computes_depth_from@20260530T053206Z#v1`
+- **subject** / **object**: `stereo vision` / `depth`
+- **meta-glyph**: `schema.topic.computational_technique_entity@20260530T130255Z#v1`
 
-## 2026-05-30T05:32:07.733691+00:00
+## 2026-05-30T13:02:56.162641+00:00
 
-- **new predicate**: `resists`
-- **new topic**: `material.property`
+- **new topic**: `material/fastener.entity`
 - **exemplar**: Galvanized hardware resists saltwater corrosion.
 - **subject** / **object**: `galvanized hardware` / `saltwater corrosion`
-- **meta-glyph**: `schema.predicate.resists@20260530T053208Z#v1`
+- **meta-glyph**: `schema.topic.material/fastener_entity@20260530T130257Z#v1`
 
-## 2026-05-30T05:32:14.743193+00:00
+## 2026-05-30T13:02:58.378767+00:00
 
-- **new predicate**: `average_cost_per_foot_per_month`
-- **new topic**: `geography.cost`
+- **new topic**: `fee.entity`
 - **exemplar**: Marina slip fees in Austin average 12 dollars per foot per month.
-- **subject** / **object**: `marina slip fees in austin` / `12 dollars`
-- **meta-glyph**: `schema.predicate.average_cost_per_foot_per_month@20260530T053215Z#v1`
+- **subject** / **object**: `marina slip fees` / `per month`
+- **meta-glyph**: `schema.topic.fee_entity@20260530T130259Z#v1`
 
-## 2026-05-30T05:32:16.532247+00:00
+## 2026-05-30T13:03:01.007011+00:00
 
-- **new predicate**: `is_challenge_for`
-- **new topic**: `technology.marine.challenge`
+- **new topic**: `phenomenon.entity`
 - **exemplar**: Sun glare is a known challenge for marine vision systems.
 - **subject** / **object**: `sun glare` / `marine vision systems`
-- **meta-glyph**: `schema.predicate.is_challenge_for@20260530T053217Z#v1`
+- **meta-glyph**: `schema.topic.phenomenon_entity@20260530T130302Z#v1`
 
-## 2026-05-30T05:32:18.299874+00:00
+## 2026-05-30T13:03:03.274233+00:00
 
-- **new predicate**: `common_application`
-- **new topic**: `technology.computing`
+- **new topic**: `computing_devices.entity`
 - **exemplar**: ARM-based computers are common for robotics due to low power.
 - **subject** / **object**: `arm-based computers` / `robotics`
-- **meta-glyph**: `schema.predicate.common_application@20260530T053219Z#v1`
+- **meta-glyph**: `schema.topic.computing_devices_entity@20260530T130304Z#v1`
 
-## 2026-05-30T05:32:20.037288+00:00
+## 2026-05-30T13:03:05.393587+00:00
 
-- **new predicate**: `open_sourced_by`
-- **new topic**: `technology.software.history`
+- **new topic**: `software.entity`
 - **exemplar**: Kafka was open-sourced by LinkedIn in 2011.
-- **subject** / **object**: `kafka` / `linkedin`
-- **meta-glyph**: `schema.predicate.open_sourced_by@20260530T053220Z#v1`
+- **subject** / **object**: `kafka` / `2011`
+- **meta-glyph**: `schema.topic.software_entity@20260530T130306Z#v1`
 
-## 2026-05-30T05:32:22.886528+00:00
+## 2026-05-30T13:03:08.431423+00:00
 
-- **new predicate**: `powers`
-- **new topic**: `technology.hardware`
+- **new topic**: `camera_sensor.entity`
 - **exemplar**: Sony's IMX sensors power the iPhone camera lineup.
-- **subject** / **object**: `sony imx sensors` / `iphone camera lineup`
-- **meta-glyph**: `schema.predicate.powers@20260530T053223Z#v1`
+- **subject** / **object**: `sony` / `iphone camera lineup`
+- **meta-glyph**: `schema.topic.camera_sensor_entity@20260530T130309Z#v1`
 
-## 2026-05-30T05:32:25.068561+00:00
+## 2026-05-30T13:03:12.539989+00:00
 
-- **new predicate**: `program_frequency`
-- **new topic**: `organization.program`
-- **exemplar**: Y Combinator's accelerator program runs twice per year.
-- **subject** / **object**: `y combinator` / `twice per year`
-- **meta-glyph**: `schema.predicate.program_frequency@20260530T053227Z#v1`
-
-## 2026-05-30T05:32:27.868254+00:00
-
-- **new predicate**: `assets_under_management`
-- **new topic**: `organization.finance`
-- **exemplar**: Andreessen Horowitz manages over 35 billion dollars in assets.
-- **subject** / **object**: `andreessen horowitz` / `over 35 billion dollars`
-- **meta-glyph**: `schema.predicate.assets_under_management@20260530T053228Z#v1`
-
-## 2026-05-30T05:32:29.416527+00:00
-
-- **new predicate**: `first_program_to_land_humans_on`
-- **new topic**: `history.space_exploration`
+- **new topic**: `space_program.entity`
 - **exemplar**: Project Apollo was the first program to land humans on the Moon.
 - **subject** / **object**: `project apollo` / `the moon`
-- **meta-glyph**: `schema.predicate.first_program_to_land_humans_on@20260530T053230Z#v1`
+- **meta-glyph**: `schema.topic.space_program_entity@20260530T130313Z#v1`
 
-## 2026-05-30T05:32:31.744801+00:00
+## 2026-05-30T13:03:14.723491+00:00
 
-- **new predicate**: `is_first_human_spaceflight_program_of`
-- **new topic**: `space.program`
+- **new topic**: `spaceflight_program.entity`
 - **exemplar**: Project Mercury was NASA's first human spaceflight program.
-- **subject** / **object**: `project mercury` / `nasa`
-- **meta-glyph**: `schema.predicate.is_first_human_spaceflight_program_of@20260530T053232Z#v1`
+- **subject** / **object**: `project mercury` / `nasa's first human spaceflight program`
+- **meta-glyph**: `schema.topic.spaceflight_program_entity@20260530T130315Z#v1`
 
-## 2026-05-30T05:32:33.543129+00:00
+## 2026-05-30T13:03:16.775890+00:00
 
-- **new predicate**: `built`
-- **new topic**: `history.military_technology`
+- **new topic**: `military_research_program.entity`
 - **exemplar**: The Manhattan Project built the first atomic bombs.
-- **subject** / **object**: `the manhattan project` / `the first atomic bombs`
-- **meta-glyph**: `schema.predicate.built@20260530T053234Z#v1`
+- **subject** / **object**: `manhattan project` / `first atomic bombs`
+- **meta-glyph**: `schema.topic.military_research_program_entity@20260530T130317Z#v1`
 
-## 2026-05-30T05:32:34.956184+00:00
+## 2026-05-30T13:03:18.888547+00:00
 
-- **new predicate**: `confidentiality_period`
-- **new topic**: `law.intellectual_property`
+- **new topic**: `legal_documents.entity`
 - **exemplar**: Most patent applications are confidential for 18 months.
 - **subject** / **object**: `patent applications` / `18 months`
-- **meta-glyph**: `schema.predicate.confidentiality_period@20260530T053235Z#v1`
+- **meta-glyph**: `schema.topic.legal_documents_entity@20260530T130320Z#v1`
 
-## 2026-05-30T05:32:36.869964+00:00
+## 2026-05-30T13:03:21.182117+00:00
 
-- **new predicate**: `requires`
-- **new topic**: `maritime.certification`
+- **new topic**: `certification_requirement.entity`
 - **exemplar**: Coast Guard certification requires hull stability testing.
 - **subject** / **object**: `coast guard certification` / `hull stability testing`
-- **meta-glyph**: `schema.predicate.requires@20260530T053237Z#v1`
+- **meta-glyph**: `schema.topic.certification_requirement_entity@20260530T130322Z#v1`
 
-## 2026-05-30T05:32:38.317448+00:00
+## 2026-05-30T13:03:23.455702+00:00
 
-- **new predicate**: `held_location`
+- **new topic**: `event.entity`
 - **exemplar**: CES is held annually in Las Vegas in January.
-- **subject** / **object**: `ces` / `las vegas`
-- **meta-glyph**: `schema.predicate.held_location@20260530T053238Z#v1`
+- **subject** / **object**: `ces` / `january`
+- **meta-glyph**: `schema.topic.event_entity@20260530T130324Z#v1`
 
-## 2026-05-30T05:32:39.741732+00:00
+## 2026-05-30T13:03:25.553112+00:00
 
-- **new predicate**: `is_largest_region`
-- **new topic**: `cloud_computing.region`
+- **new topic**: `cloud_region.entity`
 - **exemplar**: AWS us-east-1 is the largest commercial cloud region.
 - **subject** / **object**: `aws us-east-1` / `largest commercial cloud region`
-- **meta-glyph**: `schema.predicate.is_largest_region@20260530T053240Z#v1`
+- **meta-glyph**: `schema.topic.cloud_region_entity@20260530T130326Z#v1`
 
-## 2026-05-30T05:32:41.658070+00:00
+## 2026-05-30T13:03:29.050594+00:00
 
-- **new predicate**: `largest_freshwater_marina_in`
-- **new topic**: `geography.landmark`
+- **new topic**: `marina.entity`
 - **exemplar**: Marina La Crosse is the largest freshwater marina in the US.
-- **subject** / **object**: `marina la crosse` / `united states`
-- **meta-glyph**: `schema.predicate.largest_freshwater_marina_in@20260530T053242Z#v1`
+- **subject** / **object**: `marina la crosse` / `largest freshwater marina in the us`
+- **meta-glyph**: `schema.topic.marina_entity@20260530T130332Z#v1`

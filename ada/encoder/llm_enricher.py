@@ -270,15 +270,116 @@ class HaikuEnricher:
         return sf
 
 
+# ── Universal-schema adapter ─────────────────────────────────────────
+
+class UniversalSchemaEnricher:
+    """LLM-at-build-time enrichment that maps every fact into the FIXED
+    universal schema (ada.cognitive.universal.UNIVERSAL_SCHEMA), then
+    projects the result back into a StructuredFact so the existing
+    recall scoring keeps working unchanged.
+
+    Why this instead of HaikuEnricher's ad-hoc predicates:
+      - The schema doesn't sprawl — every fact has the same shape.
+      - `predicate` becomes a canonical role drawn from the universal
+        layer.role lattice (e.g. 'temporal.age', 'perceptual.color'),
+        not an LLM-invented string ('has_dream_loop', 'effect_on').
+      - Topic is also drawn from a stable lattice (entity.kind +
+        leading layer), making cross-fact composition real.
+    """
+
+    def __init__(self):
+        from ada.cognitive.universal import UniversalEnricher
+        self._u = UniversalEnricher()
+
+    def enrich(self, text: str) -> StructuredFact:
+        mapped = self._u.enrich(text)
+        return _project_to_structured(text, mapped)
+
+
+def _project_to_structured(text: str, mapped: dict[str, dict[str, str]]) -> StructuredFact:
+    """Collapse a universal-schema mapping into a StructuredFact.
+
+    The projection picks the most discriminative role from the universal
+    mapping to fill (subject, predicate, object, topic):
+
+      subject   = relational.subject || entity.name || possessor
+      predicate = the most specific role that's filled, expressed as
+                  'layer.role' so recall's predicate-match still
+                  distinguishes age vs color vs location
+      object    = relational.object || the filled role's value
+      topic     = '{entity.kind}.{primary_layer}' where primary_layer is
+                  the most-filled non-relational layer
+    """
+    def get(layer: str, role: str) -> str:
+        return mapped.get(layer, {}).get(role, "") or ""
+
+    subject = (
+        get("relational", "subject")
+        or get("relational", "possessor")
+        or get("entity", "name")
+    ).strip().lower()
+
+    # Pick the most "discriminative" role: prefer a perceptual/temporal/
+    # spatial/quantitative filling over a generic relational one.
+    PRIORITY = [
+        ("perceptual", "color"),  ("perceptual", "size"),
+        ("perceptual", "shape"),  ("perceptual", "sound"),
+        ("perceptual", "texture"),("perceptual", "temperature"),
+        ("temporal",   "age"),    ("temporal",   "time"),
+        ("temporal",   "duration"),("temporal",  "frequency"),
+        ("spatial",    "location"),("spatial",   "origin"),
+        ("quantitative", "magnitude"), ("quantitative", "count"),
+        ("relational", "predicate"),
+    ]
+    predicate = ""
+    obj = get("relational", "object")
+    for layer, role in PRIORITY:
+        v = get(layer, role)
+        if v:
+            predicate = f"{layer}.{role}"
+            if not obj:
+                obj = v
+            break
+
+    # Topic: '{kind}.{primary_layer}'.
+    kind = (get("entity", "kind") or "thing").strip().lower().replace(" ", "_")
+    layer_fills = {
+        layer: sum(1 for v in roles.values() if v)
+        for layer, roles in mapped.items()
+        if layer != "relational"
+    }
+    primary_layer = max(layer_fills, key=layer_fills.get) if layer_fills else "entity"
+    topic = f"{kind}.{primary_layer}"
+
+    return StructuredFact(
+        text=text,
+        subject=subject,
+        predicate=predicate.lower(),
+        object=str(obj).strip().lower(),
+        topic=topic,
+    )
+
+
 # ── Factory ──────────────────────────────────────────────────────────
 
 def auto_enricher() -> FactEnricher:
-    """Pick the best available enricher: Haiku if configured, else heuristic."""
+    """Pick the best available enricher.
+
+    Order (best to worst):
+      1. UniversalSchemaEnricher — Haiku maps into the fixed universal
+         shape, projected into a StructuredFact for the existing recall
+         path. Requires ANTHROPIC_API_KEY.
+      2. HaikuEnricher — ad-hoc Haiku predicates. Schema sprawls.
+      3. HeuristicEnricher — regex patterns. Offline.
+
+    The universal-schema enricher subsumes HaikuEnricher's role and
+    fixes the sprawl problem.
+    """
     if os.environ.get("ANTHROPIC_API_KEY"):
         try:
             import anthropic  # noqa: F401
-            logger.info("Enricher: HaikuEnricher (LLM-at-build-time, cached)")
-            return HaikuEnricher()
+            logger.info("Enricher: UniversalSchemaEnricher (fixed layer.role lattice)")
+            return UniversalSchemaEnricher()
         except ImportError:
             pass
     logger.info("Enricher: HeuristicEnricher (regex patterns, offline)")
