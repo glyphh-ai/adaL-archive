@@ -240,9 +240,24 @@ def fetch_summary(title: str, timeout: float = 10,
 # ── Build the schema + keys context for Haiku ───────────────────────
 
 def build_substrate_index() -> tuple[dict[str, dict], list[str]]:
-    """Returns (lattice, sorted_key_namespace)."""
+    """Returns (lattice, sorted_key_namespace).
+
+    Default loads layer-0 + layer-1 + chemistry (back-compat with
+    earlier runs). Set INCLUDE_DEVELOPMENTAL=1 to also load infant +
+    symbols + communication (the developmental substrate, ~523 keys).
+    """
     lattice: dict[str, dict] = {}
-    for p in [LAYER_0, *LAYER_1, *CHEM_FILES]:
+    sources = [LAYER_0, *LAYER_1, *CHEM_FILES]
+    if os.environ.get("INCLUDE_DEVELOPMENTAL") == "1":
+        agi_root = LAYER_0.parent.parent  # curriculum/agi
+        for stage in sorted((agi_root / "infant").glob("stage-*.yaml")):
+            sources.append(stage)
+        for sym in ("digits.yaml", "letters.yaml", "phonemes.yaml"):
+            sources.append(agi_root / "symbols" / sym)
+        for comm in ("phonotactics.yaml", "syllables.yaml",
+                     "lexicon.yaml", "grammar.yaml"):
+            sources.append(agi_root / "communication" / comm)
+    for p in sources:
         for e in _load_yaml(p):
             k = e.get("key")
             if k:
@@ -296,23 +311,34 @@ OUTPUT FORMAT: a single JSON object (no markdown, no commentary):
   "composed_of": ["<key>", "<key>", ...]
 }}
 
-THE GROUNDING CONTRACT (strict):
-1. Every key in `composed_of` MUST either:
-   (a) appear in the namespace below, OR
-   (b) be an intermediate concept YOU declare in another response in this
-       run, whose own composed_of also obeys this contract.
-2. You may declare intermediate concepts (e.g. `concept.causation`,
-   `school.empiricism`, `doctrine.stare-decisis`) by using them in
-   composed_of AND emitting a separate JSON for each one with its own
-   composed_of decomposition.
-3. The chain MUST terminate at NSM semantic primes (prime.*) or
-   layer-1 cognitive primitives (color.*, number.*, spatial.*,
-   logic.*, time.*) within at most 5 hops.
-4. Choose the most general composition that still captures the concept.
-   If a piece of meaning is just "this thing exists," use prime.something.
-   If it's "many of them," use prime.many. If it's "X happens before Y,"
-   use prime.before. Compose meaning, not surface words.
-5. Output ONLY the JSON. No prose.
+THE GROUNDING CONTRACT (strict — violations will be rejected):
+
+1. Every key in `composed_of` MUST appear in the namespace listed below.
+   No exceptions for "obvious" concepts. If you use a key not in the
+   namespace, your output will FAIL validation.
+
+2. If you need an intermediate concept that isn't in the namespace
+   (e.g. `concept.causation`, `school.empiricism`):
+   YOU MUST decompose it into namespace keys instead.
+   Do NOT invent new keys like `element.aluminum` or `concept.X` and
+   hope they're "obvious" — they won't be.
+
+3. Compose MEANING, not surface words. If the text mentions
+   "causation," don't reach for `concept.causation`; reach for
+   `prime.happen + prime.because + prime.this + prime.after` — the
+   primitives that constitute causation.
+
+4. The chain MUST terminate at NSM semantic primes (prime.*) within
+   at most 4 hops via the developmental layers (binary.*, infant.*,
+   layer-1 primitives) listed below.
+
+5. If the input text is not in your domain of expertise, or you
+   cannot honestly decompose its meaning into the namespace,
+   output: {{"key": "skip", "reason": "<short why>"}}.
+   Do NOT guess. Do NOT use chemistry keys for non-chemistry text.
+   A clean skip is better than a hallucinated extraction.
+
+6. Output ONLY the JSON. No prose, no commentary.
 
 KEY NAMESPACE (always available — every composed_of chain must
 ultimately ground in these):
@@ -636,7 +662,9 @@ def main() -> None:
     print()
 
     # ── Retry-with-feedback pass ────────────────────────────────────
-    if DO_RETRY and not budget_hit:
+    # Always run retry on whatever was extracted, regardless of budget cap.
+    # The marginal cost is small and this is where most of the recovery lives.
+    if DO_RETRY:
         # Collect failures with original summary text.
         failures: list[tuple[str, dict, dict, list[str]]] = []
         title_to_summary = dict(summaries)
