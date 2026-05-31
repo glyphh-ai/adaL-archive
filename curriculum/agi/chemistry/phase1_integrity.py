@@ -282,34 +282,40 @@ def key_namespace_text(keys: list[str]) -> str:
 
 
 SYSTEM_TMPL = """\
-You map chemistry text into the Ada universal-schema lattice.
+You map text into the Ada universal-schema lattice.
 
 OUTPUT FORMAT: a single JSON object (no markdown, no commentary):
 {{
-  "key": "compound.<lowercase-hyphenated-name>",
-  "category": "compound" | "element" | "group" | "property" | "reaction" \
-| "material",
-  "entity": {{"name": "<name>", "kind": "compound", "subkind": "<optional>"}},
-  "perceptual": {{"color": "...", "temperature": "..."}}            (optional),
-  "quantitative": {{"magnitude": "<num>", "unit": "<unit>"}}        (optional),
+  "key": "<prefix>.<lowercase-hyphenated-name>",
+  "category": "<short-category-label>",
+  "entity": {{"name": "<name>", "kind": "<kind>", "subkind": "<optional>"}},
   "semantic":   {{"category": "<short-phrase, dashed>"}}            (optional),
   "relational": {{"predicate": "<rel>", "object": "<thing>"}}       (optional),
-  "composed_of": ["<existing-key>", "<existing-key>", ...]
+  "perceptual": {{"color": "...", "temperature": "..."}}            (optional),
+  "quantitative": {{"magnitude": "<num>", "unit": "<unit>"}}        (optional),
+  "composed_of": ["<key>", "<key>", ...]
 }}
 
-RULES (strict):
-1. `composed_of` MUST be a non-empty list of keys from the namespace below.
-2. NEVER invent a key. If a needed atom doesn't exist, decompose into
-   ones that do (e.g. "ammonium" → element.nitrogen + element.hydrogen
-   + bond.covalent).
-3. Use the most specific keys that apply. If the molecule has -OH groups,
-   include group.hydroxyl. If it contains a C=O, include group.carbonyl.
-   If it hydrogen-bonds, include bond.hydrogen.
-4. For elements you may use composition with prime.* + color.* (matching
-   the layer-1 pattern). For new compounds use elements/bonds/groups.
+THE GROUNDING CONTRACT (strict):
+1. Every key in `composed_of` MUST either:
+   (a) appear in the namespace below, OR
+   (b) be an intermediate concept YOU declare in another response in this
+       run, whose own composed_of also obeys this contract.
+2. You may declare intermediate concepts (e.g. `concept.causation`,
+   `school.empiricism`, `doctrine.stare-decisis`) by using them in
+   composed_of AND emitting a separate JSON for each one with its own
+   composed_of decomposition.
+3. The chain MUST terminate at NSM semantic primes (prime.*) or
+   layer-1 cognitive primitives (color.*, number.*, spatial.*,
+   logic.*, time.*) within at most 5 hops.
+4. Choose the most general composition that still captures the concept.
+   If a piece of meaning is just "this thing exists," use prime.something.
+   If it's "many of them," use prime.many. If it's "X happens before Y,"
+   use prime.before. Compose meaning, not surface words.
 5. Output ONLY the JSON. No prose.
 
-KEY NAMESPACE (the only keys you may reference):
+KEY NAMESPACE (always available — every composed_of chain must
+ultimately ground in these):
 {namespace}
 """
 
