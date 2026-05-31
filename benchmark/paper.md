@@ -162,7 +162,7 @@ Above this, the **developmental substrate** (523 keys total):
 | Layer-1 cognitive primitives | 59 | colors / numbers / spatial / logical / temporal |
 | Binary distinctions | 54 | pre-sensory on/off contrasts (presence/absence, same/different, good/bad) |
 | Infant developmental | 179 | sensations → categories → causality → permanence → emotions → social cognition (13 stages, 0-36 months) |
-| Symbols | 76 | digits 0-9, letters A-Z, 40 English phonemes (with acoustic anchors) |
+| Symbols | 76 | digits 0-9, letters A-Z, 40 English phonemes |
 | Communication | 92 | phonotactics, syllable templates, lexicon, grammar, speech acts, dialogue moves |
 
 Every concept in the developmental substrate decomposes through prior
@@ -506,7 +506,7 @@ PYTHONPATH=. python curriculum/agi/layer-1/teach.py
 PYTHONPATH=. python curriculum/agi/infant/teach.py
 PYTHONPATH=. python curriculum/agi/infant/verify.py
 
-# Symbols: 10 digits + 26 letters + 40 phonemes (with acoustic anchors)
+# Symbols: 10 digits + 26 letters + 40 phonemes
 PYTHONPATH=. python curriculum/agi/symbols/teach.py
 
 # Communication: phonotactics + syllables + lexicon + grammar/acts
@@ -563,9 +563,7 @@ and per-run audit trails are checked into the repo.
    TemporalEncoder — but the *concepts about change-over-time* (drift,
    churn, staleness, freshness) live only as machinery, not as
    curriculum entries. The next experiment is to teach those.
-4. **The audio synthesizer** (~250 LoC of Klatt-style formant synth
-   using the F1/F2 data in `phonemes.yaml`) is not yet implemented.
-5. **Three MCP tools missing** for full LLM integration: `verify` (pre-
+4. **Three MCP tools missing** for full LLM integration: `verify` (pre-
    emit grounding check), `trace` (audit chain on demand), `intersect`
    (closed-set query). The substrate operations exist; the MCP surface
    doesn't expose them yet.
