@@ -42,6 +42,10 @@ BUDGET_USD     = float(os.environ.get("BUDGET_USD", "60"))
 CONCURRENCY    = int(os.environ.get("CONCURRENCY", "8"))
 CORPUS_FILE    = os.environ.get("CORPUS_FILE", "")
 DO_RETRY       = os.environ.get("DO_RETRY", "1") == "1"
+# When set (comma-sep prefixes), restrict the LLM's namespace to only
+# keys with those prefixes. Default: include everything in the lattice.
+NAMESPACE_PREFIXES = os.environ.get("NAMESPACE_PREFIXES", "")
+OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "")  # absolute or relative; if blank uses HERE/phase1_output
 MODEL          = "claude-haiku-4-5-20251001"
 HAIKU_IN_PER_M = 1.00  # $/MTok input
 HAIKU_OUT_PER_M = 5.00  # $/MTok output
@@ -504,7 +508,16 @@ def main() -> None:
     print(f"    fetched {len(summaries)}/{len(titles)} non-empty summaries.\n")
 
     # 4. Build prompt context.
-    ns_text = key_namespace_text(keys)
+    if NAMESPACE_PREFIXES:
+        allowed = {p.strip() for p in NAMESPACE_PREFIXES.split(",") if p.strip()}
+        filtered_keys = [k for k in keys
+                         if k.split(".", 1)[0] in allowed]
+        print(f"  ── namespace filter: {NAMESPACE_PREFIXES} → "
+              f"{len(filtered_keys)}/{len(keys)} keys exposed to LLM")
+        initial_keys = set(filtered_keys)  # rebind: refs only resolve in this slice
+        ns_text = key_namespace_text(filtered_keys)
+    else:
+        ns_text = key_namespace_text(keys)
     system_blocks = [
         {"type": "text",
          "text": SYSTEM_TMPL.format(namespace=ns_text),
@@ -756,7 +769,7 @@ def main() -> None:
     print()
 
     # 8. Save artefacts.
-    out_dir = HERE / "phase1_output"
+    out_dir = Path(OUTPUT_DIR) if OUTPUT_DIR else HERE / "phase1_output"
     out_dir.mkdir(exist_ok=True)
     (out_dir / "results.json").write_text(json.dumps(results, indent=2))
     (out_dir / "clean_entries.yaml").write_text(yaml.safe_dump(
