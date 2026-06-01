@@ -99,15 +99,22 @@ def build_protocol(n_turns: int, seed: int = 42) -> list[dict]:
 
 
 def run_ada(protocol: list[dict]) -> dict:
-    """Ada absorbs every fact, answers every query from the substrate."""
+    """Ada absorbs every fact, answers every query BY SCANNING THE SUBSTRATE.
+
+    This is the honest substrate operation: at query time, scan
+    space._thoughts to find the glyph whose canonical key matches
+    `person.<name>.<attr>`, and read the role-filled value from its
+    universal-schema metadata. No parallel dict — what's measured is
+    what the substrate actually does.
+    """
     space = ThoughtGlyphSpace(enricher=None)
-    by_name: dict[str, dict] = {}  # fast lookup mirroring tell_raw
 
     n_pass = 0
     n_query = 0
-    by_gap: dict[str, list[int]] = {}  # "1-100": [pass, total], etc.
+    by_gap: dict[str, list[int]] = {}
     latency_total_ms = 0.0
     fact_latency_ms = 0.0
+    n_fact_written = 0
 
     for item in protocol:
         if item["kind"] == "fact":
@@ -115,7 +122,6 @@ def run_ada(protocol: list[dict]) -> dict:
             name = item["name"]
             attr = item["attr"]
             value = item["value"]
-            # Map attr to universal-schema layer/role
             slots: dict[str, dict] = {"entity": {"name": name, "kind": "person"}}
             if attr == "color":
                 slots["perceptual"] = {"color": value}
@@ -128,20 +134,35 @@ def run_ada(protocol: list[dict]) -> dict:
             key = f"person.{name.lower()}.{attr}"
             space.tell_raw(facts=slots, key=key, speaker="user",
                            metadata={"category": "fact", "turn": item["turn"]})
-            by_name.setdefault(name, {})[attr] = value
             fact_latency_ms += (time.time() - t0) * 1000
+            n_fact_written += 1
         else:
             t0 = time.time()
             n_query += 1
             name = item["name"]
             attr = item["attr"]
             expected = item["expected"]
-            answer = by_name.get(name, {}).get(attr)
+            target_key = f"person.{name.lower()}.{attr}"
+
+            # HONEST SUBSTRATE LOOKUP: use the substrate's built-in
+            # key-indexed history. `_history_by_key` is the
+            # canonical-key index every `tell_raw(key=...)` writes to.
+            # Take the latest version's universal-schema slot.
+            answer = None
+            history = space._history_by_key.get(target_key, [])
+            if history:
+                latest = history[-1]
+                u = latest.glyph.metadata.get("_universal") or {}
+                if attr == "color":
+                    answer = (u.get("perceptual") or {}).get("color")
+                elif attr == "city":
+                    answer = (u.get("spatial") or {}).get("location")
+                elif attr in ("job", "hobby", "pet", "food", "drink"):
+                    answer = (u.get("relational") or {}).get("object")
             ok = (answer == expected)
             if ok:
                 n_pass += 1
             latency_total_ms += (time.time() - t0) * 1000
-            # Bucket by gap
             gap = item["gap"]
             bucket = ("1-50" if gap <= 50
                       else "51-100" if gap <= 100
@@ -160,7 +181,7 @@ def run_ada(protocol: list[dict]) -> dict:
         "accuracy": n_pass / n_query if n_query else 0.0,
         "by_gap": by_gap,
         "mean_query_ms": latency_total_ms / max(1, n_query),
-        "mean_fact_ms": fact_latency_ms / max(1, sum(1 for i in protocol if i["kind"] == "fact")),
+        "mean_fact_ms": fact_latency_ms / max(1, n_fact_written),
     }
 
 
