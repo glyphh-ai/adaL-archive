@@ -111,6 +111,162 @@ def _require_api_key() -> bool:
     return bool(os.environ.get("ANTHROPIC_API_KEY"))
 
 
+def _token_cmd(args: list[str]) -> None:
+    """Local, bootstrap token management (mint/list/revoke).
+
+    This is the one MCP-can't-do-itself piece: the first token has to be minted
+    locally with direct DB access, because minting over MCP needs a token.
+    Raw tokens are printed once — store them now.
+
+    A freshly minted token is printed once, then wiped from the terminal after
+    a countdown (default 30s) so the secret doesn't linger on an admin's screen.
+    The wipe is TTY-only — piped/redirected output stays scriptable.
+
+    Usage:
+        ada token create [--name N] [--expires-days D] [--permissions read,write]
+                         [--model-id M] [--clear-after SECONDS | --no-clear]
+        ada token list
+        ada token revoke <id-or-prefix>
+    """
+    import asyncio
+
+    sub = args[0] if args else "list"
+
+    def _opt(flag: str, default=None):
+        if flag in args:
+            i = args.index(flag)
+            if i + 1 < len(args):
+                return args[i + 1]
+        return default
+
+    async def _run() -> None:
+        import hashlib
+        import secrets
+        from datetime import datetime, timedelta
+
+        from infrastructure.database import async_session_maker, init_db
+        from domains.models.db_models import Token
+        from sqlalchemy import select
+
+        await init_db()  # ensure schema exists (create_all on SQLite / migrate on PG)
+        org_id = "ada"
+
+        if sub == "create":
+            name = _opt("--name", "cli-token")
+            model_id = _opt("--model-id")
+            perms_raw = _opt("--permissions", "read,write")
+            permissions = [p.strip() for p in perms_raw.split(",") if p.strip()]
+            days = _opt("--expires-days")
+            expires_at = (
+                datetime.utcnow() + timedelta(days=int(days)) if days else None
+            )
+            raw = f"ada_{secrets.token_urlsafe(32)}"
+            token_hash = hashlib.sha256(raw.encode()).hexdigest()
+            async with async_session_maker() as session:
+                tok = Token(
+                    name=name,
+                    token_hash=token_hash,
+                    token_prefix=raw[:12],
+                    org_id=org_id,
+                    model_id=model_id,
+                    permissions=permissions,
+                    expires_at=expires_at,
+                )
+                session.add(tok)
+                await session.commit()
+                await session.refresh(tok)
+                tok_id = str(tok.id)
+            clear_after = (
+                0 if "--no-clear" in args else int(_opt("--clear-after", "30") or 30)
+            )
+            block = [
+                "",
+                f"  {G}Token created.{R} {D}Store it now — it is not shown again.{R}",
+                "",
+                f"  {BOLD}{raw}{R}",
+                "",
+                f"  {D}id{R}          {tok_id}",
+                f"  {D}name{R}        {name}",
+                f"  {D}permissions{R} {', '.join(permissions)}",
+                f"  {D}expires{R}     {expires_at.isoformat() if expires_at else 'never'}",
+                "",
+                f"  {D}Use it:{R} Authorization: Bearer {raw[:12]}…",
+                "",
+            ]
+            for ln in block:
+                print(ln)
+
+            # Wipe the secret from the terminal after a countdown (TTY only;
+            # piped/redirected output just prints and exits, so it stays
+            # scriptable). Ctrl-C keeps it on screen.
+            if clear_after > 0 and sys.stdout.isatty():
+                try:
+                    for rem in range(clear_after, 0, -1):
+                        sys.stdout.write(
+                            f"\r  {D}clearing in {rem:2d}s — copy it now "
+                            f"(Ctrl-C to keep on screen){R}"
+                        )
+                        sys.stdout.flush()
+                        time.sleep(1)
+                    sys.stdout.write("\r\033[2K")  # erase countdown line
+                    for _ in range(len(block)):
+                        sys.stdout.write("\033[1A\033[2K")  # up + erase each block line
+                    sys.stdout.write(f"  {D}(token cleared from screen){R}\n")
+                    sys.stdout.flush()
+                except KeyboardInterrupt:
+                    sys.stdout.write("\r\033[2K")
+                    sys.stdout.write(f"  {D}(kept on screen){R}\n")
+                    sys.stdout.flush()
+
+        elif sub == "revoke":
+            ident = args[1] if len(args) > 1 else None
+            if not ident:
+                print(f"  {PINK}Usage: ada token revoke <id-or-prefix>{R}")
+                return
+            async with async_session_maker() as session:
+                result = await session.execute(
+                    select(Token).where(
+                        (Token.token_prefix == ident) | (Token.token_prefix == ident[:12])
+                    )
+                )
+                tok = result.scalar_one_or_none()
+                if tok is None:
+                    # try by id
+                    try:
+                        result = await session.execute(select(Token).where(Token.id == ident))
+                        tok = result.scalar_one_or_none()
+                    except Exception:
+                        tok = None
+                if tok is None:
+                    print(f"  {PINK}No token matching {ident!r}.{R}")
+                    return
+                tok.status = "revoked"
+                tok.revoked_at = datetime.utcnow()
+                await session.commit()
+                print(f"  {G}Revoked{R} {tok.name} ({tok.token_prefix}…)")
+
+        else:  # list
+            async with async_session_maker() as session:
+                result = await session.execute(
+                    select(Token).order_by(Token.created_at.desc())
+                )
+                tokens = result.scalars().all()
+            if not tokens:
+                print(f"  {D}No tokens. Mint one: ada token create{R}")
+                return
+            print(f"\n  {BOLD}Tokens{R}\n")
+            for t in tokens:
+                exp = t.expires_at.date().isoformat() if t.expires_at else "never"
+                print(f"  {t.token_prefix}…  {t.name:<18} {t.status:<8} "
+                      f"{','.join(t.permissions or [])}  exp:{exp}")
+            print()
+
+    try:
+        asyncio.run(_run())
+    except Exception as e:
+        print(f"  {PINK}Token command failed: {e}{R}")
+
+
 def _print_help() -> None:
     print(f"""
   {D}Just type anything to talk to Ada.{R}
@@ -123,6 +279,9 @@ def _print_help() -> None:
   {B}setup key{R}      Set Anthropic API key
   {B}setup model{R}    Change Ada's internal LLM model
   {B}setup license{R}   Install license file from glyphh.ai
+  {B}token create{R}   Mint an MCP access token (shown once)
+  {B}token list{R}     List tokens
+  {B}token revoke{R}   Revoke a token by id/prefix
   {B}status{R}         Show brain status
   {B}config{R}         Show current configuration
   {B}exit{R}           Quit
@@ -182,8 +341,22 @@ def _get_ada_home() -> str:
 
 
 def _get_env_path() -> str:
-    """Path to Ada's .env file."""
+    """Path to Ada's home env file (~/.ada/env)."""
     return f"{_get_ada_home()}/env"
+
+
+def _project_env_paths() -> list[str]:
+    """Candidate project .env files — the SAME file the runtime server reads.
+
+    Checked so the REPL resolves storage/DB options (DATABASE_URL, etc.)
+    identically to the server regardless of where it's launched from.
+    """
+    from pathlib import Path
+
+    return [
+        str(Path.cwd() / ".env"),
+        str(Path(__file__).resolve().parents[2] / ".env"),  # repo root
+    ]
 
 
 def _load_ada_env() -> None:
@@ -209,16 +382,20 @@ def _load_ada_env() -> None:
     except Exception:
         pass
 
-    # Then load ~/.ada/env (lower priority — vault wins)
-    env_path = _get_env_path()
-    if not os.path.exists(env_path):
-        return
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                os.environ.setdefault(key.strip(), value.strip())
+    # Then load env files (lower priority than vault/explicit env). Includes
+    # the project .env — the same file the runtime server reads — so the REPL
+    # and server agree on storage/DB options like DATABASE_URL.
+    seen: set[str] = set()
+    for env_path in (_get_env_path(), *_project_env_paths()):
+        if env_path in seen or not os.path.exists(env_path):
+            continue
+        seen.add(env_path)
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    os.environ.setdefault(key.strip(), value.strip())
 
 
 def _setup_key(quiet: bool = False) -> None:
@@ -601,6 +778,8 @@ def _shell(host: str, port: int) -> None:
                     print(f"  {D}Usage:{R} setup license <path-to-license-file>\n")
             else:
                 _print_setup(port)
+        elif cmd == "token":
+            _token_cmd(parts[1:])
         elif cmd == "status":
             brain = _get_brain()
             _print_status(brain)
@@ -715,12 +894,14 @@ def main() -> None:
                 print(f"Usage: ada setup license <path-to-license-file>")
         else:
             _print_setup(port)
+    elif args[0] == "token":
+        _token_cmd(args[1:])
     elif args[0] == "help":
         _print_banner()
         _print_help()
     else:
         print(f"Unknown command: {args[0]}")
-        print("Usage: ada [serve|setup|help]")
+        print("Usage: ada [serve|setup|token|help]")
         sys.exit(1)
 
 

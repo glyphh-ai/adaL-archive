@@ -378,8 +378,12 @@ class AdaThought(Base):
     thought_id = Column(String(36), primary_key=True)
     content = Column(Text, nullable=False)
     speaker = Column(String(50), nullable=False, default="incoming")
-    glyph_data = Column(Text, nullable=False)  # JSON-serialized glyph layers
+    glyph_data = Column(Text, nullable=False)  # JSON-serialized full glyph hierarchy
     content_vector = Column(Text, nullable=True)  # JSON array for content similarity
+    # Global cortex as a first-class vector: pgvector (HNSW) on Postgres,
+    # JSON-encoded text on SQLite. Lets recall use native cosine at scale and
+    # lets the glyph be reconstructed on load WITHOUT re-encoding.
+    global_cortex = Column(VectorType(2048), nullable=True)
     strength = Column(Float, default=1.0, nullable=False)
     access_count = Column(Integer, default=0, nullable=False)
     created_at = Column(Float, nullable=False)
@@ -391,6 +395,14 @@ class AdaThought(Base):
         Index("idx_thought_strength", strength.desc()),
         Index("idx_thought_accessed", last_accessed.desc()),
         Index("idx_thought_archived", archived),
+        # HNSW cosine index — PostgreSQL/pgvector only (ignored on SQLite).
+        Index(
+            "idx_thought_cortex",
+            global_cortex,
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"global_cortex": "vector_cosine_ops"},
+        ),
     )
 
     def __repr__(self) -> str:

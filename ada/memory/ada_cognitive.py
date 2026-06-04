@@ -90,7 +90,7 @@ class AdaCognitive:
         self._system_prompt = system_prompt
 
         # Core components
-        self._space = thought_space or ThoughtGlyphSpace()
+        self._space = thought_space or ThoughtGlyphSpace(with_foundation=True)
         self._glyph_loop = GlyphCognitiveLoop(self._space)
         self._cognitive = CognitiveGlyph(thought_space=self._space)
         self._conversation = Conversation(

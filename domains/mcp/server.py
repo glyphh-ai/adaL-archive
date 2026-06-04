@@ -1,14 +1,24 @@
 """
-MCP Server — Ada's brain exposed as three tools.
+MCP Server — Ada's substrate exposed as deterministic skills.
 
-  think(input)    — pure associative recall, returns what activates
-  ask(question)   — targeted retrieval, returns one fact + confidence
-  write(text)     — absorb a fact into the substrate (optional versioning)
+Cognitive surfaces:
+  think(input)        — pure associative recall, returns what activates
+  ask(question)       — targeted retrieval, one fact + confidence
+  tell(text[,key])    — absorb a fact (optional versioning)
+  tell_raw(facts[,key]) — absorb a pre-structured universal-schema fact (no LLM)
 
-The original single `think` tool is preserved as the catch-all entry that
-runs Ada's full cognitive loop (firewall + classify + route + absorb).
-The new `think` here is the surface variant: pure associative wave, no
-synthesis. Either is fine to call; they target different cognitive needs.
+Deterministic HDC skills (no LLM in the path):
+  recall(query)       — associative search, top-k matches + similarity
+  history(key)        — full version chain for a versioned key
+  drift(key)          — how a key's representation shifted over time
+  predict(key[,steps]) — beam-search projection + trend statistics
+  stats()             — substrate vital signs
+
+Access management:
+  create_token(...)   — mint an API token for this MCP server
+
+This is the tool surface the Claude Agent SDK drives: Claude decides WHAT to
+do (chat, ingest, project); these tools guarantee HOW (deterministic HDC).
 """
 
 import json
@@ -25,6 +35,9 @@ from mcp.types import (
 from domains.auth.service import AuthService
 
 logger = logging.getLogger(__name__)
+
+# Single-tenant runtime: every thought/token lives under one org.
+ADA_ORG_ID = "ada"
 
 
 def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
@@ -120,6 +133,93 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
                     "required": ["facts"],
                 },
             ),
+            Tool(
+                name="recall",
+                description=(
+                    "Deterministic associative search over Ada's substrate "
+                    "(pure HDC cosine, no LLM). Returns the top matching "
+                    "thoughts with similarity scores and their versioned key."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string"},
+                        "top_k": {"type": "integer", "default": 5},
+                    },
+                    "required": ["query"],
+                },
+            ),
+            Tool(
+                name="history",
+                description=(
+                    "The full version chain for a versioned key (e.g. "
+                    "'market.SPY', 'chris.age') in chronological order."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {"key": {"type": "string"}},
+                    "required": ["key"],
+                },
+            ),
+            Tool(
+                name="drift",
+                description=(
+                    "How the substrate's representation of a versioned key has "
+                    "shifted over time: consecutive cosine similarities, "
+                    "first-to-last similarity, and overall drift rate."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {"key": {"type": "string"}},
+                    "required": ["key"],
+                },
+            ),
+            Tool(
+                name="predict",
+                description=(
+                    "Project a versioned key forward via beam search over its "
+                    "temporal deltas. Returns confidence plus trend statistics "
+                    "(autocorrelation, drift rate, periodicity). Needs >= 2 "
+                    "versions of the key."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "key": {"type": "string"},
+                        "steps": {"type": "integer", "default": 1},
+                    },
+                    "required": ["key"],
+                },
+            ),
+            Tool(
+                name="stats",
+                description=(
+                    "Substrate vital signs: total thoughts, versioned keys, "
+                    "multi-version keys, and foundation primitives loaded."
+                ),
+                inputSchema={"type": "object", "properties": {}},
+            ),
+            Tool(
+                name="create_token",
+                description=(
+                    "Mint an API token for accessing this MCP server. The raw "
+                    "token is returned ONCE — store it now. Optionally scope by "
+                    "permissions and expiry."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string", "default": "repl-token"},
+                        "permissions": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "default": ["read", "write"],
+                        },
+                        "expires_days": {"type": "integer"},
+                        "model_id": {"type": "string"},
+                    },
+                },
+            ),
         ]
 
     @app.call_tool()
@@ -134,6 +234,18 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
             return _handle_tell(brain, args)
         if name == "tell_raw":
             return _handle_tell_raw(brain, args)
+        if name == "recall":
+            return _handle_recall(brain, args)
+        if name == "history":
+            return _handle_history(brain, args)
+        if name == "drift":
+            return _handle_drift(brain, args)
+        if name == "predict":
+            return _handle_predict(brain, args)
+        if name == "stats":
+            return _handle_stats(brain, args)
+        if name == "create_token":
+            return await _handle_create_token(brain, args)
         return _err(f"Unknown tool: {name}")
 
     return app
@@ -223,6 +335,174 @@ def _handle_tell(brain, args: dict) -> CallToolResult:
         })
     except Exception as e:
         logger.error("tell failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_recall(brain, args: dict) -> CallToolResult:
+    query = args.get("query", "")
+    top_k = int(args.get("top_k", 5))
+    if not query:
+        return _err("Missing 'query' parameter")
+    try:
+        space = brain._cognitive.thought_space
+        results = space.recall(query, top_k=top_k)
+        return _ok({
+            "query": query,
+            "results": [
+                {
+                    "content": r.thought.content,
+                    "similarity": round(float(r.global_similarity), 3),
+                    "key": r.thought.metadata.get("_key"),
+                }
+                for r in results
+            ],
+        })
+    except Exception as e:
+        logger.error("recall failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_history(brain, args: dict) -> CallToolResult:
+    key = args.get("key", "")
+    if not key:
+        return _err("Missing 'key' parameter")
+    try:
+        hist = brain._cognitive.thought_space.history(key)
+        return _ok({
+            "key": key,
+            "versions": len(hist),
+            "chain": [
+                {
+                    "version": h.metadata.get("_version"),
+                    "content": h.content,
+                    "thought_id": h.thought_id,
+                }
+                for h in hist
+            ],
+        })
+    except Exception as e:
+        logger.error("history failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_drift(brain, args: dict) -> CallToolResult:
+    key = args.get("key", "")
+    if not key:
+        return _err("Missing 'key' parameter")
+    try:
+        return _ok(brain._cognitive.thought_space.drift(key))
+    except Exception as e:
+        logger.error("drift failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_predict(brain, args: dict) -> CallToolResult:
+    key = args.get("key", "")
+    steps = int(args.get("steps", 1))
+    if not key:
+        return _err("Missing 'key' parameter")
+    try:
+        space = brain._cognitive.thought_space
+        hist = space.history(key)
+        if len(hist) < 2:
+            return _ok({
+                "key": key,
+                "versions": len(hist),
+                "prediction": None,
+                "reason": "need >= 2 versions to project",
+            })
+        from ada.temporal.predictor import BeamSearchPredictor
+
+        glyphs = [h.glyph for h in hist]
+        result = BeamSearchPredictor(beam_width=5).predict(
+            glyphs, time_intervals=steps, hierarchy_level="cortex"
+        )
+        top = result.predictions[0]
+        trends = result.trends
+        drift = space.drift(key)
+        return _ok({
+            "key": key,
+            "versions": len(hist),
+            "steps": steps,
+            "confidence": round(float(top.confidence), 3),
+            "trends": {
+                "autocorrelation": round(float(trends.autocorrelation), 3),
+                "drift_rate": round(float(trends.drift_rate), 3),
+                "periodicity": trends.periodicity,
+            },
+            "drift_rate": round(float(drift.get("drift_rate") or 0.0), 3),
+        })
+    except Exception as e:
+        logger.error("predict failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_stats(brain, args: dict) -> CallToolResult:
+    try:
+        space = brain._cognitive.thought_space
+        by_key = space._history_by_key
+        foundation = sum(
+            1 for t in space._thoughts.values() if t.metadata.get("foundation")
+        )
+        return _ok({
+            "thoughts": space.count,
+            "versioned_keys": len(by_key),
+            "multi_version_keys": sum(1 for v in by_key.values() if len(v) > 1),
+            "foundation_primitives": foundation,
+        })
+    except Exception as e:
+        logger.error("stats failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+async def _handle_create_token(brain, args: dict) -> CallToolResult:
+    import hashlib
+    import secrets
+    from datetime import datetime, timedelta
+
+    from domains.models.db_models import Token
+
+    session_factory = getattr(brain, "_session_factory", None)
+    if session_factory is None:
+        return _err("No database session available for token creation")
+
+    name = args.get("name") or "repl-token"
+    permissions = args.get("permissions") or ["read", "write"]
+    model_id = args.get("model_id")
+    expires_days = args.get("expires_days")
+    expires_at = (
+        datetime.utcnow() + timedelta(days=int(expires_days)) if expires_days else None
+    )
+
+    raw_token = f"ada_{secrets.token_urlsafe(32)}"
+    token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
+
+    try:
+        async with session_factory() as session:
+            tok = Token(
+                name=name,
+                token_hash=token_hash,
+                token_prefix=raw_token[:12],
+                org_id=ADA_ORG_ID,
+                model_id=model_id,
+                permissions=permissions,
+                expires_at=expires_at,
+            )
+            session.add(tok)
+            await session.commit()
+            await session.refresh(tok)
+            token_id = str(tok.id)
+        return _ok({
+            "id": token_id,
+            "name": name,
+            "token": raw_token,
+            "token_prefix": raw_token[:12],
+            "permissions": permissions,
+            "expires_at": expires_at.isoformat() if expires_at else None,
+            "note": "Store this token now — it is not shown again.",
+        })
+    except Exception as e:
+        logger.error("create_token failed: %s", e, exc_info=True)
         return _err(str(e))
 
 

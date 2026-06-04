@@ -11,7 +11,6 @@ Importable as ``ada.server:app``.
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime
-from pathlib import Path
 from typing import AsyncGenerator, Optional
 
 from fastapi import FastAPI, Request
@@ -51,11 +50,6 @@ def get_brain():
     return brain
 
 
-# ── Capabilities directory ───────────────────────────────────────────────────
-
-CAPABILITIES_DIR = Path(__file__).resolve().parent.parent / "capabilities"
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Boot Ada's brain."""
@@ -74,17 +68,21 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
     logger.info("Memory banks online")
 
-    # Model manager (internal — used by capabilities for DB persistence)
+    # Model manager — runtime infrastructure for deploying models out-of-band
+    # (the model API / forthcoming .adaL package loader). NOT a model itself.
     model_manager = ModelManager(async_session_maker)
 
-    # ── Load innate capabilities ─────────────────────────────────────────
-    from domains.brain.loader import CapabilityLoader, register_capabilities_in_db
+    # ── No models wired into the runtime ─────────────────────────────────
+    # The runtime ships as the runtime + primitives only. Models are loaded
+    # out-of-band — the forthcoming .adaL package paradigm: a model is a zip
+    # exposing MCP tools that register on the MCP surface, managed from the
+    # REPL. Boot with an empty brain state; the think pipeline degrades to
+    # pure LLM + memory until a model is deployed (firewall passes through,
+    # the router falls back to the LLM).
+    from domains.brain.loader import BrainState
 
-    brain_state = CapabilityLoader.boot(CAPABILITIES_DIR)
+    brain_state = BrainState()
     app.state.brain_state = brain_state
-
-    # Register capabilities in DB (loads exemplars, creates encoders)
-    await register_capabilities_in_db(brain_state, model_manager)
 
     # ── Initialize Ada's LLM ────────────────────────────────────────────
     from domains.brain.llm import AdaLLM

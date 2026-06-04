@@ -16,8 +16,9 @@ from pathlib import Path
 import yaml
 
 from ada.memory.thought_space import ThoughtGlyphSpace
+from ada.memory.foundation import FOUNDATION_DIR
 
-PRIMES_FILE = Path(__file__).parent / "primes.yaml"
+PRIMES_FILE = FOUNDATION_DIR / "primes.yaml"
 
 
 def main() -> None:
