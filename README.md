@@ -69,6 +69,17 @@ Four tools an LLM (Claude, Claude Code, any MCP-capable model) can call:
 
 ## Run it
 
+### Quickest: `make`
+
+```bash
+make install        # .venv + editable install (+ dev extras), seeds .env
+# add ANTHROPIC_API_KEY to .env  (optional — substrate works without it)
+make dev            # server with hot-reload on :8002
+```
+
+Other targets: `make repl` (interactive shell), `make serve` (no reload),
+`make test`, `make fmt`, `make clean`. Run `make` alone to list them.
+
 ### Quick: the interactive REPL
 
 ```bash
