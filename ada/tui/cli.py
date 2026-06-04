@@ -376,8 +376,9 @@ def _load_ada_env() -> None:
         }
         for vault_key, env_key in _VAULT_TO_ENV.items():
             val = vault.get(vault_key)
-            if val:
-                os.environ.setdefault(env_key, val)
+            # Override absent OR blank env vars (an empty export must not win).
+            if val and not os.environ.get(env_key):
+                os.environ[env_key] = val
     except Exception:
         pass
 
@@ -394,7 +395,11 @@ def _load_ada_env() -> None:
                 line = line.strip()
                 if line and not line.startswith("#") and "=" in line:
                     key, _, value = line.partition("=")
-                    os.environ.setdefault(key.strip(), value.strip())
+                    key, value = key.strip(), value.strip()
+                    # Override absent OR blank env vars so a stale/empty shell
+                    # export can't shadow a real value from .env.
+                    if value and not os.environ.get(key):
+                        os.environ[key] = value
 
 
 def _setup_key(quiet: bool = False) -> None:
