@@ -210,7 +210,7 @@ def fetch_summary(title: str, timeout: float = 10,
     enc = urllib.parse.quote(title.replace("_", " "))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{enc}"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "AdaCurriculum/0.1 (research)",
+        "User-Agent": "AdaCurriculum/0.1 (research; timmetim@gmail.com)",
         "Accept": "application/json",
     })
     for attempt in range(max_retries + 1):

@@ -101,7 +101,7 @@ MAX_TITLES = int(_os.environ.get("MAX_TITLES", "10000"))
 
 API = "https://en.wikipedia.org/w/api.php"
 HEADERS = {
-    "User-Agent": "AdaCurriculum/0.1 (research)",
+    "User-Agent": "AdaCurriculum/0.1 (research; timmetim@gmail.com)",
     "Accept": "application/json",
 }
 
