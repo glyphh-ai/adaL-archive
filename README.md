@@ -124,6 +124,49 @@ PYTHONPATH=. python curriculum/agi/layer-1/teach.py
 PYTHONPATH=. python curriculum/agi/layer-1/explore.py
 ```
 
+## Production: Docker
+
+The image is storage-agnostic — `DATABASE_URL` decides the backend. Unset, Ada
+runs on in-process SQLite. Point it at Postgres and the runtime flips to the
+**pgvector** backend, enabling the vector extension and running the alembic
+migrations (incl. the `ada_thoughts` cortex column + HNSW index) on first boot.
+Encoded thought vectors are then stored once and reconstructed on restart — no
+re-encoding.
+
+### Recommended: compose (runtime + pgvector)
+
+```bash
+cp .env.example .env          # set ANTHROPIC_API_KEY — DB is wired by compose
+docker compose up -d --build
+curl localhost:8002/health
+```
+
+The bundled `db` service is `pgvector/pgvector:pg16`; the runtime waits for it to
+be healthy, connects via `DATABASE_URL=postgresql://ada:ada@db:5432/ada`, and
+persists vectors to the `pgdata` named volume across restarts and upgrades.
+Override `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `PORT` in `.env`.
+
+### Single container (SQLite, no Postgres)
+
+```bash
+docker build -t ada .
+docker run -d -p 8002:8002 \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  -v ada-data:/root/.ada \
+  ada
+```
+
+Leaving `DATABASE_URL` unset keeps SQLite at `~/.ada/ada.db`; mount a volume
+there to persist the substrate. Good for a single node; use the compose path
+above for anything that needs vector recall at scale.
+
+| Env var | Purpose |
+|---------|---------|
+| `ANTHROPIC_API_KEY` | LLM enricher (`tell`) + Claude-as-renderer (`ask`) |
+| `DATABASE_URL` | unset → SQLite; `postgresql://…` → pgvector backend |
+| `ADA_MODEL` | LLM model (default `claude-haiku-4-5-20251001`) |
+| `PORT` / `HOST` | server bind (default `8002` / `0.0.0.0`) |
+
 ## When Ada is and isn't the right tool
 
 | Use case | Right tool |
