@@ -32,10 +32,12 @@ import yaml
 
 from ada.memory.thought_space import ThoughtGlyphSpace
 
+from ada.memory.foundation import FOUNDATION_DIR
+
 ROOT = Path(__file__).parent.parent
-LAYER_0 = ROOT / "layer-0" / "primes.yaml"
+LAYER_0 = FOUNDATION_DIR / "primes.yaml"
 LAYER_1 = [
-    ROOT / "layer-1" / f
+    FOUNDATION_DIR / f
     for f in ("colors.yaml", "numbers.yaml", "spatial.yaml",
               "logical.yaml", "temporal.yaml")
 ]

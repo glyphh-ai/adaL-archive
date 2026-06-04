@@ -21,10 +21,12 @@ from pathlib import Path
 import yaml
 
 from ada.memory.thought_space import ThoughtGlyphSpace
+# Foundation primitives now live in the runtime core (ada/memory/foundation/).
+from ada.memory.foundation import FOUNDATION_DIR
 
-LAYER_0 = Path(__file__).parent.parent / "layer-0" / "primes.yaml"
+LAYER_0 = FOUNDATION_DIR / "primes.yaml"
 LAYER_1_FILES = [
-    Path(__file__).parent / f
+    FOUNDATION_DIR / f
     for f in ("colors.yaml", "numbers.yaml", "spatial.yaml",
               "logical.yaml", "temporal.yaml")
 ]

@@ -103,6 +103,11 @@ class ThoughtGlyphSpace:
     Args:
         primitives: PrimitiveSpace (loaded). If None, creates and loads one.
         encoder: ThoughtGlyphEncoder. If None, creates one from primitives.
+        with_foundation: When True, seed the core foundation primitives
+            (layer-0 NSM primes + layer-1 cognitive primitives) at
+            construction so the substrate starts warm. Off by default to
+            keep benchmark/curriculum spaces clean; the runtime cognitive
+            core (AdaCognitive) turns it on.
     """
 
     def __init__(
@@ -110,6 +115,7 @@ class ThoughtGlyphSpace:
         primitives: PrimitiveSpace | None = None,
         encoder: ThoughtGlyphEncoder | None = None,
         enricher: object | None = None,
+        with_foundation: bool = False,
     ) -> None:
         # Primitives
         if primitives is None:
@@ -137,6 +143,12 @@ class ThoughtGlyphSpace:
         self._history_by_key: dict[str, list[StoredThought]] = {}
         from ada.temporal.delta import TemporalEncoder
         self._temporal = TemporalEncoder()
+
+        # Warm start: seed the core foundation primitives so a fresh runtime
+        # boots with its innate conceptual bedrock already present.
+        if with_foundation:
+            from ada.memory.foundation import seed_foundation
+            seed_foundation(self)
 
     @property
     def primitives(self) -> PrimitiveSpace:
