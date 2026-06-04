@@ -42,6 +42,10 @@ class Settings(BaseSettings):
 
     @property
     def resolved_storage_backend(self) -> str:
+        # pgvector when pointed at a persistent Postgres; SQLite otherwise.
+        url = self.resolved_database_url.lower()
+        if "postgres" in url:
+            return "pgvector"
         return "sqlite"
 
     @property
