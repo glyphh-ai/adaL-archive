@@ -1,7 +1,9 @@
 """
-Ada configuration — simple, SQLite-only.
+Ada configuration.
 
-All configuration is read from environment variables with sensible defaults.
+All configuration is read from environment variables / .env with sensible
+defaults. Storage is SQLite by default; setting DATABASE_URL to a Postgres URL
+switches the runtime to the pgvector backend (see resolved_storage_backend).
 """
 
 from functools import lru_cache
@@ -18,17 +20,18 @@ class Settings(BaseSettings):
     host: str = Field(default="0.0.0.0", description="Server host")
     port: int = Field(default=8002, description="Server port")
 
-    # Database — always SQLite
+    # Database — SQLite by default; a postgres:// URL enables pgvector.
     database_url: Optional[str] = Field(
         default=None,
-        description="SQLite database URL. Defaults to ./ada.db"
+        description="DB URL. Unset → SQLite at ~/.ada/ada.db. "
+                    "postgresql://… → pgvector backend.",
     )
 
     # Dev flags
     enable_docs: bool = Field(default=False, description="Enable /docs endpoint")
     cors_allow_all: bool = Field(default=True, description="Allow all CORS origins")
 
-    # Storage — always SQLite
+    # Storage — auto-resolved from DATABASE_URL (see resolved_storage_backend).
     storage_backend: str = Field(default="sqlite")
 
     @property

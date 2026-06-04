@@ -182,8 +182,22 @@ def _get_ada_home() -> str:
 
 
 def _get_env_path() -> str:
-    """Path to Ada's .env file."""
+    """Path to Ada's home env file (~/.ada/env)."""
     return f"{_get_ada_home()}/env"
+
+
+def _project_env_paths() -> list[str]:
+    """Candidate project .env files — the SAME file the runtime server reads.
+
+    Checked so the REPL resolves storage/DB options (DATABASE_URL, etc.)
+    identically to the server regardless of where it's launched from.
+    """
+    from pathlib import Path
+
+    return [
+        str(Path.cwd() / ".env"),
+        str(Path(__file__).resolve().parents[2] / ".env"),  # repo root
+    ]
 
 
 def _load_ada_env() -> None:
@@ -209,16 +223,20 @@ def _load_ada_env() -> None:
     except Exception:
         pass
 
-    # Then load ~/.ada/env (lower priority — vault wins)
-    env_path = _get_env_path()
-    if not os.path.exists(env_path):
-        return
-    with open(env_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                os.environ.setdefault(key.strip(), value.strip())
+    # Then load env files (lower priority than vault/explicit env). Includes
+    # the project .env — the same file the runtime server reads — so the REPL
+    # and server agree on storage/DB options like DATABASE_URL.
+    seen: set[str] = set()
+    for env_path in (_get_env_path(), *_project_env_paths()):
+        if env_path in seen or not os.path.exists(env_path):
+            continue
+        seen.add(env_path)
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    os.environ.setdefault(key.strip(), value.strip())
 
 
 def _setup_key(quiet: bool = False) -> None:
