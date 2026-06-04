@@ -80,7 +80,7 @@ capabilities/code/hooks/
 corpus.json
 
 # Phase 1 transient artifacts
-curriculum/agi/chemistry/.phase1_cache/
-curriculum/agi/chemistry/.phase1_extract_cache/
-curriculum/agi/chemistry/.corpus_cache/
-curriculum/agi/chemistry/.phase1_extract_cache_oldprompt/
+benchmark/curriculum/agi/chemistry/.phase1_cache/
+benchmark/curriculum/agi/chemistry/.phase1_extract_cache/
+benchmark/curriculum/agi/chemistry/.corpus_cache/
+benchmark/curriculum/agi/chemistry/.phase1_extract_cache_oldprompt/

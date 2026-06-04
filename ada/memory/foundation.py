@@ -11,7 +11,7 @@ fresh process starts WARM — no curriculum run required before data flows in.
 Each entry is a universal-schema glyph ingested via `tell_raw` (NO LLM calls).
 `composed_of` references become relational composition facts so the
 foundation lattice is queryable via standard recall. This is the same
-ingestion the old `curriculum/agi/layer-1/teach.py` did — moved into core.
+ingestion the old curriculum layer-1 teach step did — moved into core.
 """
 
 from __future__ import annotations

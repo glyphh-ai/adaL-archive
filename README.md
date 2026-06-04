@@ -212,8 +212,8 @@ api/                   FastAPI HTTP routes (health, tokens)
 infrastructure/        config + database (SQLite / pgvector)
 shared/                auth, exceptions, middleware
 
-curriculum/            YAML concept curricula (NSM primes → composed concepts)
-benchmark/             paper.md + the at-scale benchmarks
+benchmark/             paper.md, the at-scale benchmarks, and curriculum/
+                       (YAML concept curricula: NSM primes → composed concepts)
 scripts/               ada_repl.py and standalone demos
 ```
 

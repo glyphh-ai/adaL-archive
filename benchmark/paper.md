@@ -494,7 +494,7 @@ with audit chains terminating at universal primitives.**
 
 The three domains plus the developmental substrate consolidate into
 a single 39,429-key lattice with 304,126 composition edges
-(`curriculum/agi/ada.*`). Six operational tests on the unified
+(`benchmark/curriculum/agi/ada.*`). Six operational tests on the unified
 substrate:
 
 ### A. Coverage
@@ -576,49 +576,49 @@ at 39K scale.
 ```bash
 # ── Substrate construction (no LLM, fully deterministic) ───────────
 # Layer-0: 63 NSM primes
-PYTHONPATH=. python curriculum/agi/layer-0/teach.py
+PYTHONPATH=. python benchmark/curriculum/agi/layer-0/teach.py
 
 # Layer-1: 59 cognitive primitives
-PYTHONPATH=. python curriculum/agi/layer-1/teach.py
+PYTHONPATH=. python benchmark/curriculum/agi/layer-1/teach.py
 
 # Infant developmental: 54 binary distinctions + 179 infant concepts
-PYTHONPATH=. python curriculum/agi/infant/teach.py
-PYTHONPATH=. python curriculum/agi/infant/verify.py
+PYTHONPATH=. python benchmark/curriculum/agi/infant/teach.py
+PYTHONPATH=. python benchmark/curriculum/agi/infant/verify.py
 
 # Symbols: 10 digits + 26 letters + 40 phonemes
-PYTHONPATH=. python curriculum/agi/symbols/teach.py
+PYTHONPATH=. python benchmark/curriculum/agi/symbols/teach.py
 
 # Communication: phonotactics + syllables + lexicon + grammar/acts
-PYTHONPATH=. python curriculum/agi/communication/teach.py
+PYTHONPATH=. python benchmark/curriculum/agi/communication/teach.py
 
 # ── Small-scale benchmark (77 facts, 25 queries) ───────────────────
 PYTHONPATH=. python scripts/hard_test.py
 ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/llm_only_baseline.py
 
 # ── At-scale headline benchmark (synthetic 1M+ token corpora) ──────
-PYTHONPATH=. python curriculum/at-scale/bench.py --n 1000
-ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_rag.py --n 1500
-ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_neo4j.py --n 1500
-ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_pgvector.py --n 500
-ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_memory.py --n 200
-ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_cross_type.py
+PYTHONPATH=. python benchmark/curriculum/at-scale/bench.py --n 1000
+ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/curriculum/at-scale/bench_rag.py --n 1500
+ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/curriculum/at-scale/bench_neo4j.py --n 1500
+ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/curriculum/at-scale/bench_pgvector.py --n 500
+ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/curriculum/at-scale/bench_memory.py --n 200
+ANTHROPIC_API_KEY=... PYTHONPATH=. python benchmark/curriculum/at-scale/bench_cross_type.py
 
 # ── Cross-domain LLM-assisted extraction (§5) ──────────────────────
 # Crawl Wikipedia category trees for a domain
 DOMAIN=philosophy MAX_TITLES=20000 \
-  PYTHONPATH=. python curriculum/agi/chemistry/build_corpus.py
+  PYTHONPATH=. python benchmark/curriculum/agi/chemistry/build_corpus.py
 
 # Extract with the developmental namespace (523 keys)
 ANTHROPIC_API_KEY=... INCLUDE_DEVELOPMENTAL=1 \
   NAMESPACE_PREFIXES="prime,color,number,spatial,logic,time,binary,infant,digit,letter,phoneme,phonotactic,syllable,lexicon,grammar,act,dialogue" \
-  CORPUS_FILE=curriculum/agi/philosophy/phase1_output/corpus_titles.txt \
-  OUTPUT_DIR=curriculum/agi/philosophy/phase1_output_v2 \
+  CORPUS_FILE=benchmark/curriculum/agi/philosophy/phase1_output/corpus_titles.txt \
+  OUTPUT_DIR=benchmark/curriculum/agi/philosophy/phase1_output_v2 \
   BUDGET_USD=50 N_COMPOUNDS=20000 \
-  PYTHONPATH=. python curriculum/agi/chemistry/phase1_integrity.py
+  PYTHONPATH=. python benchmark/curriculum/agi/chemistry/phase1_integrity.py
 
 # ── Unified substrate (§6) ─────────────────────────────────────────
-PYTHONPATH=. python curriculum/agi/consolidate_light.py    # 55 sec
-PYTHONPATH=. python curriculum/agi/verify_unified.py       # 6/6 pass
+PYTHONPATH=. python benchmark/curriculum/agi/consolidate_light.py    # 55 sec
+PYTHONPATH=. python benchmark/curriculum/agi/verify_unified.py       # 6/6 pass
 ```
 
 All curriculum files, generated corpora, Phase 1 outputs (clean
