@@ -75,8 +75,6 @@ Thumbs.db
 ada/__pycache__/
 ada/**/__pycache__/
 
-# Large capability data (pulled on demand)
-capabilities/code/hooks/
 corpus.json
 
 # Phase 1 transient artifacts

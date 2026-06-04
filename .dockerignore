@@ -18,6 +18,3 @@ build/
 *.egg-info/
 benchmark/curriculum/**/phase1_output/
 benchmark/curriculum/at-scale/bench_25_output/
-# Models are not part of the runtime — they load out-of-band (.adaL packages).
-# Kept in the repo for now but excluded from the runtime image.
-capabilities/

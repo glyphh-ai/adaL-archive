@@ -179,9 +179,6 @@ encrypted in `~/.ada/vault` (`ada setup key`).
 | `JWT_SECRET_KEY` | — | JWT validation secret (token auth) |
 | `ENABLE_DOCS` | `false` | Enable `/docs` and `/redoc` |
 
-For the code-intelligence capability (`capabilities/code/`), the client reads
-`ADAL_RUNTIME_URL`, `ADAL_ORG_ID`, `ADAL_MODEL_ID`, and `ADAL_TOKEN`.
-
 ---
 
 ## Architecture map
