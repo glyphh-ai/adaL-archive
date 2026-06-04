@@ -39,8 +39,8 @@ except ImportError:
     theme = _FallbackTheme()
 
 _MODEL_DIR = Path(__file__).parent
-_GLYPHH_DIR = Path.home() / ".ada"
-_STATE_FILE = _GLYPHH_DIR / "code.json"
+_ADAL_DIR = Path.home() / ".ada"
+_STATE_FILE = _ADAL_DIR / "code.json"
 
 
 # ---------------------------------------------------------------------------
@@ -222,11 +222,11 @@ def _configure_claude_code(repo_path: str, mcp_url: str, ctx: dict, is_upgrade: 
 
     # 2. Migrate: remove Ada section from CLAUDE.md if previously injected
     target_claude_md = repo / "CLAUDE.md"
-    _GLYPHH_MARKER = "# Ada Code Intelligence"
+    _ADAL_MARKER = "# Ada Code Intelligence"
     if target_claude_md.exists():
         existing = target_claude_md.read_text()
-        if _GLYPHH_MARKER in existing:
-            marker_pos = existing.index(_GLYPHH_MARKER)
+        if _ADAL_MARKER in existing:
+            marker_pos = existing.index(_ADAL_MARKER)
             cleaned = existing[:marker_pos].rstrip()
             if cleaned:
                 target_claude_md.write_text(cleaned + "\n")
@@ -425,7 +425,7 @@ def _cmd_init(args: str, ctx: dict):
     _configure_claude_code(repo, mcp_url, ctx, is_upgrade=is_upgrade)
 
     # Save state
-    _GLYPHH_DIR.mkdir(parents=True, exist_ok=True)
+    _ADAL_DIR.mkdir(parents=True, exist_ok=True)
     _STATE_FILE.write_text(json.dumps({
         "repo": repo,
         "runtime_url": ctx["runtime_url"],

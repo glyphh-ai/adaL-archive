@@ -1,128 +1,86 @@
 # Ada
 
-**A hyperdimensional cognitive substrate that answers compositional queries
-on corpora exceeding any LLM context window.**
+**A hyperdimensional cognitive substrate that gives an LLM persistent,
+queryable memory beyond any context window.**
 
-At 100,000 facts / 3.6M tokens (18× Claude Haiku/Opus, 3.6× Sonnet),
-Ada answers five compositional queries correctly in under 200 ms each
-with full provenance. A full-context LLM scores 0/5 because the corpus
-doesn't fit in any prompt. Naive RAG scores 0/5 because top-K retrieval
-is the wrong shape for aggregation. Read the paper:
-[`benchmark/paper.md`](benchmark/paper.md).
+Ada stores facts as 2048-dim bipolar vectors and answers *compositional*
+queries over them — aggregation, distribution, multi-role intersection,
+versioned drift — in well under a second, with full provenance, on corpora
+far larger than any prompt can hold. It runs on-device (SQLite, no embedding
+API) or against Postgres + pgvector for scale, and exposes itself to any
+LLM over MCP.
 
-> *"Why not just RAG?"* — RAG handles **retrieval**. Ada handles
-> **aggregation, distribution, and multi-role intersection** — query
-> shapes RAG structurally cannot answer because the answer is not a
-> single fact in the substrate, it's a *property of the whole substrate*.
+This README is about **running and using** Ada. For the empirical argument
+(why aggregation queries beat RAG and full-context LLMs at scale), see the
+paper: [`benchmark/paper.md`](benchmark/paper.md).
 
-## The headline result
+---
 
-| | Score | Latency | Why |
-|---|---|---|---|
-| **Ada (substrate)** | **5/5 ✓** | 102–177 ms | Universal-schema role scan; aggregation is `Counter().most_common()` |
-| **LLM-only (full context)** | **0/5 ✗** | N/A | Corpus is 3.6–18× every public Claude window — bytes don't fit |
-| **LLM + naive RAG** (top-50) | **0/5 ✗** | ~1 s | Top-K can't contain a *count*; aggregation isn't a retrieval shape |
-
-Reproducible from this repo: `ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_rag.py --n 5000` (~30 minutes; details in [`curriculum/at-scale/README.md`](curriculum/at-scale/README.md)).
-
-## What it actually is
+## How it works
 
 Four pieces, each independently inspectable:
 
-1. **HDC substrate** — 2048-dim bipolar vectors. Atoms encode words via
-   positional character n-grams (no embedding model). Bindings compose
-   role-filler frames; bundling aggregates. Standard SPA-style algebra.
-   `ada/memory/`, `ada/core/`.
+1. **HDC substrate** — 2048-dim bipolar vectors. Words are encoded by
+   positional character n-grams (deterministic, no embedding model).
+   `bind` composes role–filler frames; `bundle` aggregates. `ada/core/`,
+   `ada/memory/`.
 
-2. **Universal schema** — a fixed 7-layer × 33-role lattice that every
-   fact maps into. No schema sprawl. Counting matches on
-   `perceptual.color = blue` is a one-line dict scan; top-5 cities is
-   `Counter().most_common(5)`. `ada/cognitive/universal.py`.
+2. **Universal schema** — a fixed 7-layer × 33-role lattice every fact maps
+   into (entity, perceptual, spatial, temporal, relational, quantitative,
+   epistemic). Counting "facts where color = blue" is a one-line scan; "top
+   5 cities" is `Counter().most_common(5)`. `ada/cognitive/universal.py`.
 
-3. **Programmatic ingestion** — `space.tell_raw(facts, key)` takes
-   pre-structured universal-schema slots and writes a glyph with **zero
-   LLM calls**. The path used by the curriculum loaders and the
-   at-scale benchmark. Versioned: same `key` becomes v2, v3, ...,
-   with `TemporalEncoder` delta vectors and `drift(key)` trajectories.
-   `ada/memory/thought_space.py`.
+3. **Versioned memory** — write a fact under a `key` and it becomes v1, v2,
+   v3… with delta vectors between versions. You can query its full
+   `history` and its `drift` trajectory over time. `ada/memory/thought_space.py`.
 
-4. **Curriculum** — YAML files that declare every concept as a
-   universal-schema fill plus `composed_of:` references to earlier
-   concepts. Layer-0 is the 63 NSM semantic primes (Wierzbicka). Layer-1
-   is 59 concepts (Berlin & Kay colors, numbers, spatial, logical,
-   temporal) each citing its layer-0 primes. The composition lattice
-   is recursive: any concept can be traced back to its primes.
-   `curriculum/`.
+4. **Storage** — SQLite by default (`~/.ada/ada.db`, zero setup). Point
+   `DATABASE_URL` at Postgres and the runtime switches to the **pgvector**
+   backend: vectors stored once, reconstructed on boot (no re-encoding),
+   HNSW cosine recall at scale.
 
-## MCP surface
+The substrate runs fully without an LLM. An Anthropic API key is optional —
+it enables the build-time enricher (`tell`) and Claude as the answer renderer
+(`ask`).
 
-Four tools an LLM (Claude, Claude Code, any MCP-capable model) can call:
+---
 
-| Tool | What it does |
-|---|---|
-| `think(input)` | Pure associative recall — surfaces what activates. No interpretation. |
-| `ask(question)` | Predicate-aware targeted retrieval. Returns one fact + confidence, or "I don't know." |
-| `tell(text)` | Natural-language ingestion. Optional LLM enrichment at build time. |
-| `tell_raw(facts)` | Programmatic ingestion. Zero LLM in the path. |
-
-`domains/mcp/server.py`.
-
-## Run it
+## Install & start
 
 ### Quickest: `make`
 
 ```bash
 make install        # .venv + editable install (+ dev extras), seeds .env
 # add ANTHROPIC_API_KEY to .env  (optional — substrate works without it)
-make dev            # server with hot-reload on :8002
+make dev            # server with hot-reload on http://localhost:8002
 ```
 
 Other targets: `make repl` (interactive shell), `make serve` (no reload),
 `make test`, `make fmt`, `make clean`. Run `make` alone to list them.
 
-### Quick: the interactive REPL
+### The interactive REPL
 
 ```bash
-pip install numpy pyyaml pydantic pydantic-settings transformers torch anthropic
-export ANTHROPIC_API_KEY=sk-ant-...   # optional; substrate works without
-PYTHONPATH=. python scripts/ada_repl.py
+make repl           # or, after install:  ada
 ```
 
-Inside:
 ```
-  ada> aurora                        # load 77-fact Project Aurora corpus
+  ada> aurora                        # load the 77-fact demo corpus
   ada> ask what hull does aurora use?
   → trimaran                         (grounded in: "The Aurora boat uses a trimaran hull design.")
-  ada> history aurora.hull
-  v1: single hull design  →  v2: catamaran  →  v3: trimaran
-  ada> drift aurora.hull
-  consecutive sims: [+0.812, +0.829]  drift rate: +0.306
   ada> tell key=chris.location Chris just moved to Brooklyn.
   absorbed v2 ✓
+  ada> history chris.location
+  v1: San Francisco  →  v2: Brooklyn
+  ada> drift aurora.hull
+  consecutive sims: [+0.812, +0.829]  drift rate: +0.306
+  ada> stats
+  thoughts: 77   versioned keys: 12   foundation primitives: 122
 ```
 
-### The headline benchmark
+Type `help` in the shell for the full command list.
 
-```bash
-# Three-way scoreboard (Ada / LLM-only / RAG) at 3.6M tokens
-ANTHROPIC_API_KEY=... PYTHONPATH=. python curriculum/at-scale/bench_rag.py --n 5000
-
-# Substrate-only timing (no API needed)
-PYTHONPATH=. python curriculum/at-scale/bench.py --n 1000
-```
-
-### The curriculum
-
-```bash
-# Load 63 NSM primes (layer-0)
-PYTHONPATH=. python curriculum/agi/layer-0/teach.py
-
-# Load layer-0 + layer-1 (~122 concepts + 120 composition facts)
-PYTHONPATH=. python curriculum/agi/layer-1/teach.py
-
-# Five demos of substrate-native operations no LLM does the same way
-PYTHONPATH=. python curriculum/agi/layer-1/explore.py
-```
+---
 
 ## Production: Docker
 
@@ -130,8 +88,6 @@ The image is storage-agnostic — `DATABASE_URL` decides the backend. Unset, Ada
 runs on in-process SQLite. Point it at Postgres and the runtime flips to the
 **pgvector** backend, enabling the vector extension and running the alembic
 migrations (incl. the `ada_thoughts` cortex column + HNSW index) on first boot.
-Encoded thought vectors are then stored once and reconstructed on restart — no
-re-encoding.
 
 ### Recommended: compose (runtime + pgvector)
 
@@ -141,10 +97,9 @@ docker compose up -d --build
 curl localhost:8002/health
 ```
 
-The bundled `db` service is `pgvector/pgvector:pg16`; the runtime waits for it to
-be healthy, connects via `DATABASE_URL=postgresql://ada:ada@db:5432/ada`, and
-persists vectors to the `pgdata` named volume across restarts and upgrades.
-Override `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `PORT` in `.env`.
+The bundled `db` service is `pgvector/pgvector:pg16`; the runtime waits for it
+to be healthy, connects via `DATABASE_URL=postgresql://ada:ada@db:5432/ada`,
+and persists vectors to the `pgdata` named volume across restarts and upgrades.
 
 ### Single container (SQLite, no Postgres)
 
@@ -157,235 +112,124 @@ docker run -d -p 8002:8002 \
 ```
 
 Leaving `DATABASE_URL` unset keeps SQLite at `~/.ada/ada.db`; mount a volume
-there to persist the substrate. Good for a single node; use the compose path
-above for anything that needs vector recall at scale.
+there to persist the substrate.
 
-| Env var | Purpose |
-|---------|---------|
-| `ANTHROPIC_API_KEY` | LLM enricher (`tell`) + Claude-as-renderer (`ask`) |
-| `DATABASE_URL` | unset → SQLite; `postgresql://…` → pgvector backend |
-| `ADA_MODEL` | LLM model (default `claude-haiku-4-5-20251001`) |
-| `PORT` / `HOST` | server bind (default `8002` / `0.0.0.0`) |
+---
 
-## When Ada is and isn't the right tool
+## Using it from an LLM (MCP)
 
-| Use case | Right tool |
+Ada exposes a single MCP endpoint at **`/mcp`**. Start the server, then point
+any MCP client at `http://localhost:8002/mcp`.
+
+### The tools
+
+| Tool | What it does |
 |---|---|
-| Cross-session memory beyond context window | **Ada** |
-| Aggregation / distribution / multi-role queries on >1M-token corpora | **Ada** |
-| Versioned beliefs with drift trajectories (`history(key)`, `drift(key)`) | **Ada** |
-| Audit trail of every learned schema element | **Ada** (markdown changelog) |
-| Privacy-first deployment (no embedding API) | **Ada** (deterministic char n-grams) |
-| Federated memory (merge across users) | **Ada** (HDC majority-bundle) |
-| Compositional understanding by traversing primitives | **Ada** (curriculum + composition lattice) |
-| Q&A over a small fixed corpus that fits in context | full-context LLM |
-| Pure semantic similarity over documents | transformer embeddings + ANN |
-| Strict typed-relationship reasoning (legal, compliance) | knowledge graph + Cypher/SPARQL |
+| `think(input, top_k)` | Pure associative recall — surfaces the thoughts that resonate. No answer, just context. |
+| `ask(question)` | Targeted retrieval. Returns one fact + confidence, or "I don't know." |
+| `tell(text, key?)` | Natural-language ingestion. With `key`, becomes a new version of that key. |
+| `tell_raw(facts, key?)` | Programmatic ingestion of a universal-schema slot fill. **No LLM in the path.** |
+| `recall(query, top_k)` | Deterministic HDC cosine search. Top matches + similarity + versioned key. |
+| `history(key)` | Full version chain for a key, chronological. |
+| `drift(key)` | How a key's representation shifted: consecutive sims, drift rate. |
+| `predict(key, steps)` | Project a key forward via beam search over its temporal deltas. |
+| `stats()` | Substrate vital signs: thoughts, versioned keys, foundation primitives. |
+| `create_token(...)` | Mint an API token for this MCP server (returned once). |
 
-The honest summary: **Ada is not a general-purpose retrieval winner**.
-On a 77-fact corpus that fits in any LLM's window, a full-context LLM
-beats Ada 96–72 on accuracy. Ada's contribution is the **specific
-shape of queries the other architectures structurally cannot answer**.
+`domains/mcp/server.py`.
 
-## Competitive landscape — honest comparisons
+### Connecting clients
 
-The result table above used a *naive* RAG baseline (top-K cortex
-cosine on the substrate's own vectors, no separate embedding model).
-Several real-world competitors weren't directly tested. Where they
-sit, honestly:
+```bash
+ada setup claude            # auto-configure Claude Code
+ada setup                   # print config snippets for Claude Desktop / Cursor / any MCP client
+```
 
-### vs. Claude / ChatGPT Memory (sliding-context injection)
+For authenticated access, mint a token:
 
-Both Claude and ChatGPT have "memory" features that detect noteworthy
-facts during conversation and inject them into future system prompts.
-This **works fine for ~30–100 facts per user** — the sliding-context
-budget. The honest comparison:
+```bash
+ada token create --name my-client --permissions read,write
+ada token list
+ada token revoke <id-or-prefix>
+```
 
-- **At ≤100 facts per user**: their memory wins on simplicity. Ada is
-  overkill.
-- **At >1,000 facts per user**: their memory truncates or summarises,
-  losing precision. Ada's substrate stays addressable.
-- **At >10,000 facts per user** (the eventual fate of any deployed
-  assistant): the LLM Memory feature is the same structural bind as
-  full-context — facts evicted from the budget can't be queried. Ada
-  doesn't have an eviction budget.
-- **Versioning**: they don't expose drift trajectory queryable by key.
-  Ada does.
-- **Audit**: they don't expose which facts contributed to which answer.
-  Ada does.
-- **Cross-session continuity across model swaps**: their memory is
-  bound to their account/model. Ada is bipolar HDC on your disk.
+### HTTP endpoints
 
-### vs. Neo4j / knowledge graphs (Cypher / SPARQL)
+| Endpoint | Purpose |
+|---|---|
+| `GET /health` | liveness probe |
+| `POST /mcp` | MCP tool calls (Streamable HTTP) |
+| `POST /{org_id}/tokens` | API token management |
 
-A knowledge graph with a hand-designed schema would likely **handle
-queries A–E well** — Cypher is purpose-built for `MATCH` +
-aggregation + multi-hop traversal. We have not yet run a head-to-head
-benchmark against Neo4j; **this is the most defensible comparison we
-should add next**. Honest expectations:
+---
 
-- **Queries A, B (counts)**: Neo4j likely wins on latency
-  (`MATCH (p:Person)-[:WORKS_AS]->(j:Job {name: 'engineer'}) RETURN count(*)`).
-  Both correct.
-- **Query C, D (distribution)**: Neo4j wins again — `GROUP BY` is
-  native. Both correct.
-- **Query E (multi-role intersection)**: Neo4j wins with native
-  `MATCH` + multiple `WHERE`. Both correct.
+## Configuration
 
-Where Neo4j *loses* against Ada (so the comparison still favours Ada
-on architectural grounds):
+All values have defaults — the server boots with an empty `.env`. The `.env`
+is read by both the server and the `ada` REPL; secrets can also be stored
+encrypted in `~/.ada/vault` (`ada setup key`).
 
-- **Schema design cost**: Neo4j requires hand-designing node and edge
-  types per domain. Ada's universal schema is fixed once, reused
-  forever, and the LLM (Haiku at build time) does the mapping.
-- **Versioning**: Neo4j doesn't natively version concepts with delta
-  vectors. Adding a temporal layer to a Cypher schema is real work.
-- **Cross-model substrate portability**: A Neo4j database is bound to
-  its schema; rewriting it under a new ontology is a migration. Ada's
-  2048-dim bipolar substrate doesn't care which LLM consumes it.
-- **Compositional algebra**: HDC's bind/bundle/unbind operations let
-  Ada *bind* `(perceptual.color, blue)` and search role-level
-  similarity natively. Neo4j has no comparable primitive.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ANTHROPIC_API_KEY` | — | Enables the `tell` enricher + Claude as `ask` renderer |
+| `ADA_MODEL` | `claude-haiku-4-5-20251001` | LLM model for enrichment / rendering |
+| `DATABASE_URL` | SQLite at `~/.ada/ada.db` | `postgresql://…` switches to the pgvector backend |
+| `HOST` | `0.0.0.0` | Server bind address |
+| `PORT` | `8002` | Server port |
+| `JWT_SECRET_KEY` | — | JWT validation secret (token auth) |
+| `ENABLE_DOCS` | `false` | Enable `/docs` and `/redoc` |
 
-**Bottom line: Neo4j wins on aggregation latency; Ada wins on
-not-needing-hand-schema and on versioning + audit + compositional
-primitives. They're complementary, not redundant.** A future paper
-revision should include a Neo4j baseline.
+For the code-intelligence capability (`capabilities/code/`), the client reads
+`ADAL_RUNTIME_URL`, `ADAL_ORG_ID`, `ADAL_MODEL_ID`, and `ADAL_TOKEN`.
 
-### vs. pgvector / Chroma / Pinecone (production vector DBs)
-
-The RAG baseline we ran used Ada's own cortex cosine for top-K
-retrieval — *not* a separate transformer-embedding vector DB. We
-**have not yet directly benchmarked against pgvector + sentence-
-transformers**. Honest expectation:
-
-A real vector DB with a real embedding model would likely **beat our
-naive RAG baseline on retrieval quality for queries A–D** (more
-semantically-tuned embeddings would surface more relevant facts in the
-top-K). But it would **still score 0/5 on aggregation and
-distribution queries** because:
-
-- Top-K returns at most K facts.
-- The count answer ("71 engineers exist") is **not a fact in any
-  retrievable form** — it's a *property of the whole corpus*.
-- Distribution ("top 5 cities") **requires the full distribution**, not
-  a sample. Top-K returns a biased sample.
-
-This is the structural argument repeating: RAG is the right tool for
-single-entity retrieval; *no implementation of RAG fixes aggregation*
-because aggregation isn't top-K. Adding pgvector to the bench would
-strengthen the report but not change the conclusion.
-
-**Bottom line: pgvector vs Ada is the same shape as our naive RAG vs
-Ada — pgvector improves retrieval *quality*, but the failure category
-on aggregation is implementation-independent.** Adding it is a
-defensiveness move, not a research move.
-
-### Summary table
-
-| System | Wins at | Loses at |
-|---|---|---|
-| **Ada** | aggregation, distribution, multi-role intersection at scale; versioning; audit; on-device | small-corpus retrieval accuracy, semantic synonymy |
-| **Full-context LLM** | small-corpus Q&A, synthesis | corpus > context window (structurally) |
-| **Claude/ChatGPT Memory** | small per-user fact budget (~30-100), zero-config | beyond eviction budget, no aggregation, no drift |
-| **Neo4j / KG** | aggregation latency, multi-hop traversal, typed relations | requires hand schema, no native versioning, no compositional algebra |
-| **pgvector / RAG** | semantic single-entity retrieval at scale | aggregation, distribution (top-K can't contain a count) |
+---
 
 ## Architecture map
 
 ```
 ada/
-  core/                      HDC primitives (Vector, ops: bind, bundle, cosine)
+  core/                HDC primitives (Vector; bind, bundle, cosine)
   cognitive/
-    universal.py             7-layer × 33-role universal schema
-    surface.py               think / ask cognitive surfaces
-    generate.py              LLM-as-renderer
-    loop.py                  9-stage cognitive loop
-  encoder/
-    llm_enricher.py          LLM-at-build-time fact enrichment
-    universal-schema adapter projects mapping → StructuredFact
+    universal.py       7-layer × 33-role universal schema
+    surface.py         think / ask cognitive surfaces
+    loop.py            cognitive loop
   memory/
-    atom.py                  2048-dim bipolar atoms
-    binding.py               role-filler frames
-    thought_space.py         tell_raw / absorb / recall + versioning
-    glyph_dream.py           REM + slow-wave dream loops
-    thought_glyph.py         5-layer hierarchical encoder
-  temporal/
-    delta.py                 compute / apply version-delta vectors
-    predictor.py             drift statistics, beam search
-  skill/
-    schema_evolution.py      SchemaTracker (markdown + meta-glyphs)
-  tui/                       CLI / REPL
-  llm/                       local LLM backends (MLX, llama-cpp, API)
+    atom.py            2048-dim bipolar atoms
+    binding.py         role–filler frames
+    thought_space.py   tell_raw / absorb / recall + versioning
+    foundation.py      pre-encoded primitive warm-start (~56ms boot)
+  temporal/            version deltas, drift statistics, beam-search predictor
+  market/              glyph-native HDC market forecaster
+  tui/                 CLI / REPL  (the `ada` command)
+  llm/                 LLM backends (API, MLX, llama-cpp)
 
 domains/
-  brain/                     central think() pipeline
-  mcp/server.py              MCP server: think / ask / tell / tell_raw
-  query/, models/, nl_query/, listeners/, capabilities/
+  brain/               central think() pipeline
+  mcp/server.py        MCP tools: think / ask / tell / tell_raw / recall /
+                       history / drift / predict / stats / create_token
 
-api/                         FastAPI HTTP routes
-infrastructure/              config + db
-shared/                      auth, exceptions, utilities
+api/                   FastAPI HTTP routes (health, tokens)
+infrastructure/        config + database (SQLite / pgvector)
+shared/                auth, exceptions, middleware
 
-benchmark/
-  paper.md                   the writeup — at-scale empirical claim
-  aurora_versioned.py        77-fact / 25-query benchmark (= hard_test)
-  llm_only_baseline.py       LLM with full corpus in context (small-scale only)
-
-curriculum/
-  README.md                  what curricula are
-  agi/
-    layer-0/                 63 NSM semantic primes
-    layer-1/                 59 concepts + 120 composition facts
-                             (colors, numbers, spatial, logical, temporal)
-  at-scale/
-    generate.py              deterministic synthetic corpus
-    bench.py                 Ada-only timing
-    bench_rag.py             three-way: Ada / LLM-only / RAG
-
-scripts/
-  ada_repl.py                interactive REPL
-  hard_test.py               77-fact Aurora benchmark
-  heldout_test.py            generalization test
-  versioning_demo.py         absorb(key=…) → history → drift
-  schema_demo.py             SchemaTracker over Alice corpus
-  think_vs_ask.py            side-by-side cognitive ops
-  multihop_demo.py           "what are Chris's children's names?"
-
-docs/
-  schema_history.md          auto-generated schema changelog (per-run)
+curriculum/            YAML concept curricula (NSM primes → composed concepts)
+benchmark/             paper.md + the at-scale benchmarks
+scripts/               ada_repl.py and standalone demos
 ```
 
-## HTTP / MCP endpoints
-
-| Endpoint | Purpose |
-|---|---|
-| `GET /health` | liveness probe |
-| `POST /{org_id}/{model_id}/mcp` | MCP tool calls: `think` / `ask` / `tell` / `tell_raw` |
-| `POST /{org_id}/{model_id}/listener` | async data ingestion |
-| `POST /{org_id}/tokens` | API token management |
-
-## Configuration
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | Enables Haiku-backed enricher + Claude as renderer in MCP `ask` |
-| `ADA_MODEL` | `claude-haiku-4-5-20251001` | LLM model for enrichment / rendering |
-| `DATABASE_URL` | SQLite | PostgreSQL + pgvector for production |
-| `HOST` | `0.0.0.0` | Server bind address |
-| `PORT` | `8002` | Server port |
-| `JWT_SECRET_KEY` | — | JWT validation secret |
-| `ENABLE_DOCS` | `false` | Enable /docs and /redoc |
+---
 
 ## The paper
 
-Read [`benchmark/paper.md`](benchmark/paper.md) for the full
-architectural contribution and benchmark results. The honest claim:
-**at corpus sizes that exceed an LLM context window — which is the
-regime any production memory system enters within months of use — Ada
-answers compositional queries that the LLM cannot see and that naive
-RAG, by construction, cannot aggregate.**
+[`benchmark/paper.md`](benchmark/paper.md) makes the empirical case: at corpus
+sizes that exceed an LLM context window — the regime any production memory
+system enters within months — Ada answers compositional queries (counts,
+distributions, multi-role intersections) that a full-context LLM can't see and
+that top-K RAG, by construction, can't aggregate.
+
+---
 
 ## License
 
-MIT
+See [`LICENSE`](LICENSE) — Glyphh AI Community License. Copyright © 2026
+Glyphh AI LLC.

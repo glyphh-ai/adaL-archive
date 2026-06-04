@@ -39,14 +39,14 @@ DEFAULT_RUNTIME_URL = "http://localhost:8002"
 DEFAULT_MODEL_ID = "code"
 BATCH_SIZE = 50
 
-GLYPHH_CONFIG_FILE = Path.home() / ".ada" / "config.json"
+ADAL_CONFIG_FILE = Path.home() / ".ada" / "config.json"
 
 
 def _load_cli_config() -> dict:
     """Load the Ada CLI config (~/.ada/config.json)."""
-    if GLYPHH_CONFIG_FILE.exists():
+    if ADAL_CONFIG_FILE.exists():
         try:
-            return json.loads(GLYPHH_CONFIG_FILE.read_text())
+            return json.loads(ADAL_CONFIG_FILE.read_text())
         except Exception:
             pass
     return {}
@@ -55,7 +55,7 @@ def _load_cli_config() -> dict:
 def _resolve_token(explicit: str | None, runtime_url: str) -> str | None:
     """Return the auth token to use.
 
-    Priority: explicit --token / GLYPHH_TOKEN →
+    Priority: explicit --token / ADAL_TOKEN →
               runtime_tokens[endpoint] → runtime_token → access_token.
     """
     if explicit:
@@ -421,20 +421,20 @@ if __name__ == "__main__":
     parser.add_argument("repo", help="Path to the repository root")
     parser.add_argument(
         "--runtime-url",
-        default=os.environ.get("GLYPHH_RUNTIME_URL", DEFAULT_RUNTIME_URL),
+        default=os.environ.get("ADAL_RUNTIME_URL", DEFAULT_RUNTIME_URL),
         help=f"Runtime URL (default: {DEFAULT_RUNTIME_URL})",
     )
     parser.add_argument(
         "--org-id",
-        default=os.environ.get("GLYPHH_ORG_ID"),
+        default=os.environ.get("ADAL_ORG_ID"),
     )
     parser.add_argument(
         "--model-id",
-        default=os.environ.get("GLYPHH_MODEL_ID", DEFAULT_MODEL_ID),
+        default=os.environ.get("ADAL_MODEL_ID", DEFAULT_MODEL_ID),
     )
     parser.add_argument(
         "--token",
-        default=os.environ.get("GLYPHH_TOKEN"),
+        default=os.environ.get("ADAL_TOKEN"),
         help="Auth token for the runtime",
     )
     parser.add_argument("--incremental", action="store_true")
