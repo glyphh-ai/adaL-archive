@@ -10,7 +10,7 @@ readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 authors = [
-    {name = "Ada AI", email = "support@ada.ai"},
+    {name = "Chris Timmerman", email = "timmetim@gmail.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
