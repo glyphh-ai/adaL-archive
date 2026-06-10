@@ -76,7 +76,19 @@ _ENRICHER_SYSTEM = (
     "leave the role blank.\n"
     "4. Attribute values (age, color, height) describe the primary "
     "subject and go in their dedicated roles (temporal.age, "
-    "perceptual.color, quantitative.magnitude + quantitative.unit).\n\n"
+    "perceptual.color, quantitative.magnitude + quantitative.unit).\n"
+    "5. Stated preferences and favorites are attributes OF the subject, "
+    "stored in the attribute's natural slot: 'X's favorite color is "
+    "blue' → perceptual.color=blue and relational.predicate="
+    "'favorite_color'. Do not move the preferred value into "
+    "relational.object.\n"
+    "6. Occupations and roles: 'X works as a Y' → relational="
+    "{subject: X, predicate: works_as, object: Y}. entity.kind/subkind "
+    "describe what kind of thing the subject IS (person, organization, "
+    "place) — never an occupation, hobby, or possession.\n"
+    "7. Fill a slot only with information the fact explicitly states "
+    "about the primary subject. Incidental phrases ('at home', 'at "
+    "work', 'these days', 'busier than ever') fill nothing.\n\n"
     "SCHEMA:\n" +
     "\n".join(f"  {layer}: {', '.join(roles)}"
               for layer, roles in UNIVERSAL_SCHEMA.items())
@@ -123,7 +135,9 @@ class UniversalEnricher:
             self.usage["output_tokens"] += resp.usage.output_tokens
             raw = resp.content[0].text.strip()
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw).strip()
-            mapped = json.loads(raw)
+            # Parse the FIRST JSON object — the model occasionally emits
+            # trailing commentary or a second object.
+            mapped, _ = json.JSONDecoder().raw_decode(raw)
         except Exception as e:
             logger.warning("Universal enrich failed for %r: %s", text[:40], e)
             mapped = {}

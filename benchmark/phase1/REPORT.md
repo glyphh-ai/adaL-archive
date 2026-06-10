@@ -11,6 +11,16 @@ from API token usage.*
 |---|---|---|---|
 | v1 (baseline prompt) | 0–4 | **88.5% ± 1.0%** | ✗ FAIL |
 | v2 (+4 extraction rules) | 5–9 | **96.6% ± 0.6%** | ✓ PASS |
+| v3 (+3 convention rules, +precision metric) | 10–14 | **99.8% ± 0.1%** | ✓ PASS |
+
+v3 also measures the precision side that v1/v2 were blind to:
+**spurious-fill rate 3.7%** (a fact polluting a foreign aggregation
+slot, e.g. "spends hours on chess" → `quantitative.magnitude="hours"`),
+giving **CLEAN rate 96.1% ± 0.5%** (semantic + zero pollution), and the
+end-to-end aggregation diagnostics went from 9/20 (v2) to **17/20
+exact**. The three remaining misses are single-count drifts from the
+residual spurious fills. Cost rose to $0.0011/fact with the longer
+prompt — still ~3× below the old paper's claim.
 
 Entity attribution was **100% on all 10 seeds** — every fact linked to
 the right person. Capture-anywhere was 100% in v2: the enricher never

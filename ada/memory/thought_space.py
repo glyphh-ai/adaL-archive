@@ -272,27 +272,40 @@ class ThoughtSpace:
     #
     # These are exact O(N) scans over the universal-schema slots — the
     # query shapes (aggregation, distribution, intersection, refusal)
-    # that top-K retrieval structurally cannot answer.
+    # that top-K retrieval structurally cannot answer. They answer over
+    # CURRENT belief: superseded versions of a keyed fact are skipped
+    # (the chain stays reachable via history()).
+
+    def _is_current(self, thought: StoredThought) -> bool:
+        """False only for superseded versions of a keyed fact."""
+        key = thought.metadata.get("_key")
+        if key is None:
+            return True
+        chain = self._history_by_key.get(key)
+        return not chain or chain[-1].thought_id == thought.thought_id
+
+    def _current_thoughts(self):
+        return (t for t in self._thoughts.values() if self._is_current(t))
 
     def count_where(self, layer: str, role: str, value: str) -> int:
-        """How many facts fill layer.role with exactly this value?"""
+        """How many current facts fill layer.role with exactly this value?"""
         v = value.strip().lower()
         return sum(
-            1 for t in self._thoughts.values()
+            1 for t in self._current_thoughts()
             if (t.universal.get(layer) or {}).get(role, "").strip().lower() == v
         )
 
     def distribution(self, layer: str, role: str, top_k: int = 5) -> list[tuple[str, int]]:
-        """Most-common values for layer.role across the substrate."""
+        """Most-common values for layer.role across current facts."""
         c: Counter = Counter()
-        for t in self._thoughts.values():
+        for t in self._current_thoughts():
             v = (t.universal.get(layer) or {}).get(role)
             if v is not None:
                 c[str(v).strip().lower()] += 1
         return c.most_common(top_k)
 
     def find_where(self, conditions: dict[str, str]) -> list[StoredThought]:
-        """Facts matching ALL conditions. Keys are 'layer.role' strings.
+        """Current facts matching ALL conditions. Keys are 'layer.role' strings.
 
         find_where({"perceptual.color": "blue", "spatial.location": "Austin"})
         An empty result is a structural ∅ — refusal, not failure.
@@ -302,7 +315,7 @@ class ThoughtSpace:
             layer, _, role = lr.partition(".")
             parsed.append((layer, role, str(value).strip().lower()))
         out = []
-        for t in self._thoughts.values():
+        for t in self._current_thoughts():
             u = t.universal
             if all(
                 (u.get(layer) or {}).get(role, "").strip().lower() == v
@@ -312,12 +325,87 @@ class ThoughtSpace:
         return out
 
     def slot_values(self, layer: str, role: str) -> set[str]:
-        """Every distinct value the substrate holds for layer.role."""
+        """Every distinct value current facts hold for layer.role."""
         return {
             str(v).strip().lower()
-            for t in self._thoughts.values()
+            for t in self._current_thoughts()
             if (v := (t.universal.get(layer) or {}).get(role)) is not None
         }
+
+    # ── Entity-level view ────────────────────────────────────────────
+    #
+    # A single entity's facts arrive as separate thoughts (one glyph per
+    # fact). Cross-fact queries — "who lives in Austin AND works as an
+    # engineer" — require joining those glyphs per entity. The entity
+    # view groups current thoughts by normalized entity.name and unions
+    # their slot fills (a slot filled by multiple facts keeps every
+    # value, so "blue" matches whether one fact or three said it).
+
+    def entity_profiles(self) -> dict[str, dict[str, set[str]]]:
+        """entity name -> {'layer.role': {values}} over current facts."""
+        profiles: dict[str, dict[str, set[str]]] = {}
+        for t in self._current_thoughts():
+            u = t.universal
+            name = (u.get("entity") or {}).get("name")
+            if not name:
+                continue
+            prof = profiles.setdefault(str(name).strip().lower(), {})
+            for layer, roles in u.items():
+                for role, v in roles.items():
+                    prof.setdefault(f"{layer}.{role}", set()).add(
+                        str(v).strip().lower()
+                    )
+        return profiles
+
+    def entities_where(self, conditions: dict) -> list[str]:
+        """Entity names whose joined facts satisfy ALL conditions.
+
+        A condition value may be a single value or a list — a list means
+        the entity's slot must contain EVERY value (e.g. two
+        relational.object facts: works as a teacher AND enjoys chess).
+
+        entities_where({"spatial.location": "Austin",
+                        "relational.object": ["engineer", "chess"]})
+        Empty result is a structural ∅ over entities.
+        """
+        wanted: list[tuple[str, list[str]]] = []
+        for lr, v in conditions.items():
+            values = v if isinstance(v, (list, tuple, set)) else [v]
+            wanted.append((lr, [str(x).strip().lower() for x in values]))
+
+        def slot_matches(prof: dict, lr: str, values: list[str]) -> bool:
+            have = prof.get(lr, set())
+            if lr == "relational.predicate":
+                # Predicates are verb phrases ('works_as', 'earns living
+                # as'), not categorical values — match by containment.
+                return all(any(v in h or h in v for h in have) for v in values)
+            return set(values) <= have
+
+        return [
+            name for name, prof in self.entity_profiles().items()
+            if all(slot_matches(prof, lr, values) for lr, values in wanted)
+        ]
+
+    def distribution_filtered(
+        self, layer: str, role: str, top_k: int = 5,
+        predicate_contains: str | None = None,
+    ) -> list[tuple[str, int]]:
+        """distribution(), optionally restricted to facts whose
+        relational.predicate contains a substring — disambiguates
+        shared slots ('relational.object' holds jobs, hobbies, pets)."""
+        c: Counter = Counter()
+        needle = (predicate_contains or "").strip().lower()
+        for t in self._current_thoughts():
+            u = t.universal
+            v = (u.get(layer) or {}).get(role)
+            if v is None:
+                continue
+            if needle:
+                pred = str((u.get("relational") or {}).get("predicate", "")).lower()
+                if needle not in pred:
+                    continue
+            c[str(v).strip().lower()] += 1
+        return c.most_common(top_k)
 
     # ── Versioned-concept queries ────────────────────────────────────────
 

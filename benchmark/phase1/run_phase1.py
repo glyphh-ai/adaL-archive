@@ -84,6 +84,39 @@ def _find_value(mapped: dict, value: str) -> list[tuple[str, str]]:
     return hits
 
 
+# The canonical slots used by ANY fact type in this corpus. A fill in one
+# of these slots that belongs to neither this fact's expected nor
+# acceptable slots, with a value that isn't the fact's value or the
+# person, pollutes that slot's aggregations — measured as a spurious fill
+# (precision-side complement to the recall-side checks).
+AGGREGATION_SLOTS = {
+    ("temporal", "age"), ("spatial", "location"), ("spatial", "origin"),
+    ("relational", "object"), ("perceptual", "color"),
+    ("quantitative", "magnitude"),
+}
+
+
+def spurious_fills(fact: NLFact, mapped: dict) -> list[list[str]]:
+    """Aggregation-relevant slots polluted by this extraction."""
+    layer, role, value = fact.expected
+    allowed = {(layer, role)} | {tuple(a) for a in fact.acceptable}
+    person = _norm(fact.person)
+    out = []
+    for slot in AGGREGATION_SLOTS - allowed:
+        slayer, srole = slot
+        roles = (mapped or {}).get(slayer)
+        if not isinstance(roles, dict):
+            continue
+        got = roles.get(srole)
+        if got is None or not str(got).strip():
+            continue
+        if person in _norm(got):
+            continue  # attribution echo (person's name) — harmless to
+                      # value aggregations, common in relational slots
+        out.append([slayer, srole, str(got)])
+    return out
+
+
 def score_fact(fact: NLFact, mapped: dict) -> dict:
     layer, role, value = fact.expected
     if not isinstance(mapped, dict):
@@ -105,6 +138,7 @@ def score_fact(fact: NLFact, mapped: dict) -> dict:
     acceptable_slots = {tuple(a) for a in fact.acceptable}
     captured_ok = canonical_ok or bool(acceptable_slots & set(hits))
 
+    spurious = spurious_fills(fact, mapped)
     return {
         "sentence": fact.sentence,
         "person": fact.person,
@@ -114,6 +148,8 @@ def score_fact(fact: NLFact, mapped: dict) -> dict:
         "canonical_ok": canonical_ok,
         "captured_ok": captured_ok,
         "semantic_ok": entity_ok and canonical_ok,
+        "spurious_fills": spurious,
+        "clean_ok": entity_ok and canonical_ok and not spurious,
         "value_landed_in": [list(h) for h in hits],
         "extraction": mapped,
     }
@@ -168,6 +204,8 @@ def run_seed(n_persons: int, seed: int, workers: int, out_dir: Path) -> dict:
         "entity_rate": sum(r["entity_ok"] for r in rows) / n,
         "canonical_rate": sum(r["canonical_ok"] for r in rows) / n,
         "captured_rate": sum(r["captured_ok"] for r in rows) / n,
+        "spurious_fill_rate": sum(bool(r["spurious_fills"]) for r in rows) / n,
+        "clean_rate": sum(r["clean_ok"] for r in rows) / n,
         "by_type": by_type,
         "usage": dict(enricher.usage),
         "cost_usd": round(cost, 4),
@@ -221,6 +259,9 @@ def print_summary(s: dict) -> None:
     print(f"    entity attribution : {100 * s['entity_rate']:.1f}%")
     print(f"    canonical slot     : {100 * s['canonical_rate']:.1f}%")
     print(f"    captured anywhere  : {100 * s['captured_rate']:.1f}%")
+    print(f"    spurious-fill rate : {100 * s['spurious_fill_rate']:.1f}%  "
+          f"(facts polluting a foreign aggregation slot)")
+    print(f"    CLEAN (semantic + no spurious): {100 * s['clean_rate']:.1f}%")
     print(f"\n  {'type':<10} {'n':>4} {'semantic':>9} {'entity':>7} "
           f"{'canon':>6} {'captured':>9}")
     for ft, d in sorted(s["by_type"].items()):

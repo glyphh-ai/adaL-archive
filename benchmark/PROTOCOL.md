@@ -119,5 +119,17 @@ result.
 
 ## 7. Amendments
 
-*(none yet — any change to §4 weights or §5 thresholds gets logged here
-with date and reason, before the affected phase is run)*
+- **§7-1 (2026-06-10, before Phase 2 v1):** the graph baseline ingests
+  from the shared universal extraction rather than its own LLM
+  extraction pass. Reason: holds ingestion quality constant so the
+  comparison isolates query architecture; the hand-written
+  predicate→edge mapping the graph still needs is the measured
+  schema-design cost.
+- **§7-2 (2026-06-10, after Phase 2 v1, before v2):** engine fixes from
+  pilot/v1 failure analysis — `entities_where` gained multi-value
+  same-slot conditions and containment matching for
+  `relational.predicate`; `distribution_filtered` added. No §4 weights
+  or §5 thresholds changed; no scorer changes; v2 ran on fresh seeds.
+  Outcome recorded in `phase2/REPORT.md`: §5 win condition NOT met
+  (statistical tie with Kùzu on accuracy, lost cost/latency
+  tie-breakers), kill condition not fired (EAV −21.6 points).
