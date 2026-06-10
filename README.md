@@ -1,47 +1,41 @@
 # Ada
 
-**A hyperdimensional cognitive substrate that gives an LLM persistent,
+**A structured memory substrate that gives an LLM persistent,
 queryable memory beyond any context window.**
 
-Ada stores facts as 2048-dim bipolar vectors and answers *compositional*
+Ada maps facts into a fixed universal schema and answers *compositional*
 queries over them — aggregation, distribution, multi-role intersection,
-versioned drift — in well under a second, with full provenance, on corpora
-far larger than any prompt can hold. It runs on-device (SQLite, no embedding
-API) or against Postgres + pgvector for scale, and exposes itself to any
-LLM over MCP.
+versioned history — in milliseconds, with full provenance, on corpora far
+larger than any prompt can hold. It runs on-device (SQLite, zero setup)
+or against Postgres for scale, and exposes itself to any LLM over MCP.
 
-This README is about **running and using** Ada. For the empirical argument
-(why aggregation queries beat RAG and full-context LLMs at scale), see the
-paper: [`benchmark/paper.md`](benchmark/paper.md).
+This README is about **running and using** Ada. The empirical case for the
+architecture is being rebuilt from scratch in `benchmark/` (see
+`benchmark/PROTOCOL.md` for the pre-registered protocol).
 
 ---
 
 ## How it works
 
-Four pieces, each independently inspectable:
+Three pieces, each independently inspectable:
 
-1. **HDC substrate** — 2048-dim bipolar vectors. Words are encoded by
-   positional character n-grams (deterministic, no embedding model).
-   `bind` composes role–filler frames; `bundle` aggregates. `ada/core/`,
-   `ada/memory/`.
-
-2. **Universal schema** — a fixed 7-layer × 33-role lattice every fact maps
+1. **Universal schema** — a fixed 7-layer × 33-role lattice every fact maps
    into (entity, perceptual, spatial, temporal, relational, quantitative,
-   epistemic). Counting "facts where color = blue" is a one-line scan; "top
-   5 cities" is `Counter().most_common(5)`. `ada/cognitive/universal.py`.
+   epistemic). Counting "facts where color = blue" is an exact scan; "top
+   5 cities" is `Counter().most_common(5)`. An empty slot is a structural
+   ∅ — Ada refuses instead of confabulating. `ada/cognitive/universal.py`.
 
-3. **Versioned memory** — write a fact under a `key` and it becomes v1, v2,
-   v3… with delta vectors between versions. You can query its full
-   `history` and its `drift` trajectory over time. `ada/memory/thought_space.py`.
+2. **Versioned memory** — write a fact under a `key` and it becomes v1, v2,
+   v3… with the full chain queryable via `history`. `ada/memory/thought_space.py`.
 
-4. **Storage** — SQLite by default (`~/.ada/ada.db`, zero setup). Point
-   `DATABASE_URL` at Postgres and the runtime switches to the **pgvector**
-   backend: vectors stored once, reconstructed on boot (no re-encoding),
-   HNSW cosine recall at scale.
+3. **Storage** — SQLite by default (`~/.ada/ada.db`, zero setup). Point
+   `DATABASE_URL` at Postgres and the runtime switches backends.
 
-The substrate runs fully without an LLM. An Anthropic API key is optional —
-it enables the build-time enricher (`tell`) and Claude as the answer renderer
-(`ask`).
+Facts arrive two ways: **`tell_raw`** takes pre-structured slot fills with
+no LLM in the path; **`tell`** takes natural language — with an Anthropic
+API key, an enricher maps the text into the schema at write time (one
+cached LLM call per fact). The read path never calls an LLM; structured
+queries and lexical recall are exact, deterministic scans.
 
 ---
 
@@ -72,10 +66,13 @@ make repl           # or, after install:  ada
   absorbed v2 ✓
   ada> history chris.location
   v1: San Francisco  →  v2: Brooklyn
-  ada> drift aurora.hull
-  consecutive sims: [+0.812, +0.829]  drift rate: +0.306
+  ada> count perceptual.color=blue
+  3 facts with perceptual.color=blue
+  ada> top spatial.location
+     12  austin
+      4  galveston bay
   ada> stats
-  thoughts: 77   versioned keys: 12   foundation primitives: 122
+  thoughts: 77   versioned keys: 12
 ```
 
 Type `help` in the shell for the full command list.
@@ -85,11 +82,10 @@ Type `help` in the shell for the full command list.
 ## Production: Docker
 
 The image is storage-agnostic — `DATABASE_URL` decides the backend. Unset, Ada
-runs on in-process SQLite. Point it at Postgres and the runtime flips to the
-**pgvector** backend, enabling the vector extension and running the alembic
-migrations (incl. the `ada_thoughts` cortex column + HNSW index) on first boot.
+runs on in-process SQLite. Point it at Postgres and the runtime runs the
+alembic migrations on first boot.
 
-### Recommended: compose (runtime + pgvector)
+### Recommended: compose (runtime + Postgres)
 
 ```bash
 cp .env.example .env          # set ANTHROPIC_API_KEY — DB is wired by compose
@@ -97,9 +93,9 @@ docker compose up -d --build
 curl localhost:8002/health
 ```
 
-The bundled `db` service is `pgvector/pgvector:pg16`; the runtime waits for it
-to be healthy, connects via `DATABASE_URL=postgresql://ada:ada@db:5432/ada`,
-and persists vectors to the `pgdata` named volume across restarts and upgrades.
+The bundled `db` service is `postgres:16`; the runtime waits for it to be
+healthy, connects via `DATABASE_URL=postgresql://ada:ada@db:5432/ada`, and
+persists memory to the `pgdata` named volume across restarts and upgrades.
 
 ### Single container (SQLite, no Postgres)
 
@@ -125,15 +121,13 @@ any MCP client at `http://localhost:8002/mcp`.
 
 | Tool | What it does |
 |---|---|
-| `think(input, top_k)` | Pure associative recall — surfaces the thoughts that resonate. No answer, just context. |
+| `think(input, top_k)` | Broad recall — surfaces the thoughts that match. No answer, just context. |
 | `ask(question)` | Targeted retrieval. Returns one fact + confidence, or "I don't know." |
 | `tell(text, key?)` | Natural-language ingestion. With `key`, becomes a new version of that key. |
 | `tell_raw(facts, key?)` | Programmatic ingestion of a universal-schema slot fill. **No LLM in the path.** |
-| `recall(query, top_k)` | Deterministic HDC cosine search. Top matches + similarity + versioned key. |
+| `recall(query, top_k)` | Deterministic lexical search. Top matches + similarity + versioned key. |
 | `history(key)` | Full version chain for a key, chronological. |
-| `drift(key)` | How a key's representation shifted: consecutive sims, drift rate. |
-| `predict(key, steps)` | Project a key forward via beam search over its temporal deltas. |
-| `stats()` | Substrate vital signs: thoughts, versioned keys, foundation primitives. |
+| `stats()` | Substrate vital signs: thoughts, versioned keys, per-layer slot fill. |
 | `create_token(...)` | Mint an API token for this MCP server (returned once). |
 
 `domains/mcp/server.py`.
@@ -171,9 +165,9 @@ encrypted in `~/.ada/vault` (`ada setup key`).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | — | Enables the `tell` enricher + Claude as `ask` renderer |
+| `ANTHROPIC_API_KEY` | — | Enables the `tell` enricher + LLM as `ask` renderer |
 | `ADA_MODEL` | `claude-haiku-4-5-20251001` | LLM model for enrichment / rendering |
-| `DATABASE_URL` | SQLite at `~/.ada/ada.db` | `postgresql://…` switches to the pgvector backend |
+| `DATABASE_URL` | SQLite at `~/.ada/ada.db` | `postgresql://…` switches to the Postgres backend |
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8002` | Server port |
 | `JWT_SECRET_KEY` | — | JWT validation secret (token auth) |
@@ -185,44 +179,32 @@ encrypted in `~/.ada/vault` (`ada setup key`).
 
 ```
 ada/
-  core/                HDC primitives (Vector; bind, bundle, cosine)
   cognitive/
-    universal.py       7-layer × 33-role universal schema
+    universal.py       7-layer × 33-role universal schema + LLM enricher
     surface.py         think / ask cognitive surfaces
-    loop.py            cognitive loop
+    generate.py        optional LLM renderer (the surface form)
   memory/
-    atom.py            2048-dim bipolar atoms
-    binding.py         role–filler frames
-    thought_space.py   tell_raw / absorb / recall + versioning
-    foundation.py      pre-encoded primitive warm-start (~56ms boot)
-  temporal/            version deltas, drift statistics, beam-search predictor
-  market/              glyph-native HDC market forecaster
+    thought_space.py   the substrate: tell_raw / absorb / structured
+                       queries (count, distribution, intersection) /
+                       lexical recall / versioned keys
+    thought_persistence.py   DB sync (SQLite / Postgres)
+    ada_cognitive.py   memory + input routing + conversation
+  encoder/
+    llm_enricher.py    LLM-at-build-time text → schema extraction
   tui/                 CLI / REPL  (the `ada` command)
-  llm/                 LLM backends (API, MLX, llama-cpp)
 
 domains/
-  brain/               central think() pipeline
+  brain/               think() pipeline (perceive → recall → respond)
   mcp/server.py        MCP tools: think / ask / tell / tell_raw / recall /
-                       history / drift / predict / stats / create_token
+                       history / stats / create_token
 
 api/                   FastAPI HTTP routes (health, tokens)
-infrastructure/        config + database (SQLite / pgvector)
+infrastructure/        config + database (SQLite / Postgres)
 shared/                auth, exceptions, middleware
 
-benchmark/             paper.md, the at-scale benchmarks, and curriculum/
-                       (YAML concept curricula: NSM primes → composed concepts)
-scripts/               ada_repl.py and standalone demos
+benchmark/             PROTOCOL.md + the benchmark suite (being rebuilt)
+scripts/               ada_repl.py and the 77-fact hard test
 ```
-
----
-
-## The paper
-
-[`benchmark/paper.md`](benchmark/paper.md) makes the empirical case: at corpus
-sizes that exceed an LLM context window — the regime any production memory
-system enters within months — Ada answers compositional queries (counts,
-distributions, multi-role intersections) that a full-context LLM can't see and
-that top-K RAG, by construction, can't aggregate.
 
 ---
 

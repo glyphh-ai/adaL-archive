@@ -1,5 +1,6 @@
 """
-Database connection management with async SQLAlchemy and pgvector.
+Database connection management with async SQLAlchemy.
+SQLite by default; Postgres when DATABASE_URL points at one.
 """
 
 import logging
@@ -72,29 +73,16 @@ Base = declarative_base()
 
 
 async def init_db() -> None:
-    """Initialize database — enable pgvector (if applicable) and run migrations.
+    """Initialize database and run migrations.
 
-    For pgvector backends: enables the pgvector extension and runs Alembic migrations.
-    For SQLite backends: skips pgvector and Alembic entirely, uses create_all() directly.
+    For Postgres backends: runs Alembic migrations.
+    For SQLite backends: skips Alembic entirely, uses create_all() directly.
     """
     import os
-    import shutil
-
-    backend = settings.resolved_storage_backend
-
-    # ── pgvector: enable extension ────────────────────────────────────────────
-    if backend == "pgvector":
-        async with engine.begin() as conn:
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            logger.info("pgvector extension enabled")
 
     # ── SQLite: set pragmas and create tables directly, skip Alembic ──────────
     if _is_sqlite:
-        from domains.models.db_models import Glyph, GlyphVector, Edge, ModelConfig, Token, AdaThought  # noqa: F401
-        try:
-            from domains.procedures.models import StoredProcedureModel  # noqa: F401
-        except ImportError:
-            pass
+        from domains.models.db_models import Token, AdaThought  # noqa: F401
         async with engine.begin() as conn:
             # WAL mode persists on the database file — only needs to be set once
             # but is safe to re-run. Enables concurrent readers + single writer.
@@ -105,7 +93,7 @@ async def init_db() -> None:
         logger.info("SQLite: database tables created, WAL mode enabled")
         return
 
-    # ── pgvector: run Alembic migrations ─────────────────────────────────────
+    # ── Postgres: run Alembic migrations ─────────────────────────────────────
     import sys as _sys
 
     app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -134,11 +122,7 @@ async def init_db() -> None:
     # Fallback: create tables directly if migrations didn't run
     if not migrations_applied:
         logger.info("Falling back to Base.metadata.create_all()")
-        from domains.models.db_models import Glyph, GlyphVector, Edge, ModelConfig, Token, AdaThought  # noqa: F401
-        try:
-            from domains.procedures.models import StoredProcedureModel  # noqa: F401
-        except ImportError:
-            pass
+        from domains.models.db_models import Token, AdaThought  # noqa: F401
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)

@@ -2,9 +2,9 @@
 LLM-at-build-time fact enricher.
 
 Parses incoming facts into a structured `{subject, predicate, object, topic}`
-tuple so the HDC encoder can put each part of a fact into a discriminative
-binding role. This is the "cortical interpretation" step — the brain doesn't
-store raw sentences, it stores parsed structure.
+tuple so recall can match on discriminative structure (predicate/subject)
+instead of raw surface text. The substrate doesn't store raw sentences
+alone — it stores parsed structure alongside them.
 
 Two enrichers:
 
@@ -294,6 +294,10 @@ class UniversalSchemaEnricher:
     def enrich(self, text: str) -> StructuredFact:
         mapped = self._u.enrich(text)
         return _project_to_structured(text, mapped)
+
+    def universal(self, text: str) -> dict[str, dict[str, str]]:
+        """The raw universal-schema mapping (cached with enrich())."""
+        return self._u.enrich(text)
 
 
 def _project_to_structured(text: str, mapped: dict[str, dict[str, str]]) -> StructuredFact:

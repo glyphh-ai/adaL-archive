@@ -1,17 +1,15 @@
-# Ada runtime + pgvector, ready to boot.
+# Ada runtime + Postgres, ready to boot.
 #
 #   cp .env.example .env      # set ANTHROPIC_API_KEY (DB is wired below)
 #   docker compose up --build
 #
-# The `db` service ships pgvector preloaded. The runtime connects via
-# DATABASE_URL, which flips Ada to the pgvector backend automatically; on boot
-# it enables the vector extension and runs alembic migrations (incl. the
-# ada_thoughts cortex column + HNSW index). Thoughts persist in the named
-# volume, so encoded vectors are stored once and reused across restarts.
+# The runtime connects via DATABASE_URL, which flips Ada to the Postgres
+# backend automatically; on boot it runs the alembic migrations. Thoughts
+# persist in the named volume across restarts.
 
 services:
   db:
-    image: pgvector/pgvector:pg16
+    image: postgres:16
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-ada}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ada}

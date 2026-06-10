@@ -1,9 +1,8 @@
 """
-Ada — a self-evolving cognitive brain for LLMs.
+Ada — a structured memory substrate for LLMs.
 
-Single FastAPI server exposing one MCP endpoint (/mcp) with one tool (think).
-Ada loads her innate capabilities at startup, owns her own LLM (Haiku),
-and grows new capabilities over time via the dream loop.
+Single FastAPI server exposing one MCP endpoint (/mcp) with the cognitive
+tools (think / ask / tell / tell_raw / recall / history / stats).
 
 Importable as ``ada.server:app``.
 """
@@ -24,7 +23,6 @@ from shared.middleware import (
     CorrelationIDMiddleware,
     LoggingMiddleware,
 )
-from domains.models.manager import ModelManager
 
 # Configure structured logging
 logging.basicConfig(
@@ -38,12 +36,7 @@ _start_time = datetime.utcnow()
 
 # ── Global brain state ───────────────────────────────────────────────────────
 
-model_manager: Optional[ModelManager] = None
 brain: Optional[object] = None  # domains.brain.think.Brain — set in lifespan
-
-
-def get_model_manager() -> ModelManager:
-    return model_manager
 
 
 def get_brain():
@@ -53,7 +46,7 @@ def get_brain():
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Boot Ada's brain."""
-    global model_manager, brain
+    global brain
 
     logger.info("Waking up...")
 
@@ -68,22 +61,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await init_db()
     logger.info("Memory banks online")
 
-    # Model manager — runtime infrastructure for deploying models out-of-band
-    # (the model API / forthcoming .adaL package loader). NOT a model itself.
-    model_manager = ModelManager(async_session_maker)
-
-    # ── No models wired into the runtime ─────────────────────────────────
-    # The runtime ships as the runtime + primitives only. Models are loaded
-    # out-of-band — the forthcoming .adaL package paradigm: a model is a zip
-    # exposing MCP tools that register on the MCP surface, managed from the
-    # REPL. Boot with an empty brain state; the think pipeline degrades to
-    # pure LLM + memory until a model is deployed (firewall passes through,
-    # the router falls back to the LLM).
-    from domains.brain.loader import BrainState
-
-    brain_state = BrainState()
-    app.state.brain_state = brain_state
-
     # ── Initialize Ada's LLM ────────────────────────────────────────────
     from domains.brain.llm import AdaLLM
 
@@ -91,13 +68,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.llm = llm
 
     # ── Initialize the think pipeline ───────────────────────────────────
+    # The enricher maps natural-language `tell`s into universal-schema
+    # slots at write time (LLM if a key is present, regex fallback if not).
+    from ada.encoder.llm_enricher import auto_enricher
     from domains.brain.think import Brain
 
     brain = Brain(
-        brain_state=brain_state,
-        model_manager=model_manager,
         llm=llm,
         session_factory=async_session_maker,
+        enricher=auto_enricher(),
     )
     app.state.brain = brain
 
@@ -123,30 +102,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.mcp_session_managers = (json_manager, sse_manager)
     logger.info("MCP endpoint online at /mcp")
 
-    # ── Resume any incomplete encoding from previous boot ─────────────
-    try:
-        await model_manager.resume_staged_encoding()
-    except Exception as e:
-        logger.warning(f"Staged encoding resume: {e}")
-
-    # ── Wait for ALL encoding to finish before accepting requests ────
-    # Ada doesn't serve until every capability (especially firewall)
-    # has all its exemplars loaded. First boot can take minutes.
-    import asyncio
-    if model_manager._encoding_in_progress:
-        logger.info(
-            f"Waiting for exemplar encoding to finish: "
-            f"{[k[1] for k in model_manager._encoding_in_progress]}"
-        )
-        while model_manager._encoding_in_progress:
-            await asyncio.sleep(1.0)
-        logger.info("All exemplars encoded")
-
-    # ── Start dream loop ────────────────────────────────────────────────
-    brain.start_dreaming()
-    logger.info("Dream loop active")
-
     # ── Start background persistence worker ─────────────────────────────
+    import asyncio
+
     async def _persist_worker():
         """Flush thought queue to SQLite every 2 seconds."""
         while True:
@@ -172,11 +130,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     persist_task.cancel()
     # Final flush — don't lose queued thoughts
     await brain.flush_persist_queue()
-    brain.stop_dreaming()
-
-    # Flush memory strengths to DB
-    from ada.memory.thought_persistence import flush_all_strengths
-    await flush_all_strengths(async_session_maker, brain.cognitive.thought_space)
 
     await close_db()
     logger.info("Ada is asleep.")
@@ -185,7 +138,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # Create FastAPI application
 app = FastAPI(
     title="Ada",
-    description="A self-evolving cognitive brain for LLMs",
+    description="A structured memory substrate for LLMs",
     version="0.1.0",
     docs_url="/docs" if settings.enable_docs else None,
     redoc_url="/redoc" if settings.enable_docs else None,

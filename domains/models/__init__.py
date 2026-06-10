@@ -1,19 +1,5 @@
-from .loader import (
-    ModelManifest,
-    LoadedModel,
-    load_manifest,
-    load_encoder_config,
-    load_model,
-    discover_models,
-    count_exemplars,
-)
+"""Database models for the Ada runtime."""
 
-__all__ = [
-    "ModelManifest",
-    "LoadedModel",
-    "load_manifest",
-    "load_encoder_config",
-    "load_model",
-    "discover_models",
-    "count_exemplars",
-]
+from .db_models import AdaThought, Token
+
+__all__ = ["AdaThought", "Token"]

@@ -28,10 +28,10 @@ from __future__ import annotations
 
 import time
 
-from ada.cognitive.generate import GlyphGenerator, build_llm_renderer, build_qwen_renderer
+from ada.cognitive.generate import build_llm_renderer
+from ada.cognitive.surface import CognitiveSurface
 from ada.encoder.llm_enricher import auto_enricher
-from ada.memory.glyph_cognitive import GlyphCognitiveLoop
-from ada.memory.thought_space import ThoughtGlyphSpace
+from ada.memory.thought_space import ThoughtSpace
 from ada.skill import SchemaTracker
 
 
@@ -203,11 +203,10 @@ assert len(QUERIES) == 25, f"expected 25 queries, got {len(QUERIES)}"
 
 def main() -> None:
     enricher = auto_enricher()
-    space = ThoughtGlyphSpace(enricher=enricher)
+    space = ThoughtSpace(enricher=enricher)
     tracker = SchemaTracker(space, history_path="docs/aurora_schema.md")
-    cognitive = GlyphCognitiveLoop(space)
-    renderer = build_llm_renderer() or build_qwen_renderer()
-    gen = GlyphGenerator(space, cognitive, renderer=renderer)
+    renderer = build_llm_renderer()
+    surface = CognitiveSurface(space, renderer=renderer)
 
     # ── SESSION 1: ingest 80 facts with versioning ──
     print("─── SESSION 1: ingesting 80 facts about Project Aurora ───\n")
@@ -238,10 +237,10 @@ def main() -> None:
     rows = []
     t0 = time.time()
     for i, (cat, q, want_a, want_b) in enumerate(QUERIES, 1):
-        # Synthesis queries need more chains to surface multiple facts.
+        # Synthesis queries need more facts surfaced for the renderer.
         top_k = 12 if cat == "F" else 5
-        result = gen.generate(q, top_chains=top_k, absorb_response=False, reinforce=False)
-        ans = (result.response or "").lower()
+        answer = surface.ask(q, top_chains=top_k)
+        ans = (answer.rendered or "").lower()
         if cat == "E":
             ok = any(p in ans for p in REFUSAL_PHRASES)
         else:

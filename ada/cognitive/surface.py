@@ -1,21 +1,18 @@
 """
 Two cognitive surfaces on the same substrate:
 
-    think(input)   — pure associative wave. Surfaces what activates,
+    think(input)   — broad recall. Surfaces the facts that match,
                      without interpretation. No question/answer framing.
-                     This is the brain's reflex; you "think about X" and
-                     a constellation of related thoughts fires.
 
-    ask(question)  — targeted retrieval. Predicate-aware structural
-                     match. Returns one fact and a confidence, or
-                     refuses honestly with "I don't know."
+    ask(question)  — targeted retrieval. Returns one fact and a
+                     confidence, or refuses honestly with "I don't know."
 
-Same substrate, different recall policies. think is broader and unfiltered;
-ask is narrower and disciplined. The MCP layer exposes both — Claude calls
-think when it wants context, ask when it needs a specific fact.
+Same substrate, different recall policies. think is broader and
+unfiltered; ask is narrower and disciplined. The MCP layer exposes both —
+an LLM calls think when it wants context, ask when it needs a fact.
 
 Usage:
-    surface = CognitiveSurface(space, cognitive, renderer=...)
+    surface = CognitiveSurface(space, renderer=...)
     activation = surface.think("project aurora")
     answer     = surface.ask("what hull does aurora use?")
 """
@@ -25,20 +22,17 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from ada.memory.glyph_cognitive import GlyphCognitiveLoop, GlyphReasoningChain
-from ada.memory.thought_space import StoredThought, ThoughtGlyphSpace
+from ada.memory.thought_space import StoredThought, ThoughtSpace
 
 
 # ── Return types ─────────────────────────────────────────────────────
 
 @dataclass
 class Activation:
-    """What think() returns — raw associative output, no synthesis."""
+    """What think() returns — raw recall output, no synthesis."""
     input: str
     thoughts: list[StoredThought] = field(default_factory=list)
     similarities: list[float] = field(default_factory=list)
-    pathway: Optional[str] = None
-    pattern_boost: float = 0.0
 
     def __iter__(self):
         return iter(zip(self.thoughts, self.similarities))
@@ -64,43 +58,25 @@ class CognitiveSurface:
 
     def __init__(
         self,
-        space: ThoughtGlyphSpace,
-        cognitive: GlyphCognitiveLoop,
+        space: ThoughtSpace,
         renderer=None,
-        min_confidence: float = 0.4,
+        min_confidence: float = 0.3,
+        **_compat,
     ):
+        # **_compat swallows the legacy cognitive= arg from the HDC era.
         self.space = space
-        self.cognitive = cognitive
         self.renderer = renderer
         self.min_confidence = min_confidence
 
-    # ── think — associative wave ──────────────────────────────────────
+    # ── think — broad recall ──────────────────────────────────────────
 
     def think(self, input_text: str, top_k: int = 10) -> Activation:
-        """The brain's reflex — what does this input activate?
-
-        Surfaces the constellation of related thoughts without filtering
-        for "the answer." No question is assumed. No refusal threshold.
-        The output is what's resonant — interpretation is the caller's job.
-        """
-        chains = self.cognitive.reason(input_text, top_k=top_k)
-        thoughts: list[StoredThought] = []
-        sims: list[float] = []
-        seen: set[str] = set()
-        for chain in chains:
-            for hop in chain.hops:
-                tid = hop.result.thought.thought_id
-                if tid in seen:
-                    continue
-                seen.add(tid)
-                thoughts.append(hop.result.thought)
-                sims.append(chain.confidence)
+        """What does this input surface? No filtering for 'the answer'."""
+        results = self.space.recall(input_text, top_k=top_k)
         return Activation(
             input=input_text,
-            thoughts=thoughts,
-            similarities=sims,
-            pathway=chains[0].pathway_name if chains else None,
-            pattern_boost=chains[0].pattern_boost if chains else 0.0,
+            thoughts=[r.thought for r in results],
+            similarities=[r.global_similarity for r in results],
         )
 
     # ── ask — targeted retrieval ──────────────────────────────────────
@@ -108,18 +84,15 @@ class CognitiveSurface:
     def ask(self, question: str, top_chains: int = 5) -> Answer:
         """Find me a fact that answers this question.
 
-        Uses the substrate's predicate-aware recall + the LLM renderer
-        (when available) to produce a single grounded answer. Refuses
-        with low confidence rather than inventing — the no-hallucinations
-        property comes from this discipline.
+        Refuses with low confidence rather than inventing — the
+        no-hallucinations property comes from this discipline.
         """
-        chains = self.cognitive.reason(question, top_chains)
-        if not chains or not chains[0].hops:
+        results = self.space.recall(question, top_k=top_chains)
+        if not results:
             return Answer(question=question, refused=True, rendered="I don't know.")
 
-        top = chains[0]
-        confidence = top.confidence
-
+        top = results[0]
+        confidence = top.global_similarity
         if confidence < self.min_confidence:
             return Answer(
                 question=question,
@@ -128,7 +101,7 @@ class CognitiveSurface:
                 rendered="I don't know.",
             )
 
-        fact = top.hops[0].result.thought
+        fact = top.thought
 
         # Render the answer through the LLM if one's wired in. The renderer
         # sees only the top facts — it can't invent because there's nothing
@@ -136,9 +109,7 @@ class CognitiveSurface:
         if self.renderer is not None:
             try:
                 facts_for_render = "\n".join(
-                    f"- {chain.hops[0].result.thought.content}"
-                    for chain in chains[:top_chains]
-                    if chain.hops
+                    f"- {r.thought.content}" for r in results
                 )
                 rendered = self.renderer(facts_for_render, question)
             except Exception:

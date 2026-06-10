@@ -1,20 +1,23 @@
 """
 Ada interactive REPL — talk to the substrate.
 
-Three commands at the prompt:
+Commands at the prompt:
 
     write <text>        — absorb a fact (use 'write key=foo your text' for versioned)
     ask <question>      — targeted retrieval, refuses with 'I don't know'
-    think <input>       — pure associative wave, returns activations
+    think <input>       — broad recall, returns matches
+    count <l.r>=<v>     — structured count, e.g. count perceptual.color=blue
+    top <layer.role>    — distribution, e.g. top spatial.location
+    find <l.r>=<v> ...  — slot intersection (ALL conditions must match)
     history <key>       — version chain for a stable key
-    drift <key>         — cosine drift across the chain
     schema              — what predicates / topics Ada has learned
+    stats               — substrate vital signs
     aurora              — pre-load the Project Aurora corpus (77 facts)
     quit                — exit
 
-If ANTHROPIC_API_KEY is set, Haiku enriches every absorb and renders
-every `ask`. Otherwise a heuristic enricher + Qwen3 (local, if present)
-render. Either way the substrate works.
+If ANTHROPIC_API_KEY is set, the enricher maps every absorb into the
+universal schema and an LLM renders every `ask`. Otherwise a heuristic
+enricher runs offline. Either way the substrate works.
 
     PYTHONPATH=. python scripts/ada_repl.py
 """
@@ -23,11 +26,10 @@ from __future__ import annotations
 
 import sys
 
-from ada.cognitive.generate import build_llm_renderer, build_qwen_renderer
+from ada.cognitive.generate import build_llm_renderer
 from ada.cognitive.surface import CognitiveSurface
 from ada.encoder.llm_enricher import auto_enricher
-from ada.memory.glyph_cognitive import GlyphCognitiveLoop
-from ada.memory.thought_space import ThoughtGlyphSpace
+from ada.memory.thought_space import ThoughtSpace
 from ada.skill import SchemaTracker
 
 
@@ -49,7 +51,7 @@ R = "\033[0m"
 def _banner() -> None:
     for i, line in enumerate(_BANNER):
         print(f"  {_GRAD[min(i, len(_GRAD)-1)]}\033[1m{line}{R}")
-    print(f"  {D}cognitive substrate v0.6.0{R}\n")
+    print(f"  {D}structured memory substrate v0.7.0{R}\n")
 
 
 # ── REPL ──────────────────────────────────────────────────────────────
@@ -58,23 +60,36 @@ HELP = """  commands:
     write <text>           — absorb a fact
     write key=K <text>     — absorb as next version of K
     ask <question>         — targeted retrieval (refuses 'I don't know')
-    think <input>          — pure associative wave
+    think <input>          — broad recall
+    count <l.r>=<v>        — structured count (count perceptual.color=blue)
+    top <layer.role>       — distribution (top spatial.location)
+    find <l.r>=<v> ...     — slot intersection, ALL conditions must match
     history <key>          — version chain
-    drift <key>            — cosine drift across the chain
     schema                 — predicates/topics learned so far
+    stats                  — substrate vital signs
     aurora                 — pre-load the Aurora corpus (77 facts)
     help / ?               — this help
     quit / exit            — leave
 """
 
 
+def _parse_conditions(body: str) -> dict[str, str] | None:
+    """Parse 'layer.role=value layer.role=value' into a conditions dict."""
+    conditions: dict[str, str] = {}
+    for part in body.split():
+        if "=" not in part or "." not in part.split("=", 1)[0]:
+            return None
+        lr, value = part.split("=", 1)
+        conditions[lr] = value
+    return conditions or None
+
+
 def main() -> None:
     enricher = auto_enricher()
-    space = ThoughtGlyphSpace(enricher=enricher)
+    space = ThoughtSpace(enricher=enricher)
     tracker = SchemaTracker(space, history_path="docs/repl_schema.md")
-    cognitive = GlyphCognitiveLoop(space)
-    renderer = build_llm_renderer() or build_qwen_renderer()
-    surface = CognitiveSurface(space, cognitive, renderer=renderer)
+    renderer = build_llm_renderer()
+    surface = CognitiveSurface(space, renderer=renderer)
 
     _banner()
     if renderer is None:
@@ -104,6 +119,50 @@ def main() -> None:
             print(f"  {D}top predicates  : {s['top_predicates']}{R}")
             print(f"  {D}top topics      : {s['top_topics']}{R}")
             continue
+        if raw == "stats":
+            s = space.stats()
+            print(f"  {D}thoughts          : {s['count']}{R}")
+            print(f"  {D}versioned keys    : {s['versioned_keys']}{R}")
+            print(f"  {D}multi-version keys: {s['multi_version_keys']}{R}")
+            print(f"  {D}layer fill        : {s['layer_fill']}{R}")
+            continue
+        if raw.startswith("count "):
+            conditions = _parse_conditions(raw[len("count "):].strip())
+            if not conditions:
+                print(f"  {D}usage: count layer.role=value{R}")
+                continue
+            (lr, value), = list(conditions.items())[:1]
+            layer, _, role = lr.partition(".")
+            n = space.count_where(layer, role, value)
+            print(f"  {C}{n}{R}  {D}facts with {lr}={value}{R}")
+            continue
+        if raw.startswith("top "):
+            lr = raw[len("top "):].strip()
+            if "." not in lr:
+                print(f"  {D}usage: top layer.role{R}")
+                continue
+            layer, _, role = lr.partition(".")
+            dist = space.distribution(layer, role, top_k=5)
+            if not dist:
+                print(f"  {D}∅ — no facts fill {lr} (structural refusal){R}")
+                continue
+            for value, n in dist:
+                print(f"    {C}{n:>5}{R}  {value}")
+            continue
+        if raw.startswith("find "):
+            conditions = _parse_conditions(raw[len("find "):].strip())
+            if not conditions:
+                print(f"  {D}usage: find layer.role=value [layer.role=value ...]{R}")
+                continue
+            hits = space.find_where(conditions)
+            if not hits:
+                print(f"  {D}∅ — no facts match all conditions (structural refusal){R}")
+                continue
+            for t in hits[:10]:
+                print(f"    {C}•{R} {t.content}")
+            if len(hits) > 10:
+                print(f"  {D}… and {len(hits) - 10} more{R}")
+            continue
         if raw.startswith("history "):
             key = raw[len("history "):].strip()
             hist = space.history(key)
@@ -113,18 +172,6 @@ def main() -> None:
             for st in hist:
                 v = st.metadata.get("_version")
                 print(f"  {D}v{v}: {R}{st.content}")
-            continue
-        if raw.startswith("drift "):
-            key = raw[len("drift "):].strip()
-            d = space.drift(key)
-            if d.get("drift_rate") is None:
-                print(f"  {D}only {d.get('versions', 0)} version(s) — drift needs ≥2{R}")
-                continue
-            print(f"  {D}versions: {d['versions']}{R}")
-            cons = ", ".join(f"{x:+.3f}" for x in d["consecutive_similarities"])
-            print(f"  {D}consecutive sims:{R} [{cons}]")
-            print(f"  {D}first→last sim  :{R} {d['first_to_last_similarity']:+.3f}")
-            print(f"  {D}drift rate      :{R} {d['drift_rate']:+.3f}")
             continue
         if raw.startswith("write "):
             body = raw[len("write "):].strip()
@@ -160,8 +207,7 @@ def main() -> None:
             if not act.thoughts:
                 print(f"  {D}(no activation){R}")
                 continue
-            print(f"  {D}{len(act)} thoughts activated"
-                  f"{f' (pathway: {act.pathway})' if act.pathway else ''}{R}")
+            print(f"  {D}{len(act)} thoughts matched{R}")
             for t, s in list(act)[:6]:
                 print(f"    {D}[{s:+.2f}]{R}  {t.content}")
             continue

@@ -1,47 +1,23 @@
 """
-ada.cognitive — HDC cognitive loop for domain-agnostic tool calling.
+ada.cognitive — the universal schema and the cognitive surfaces on it.
 
-Core classes:
-    CognitiveLoop            — the main loop (perceive → recall → deduce → slot → decide)
-    SchemaIntentClassifier   — intent classification from function schemas via GlyphSpace
-    GlyphSpace               — unified glyph storage + scoring + caching
-    ScoringStrategy          — protocol for model-specific scoring
-    DefaultScoringStrategy   — cosine similarity on global cortex
-    DomainConfig             — domain-specific configuration loader
-    SlotExtractor            — data-driven argument extraction
-    IdeaSpace                — episodic memory with Hebbian reinforcement
-    StepResult               — result of one cognitive loop turn
-
-The SDK classes are pure engines with zero domain knowledge.
-Domain logic lives in config files provided by the model.
+    UNIVERSAL_SCHEMA   — the fixed 7-layer × 33-role lattice
+    UniversalEnricher  — LLM-at-build-time text → schema extractor
+    CognitiveSurface   — think / ask on a ThoughtSpace
+    build_llm_renderer — optional LLM surface form for answers
 """
 
-from .domain import DomainConfig, SlotDefinition, StateEffect, TriggerSuppression, StateFormat
-from .glyph_space import GlyphSpace, ScoringStrategy, DefaultScoringStrategy
-from .idea import IdeaEncoder, IdeaSpace, Idea
-from .intent_cache import IntentCache  # deprecated, kept for backward compat
-from .loop import CognitiveLoop, StepResult
-from .model_scorer import ModelScorer, ScorerResult
-from .schema_classifier import SchemaIntentClassifier
-from .slots import SlotExtractor
+from .universal import ALL_LAYERS, ALL_ROLES, UNIVERSAL_SCHEMA, UniversalEnricher
+from .surface import Activation, Answer, CognitiveSurface
+from .generate import build_llm_renderer
 
 __all__ = [
-    "CognitiveLoop",
-    "DefaultScoringStrategy",
-    "DomainConfig",
-    "GlyphSpace",
-    "IdeaEncoder",
-    "IdeaSpace",
-    "Idea",
-    "IntentCache",
-    "ModelScorer",
-    "SchemaIntentClassifier",
-    "ScorerResult",
-    "ScoringStrategy",
-    "SlotDefinition",
-    "SlotExtractor",
-    "StateEffect",
-    "StateFormat",
-    "StepResult",
-    "TriggerSuppression",
+    "UNIVERSAL_SCHEMA",
+    "ALL_LAYERS",
+    "ALL_ROLES",
+    "UniversalEnricher",
+    "CognitiveSurface",
+    "Activation",
+    "Answer",
+    "build_llm_renderer",
 ]

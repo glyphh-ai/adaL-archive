@@ -1,184 +1,30 @@
 """
-GlyphGenerator — render text from the cognitive substrate.
+LLM renderer factory — the surface form on top of the substrate.
 
-The 10th stage of the cognitive loop. Takes a query, runs glyph-based
-multi-hop recall, and emits two things:
-  1. A "render context" — what the substrate believes is relevant
-  2. Optionally, rendered text (if a language renderer is wired in)
-
-The substrate does the cognition; the renderer does the surface form.
-LLM is optional — without it you see the substrate's raw output, which
-is the new bit. With it, the LLM only sees what Ada chose to expose.
-
-Usage:
-    from ada.memory.thought_space import ThoughtGlyphSpace
-    from ada.memory.glyph_cognitive import GlyphCognitiveLoop
-    from ada.cognitive.generate import GlyphGenerator, build_llm_renderer
-
-    space = ThoughtGlyphSpace()
-    cognitive = GlyphCognitiveLoop(space)
-    gen = GlyphGenerator(space, cognitive, renderer=build_llm_renderer())
-
-    space.absorb("My name is Chris.")
-    result = gen.generate("What's my name?")
-    print(result.context)     # substrate output
-    print(result.response)    # LLM rendering (if renderer wired)
+The substrate does the retrieval; the renderer turns recalled facts into
+natural language. The LLM only ever sees what the substrate chose to
+expose, so it can't invent facts. Without a renderer (no API key), the
+substrate's raw output is returned directly.
 """
 
 from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass, field
 from typing import Callable, Optional
-
-from ada.memory.glyph_cognitive import GlyphCognitiveLoop, GlyphReasoningChain
-from ada.memory.thought_space import ThoughtGlyphSpace
 
 logger = logging.getLogger(__name__)
 
-
-# ── Result type ──────────────────────────────────────────────────────────
-
-@dataclass
-class GenerationResult:
-    """Output of one generate() call."""
-    query: str
-    chains: list[GlyphReasoningChain] = field(default_factory=list)
-    context: str = ""             # the rich debug view (substrate output)
-    render_facts: str = ""        # the trimmed facts a renderer actually sees
-    response: Optional[str] = None
-    used_renderer: bool = False
-
-    @property
-    def top_recall(self) -> Optional[str]:
-        """The single most-relevant recalled memory, if any."""
-        if not self.chains or not self.chains[0].hops:
-            return None
-        return self.chains[0].hops[0].result.thought.content
-
-
-# A Renderer takes (context, query) and returns generated text.
+# (facts_context, query) -> rendered text
 Renderer = Callable[[str, str], str]
 
-
-# ── Generator ────────────────────────────────────────────────────────────
-
 DEFAULT_SYSTEM = (
-    "You are Ada — a cognitive substrate that recalls memories via "
-    "hyperdimensional vectors and renders them to natural language. "
-    "Answer the user's query using ONLY the recalled memories provided. "
-    "Be concise (1-2 sentences). If the memories don't contain the answer, "
-    "say so directly — never invent facts."
+    "You are Ada's language surface. You receive recalled memories and a "
+    "query. Answer the query in ONE short sentence using ONLY the recalled "
+    "memories. If they don't contain the answer, say \"I don't know.\" "
+    "Never invent facts."
 )
 
-
-class GlyphGenerator:
-    """The GENERATE stage of the cognitive loop.
-
-    Pipeline:
-      1. cognitive.reason(query) → glyph chains with confidence + layer activations
-      2. Build a render context from the top chains (memories + their activation pattern)
-      3. Optionally call a renderer (LLM-as-renderer is the natural fit)
-      4. Absorb the response back to memory (closes the learning loop)
-      5. Hebbian-reinforce the winning chain
-    """
-
-    def __init__(
-        self,
-        space: ThoughtGlyphSpace,
-        cognitive: GlyphCognitiveLoop,
-        renderer: Optional[Renderer] = None,
-    ):
-        self.space = space
-        self.cognitive = cognitive
-        self.renderer = renderer
-
-    def generate(
-        self,
-        query: str,
-        top_chains: int = 5,
-        absorb_response: bool = True,
-        reinforce: bool = True,
-    ) -> GenerationResult:
-        # 1. Cognitive recall — multi-hop glyph reasoning.
-        chains = self.cognitive.reason(query, top_k=top_chains)
-
-        # 2. Assemble the render context (rich debug view + trimmed facts).
-        context = self._build_context(query, chains)
-        render_facts = self._render_facts(chains)
-
-        # 3. Optional rendering via LLM. Renderer sees only the facts.
-        response = None
-        used_renderer = False
-        if self.renderer is not None:
-            try:
-                response = self.renderer(render_facts, query)
-                used_renderer = True
-            except Exception as e:
-                logger.warning("Renderer failed: %s", e)
-
-        # 4. Close the loop — absorb Ada's own response as a thought.
-        if absorb_response and response:
-            self.space.absorb(response, speaker="outgoing")
-
-        # 5. Reinforce the winning chain (Hebbian).
-        if reinforce and chains:
-            self.cognitive.confirm(chains[0])
-
-        return GenerationResult(
-            query=query,
-            chains=chains,
-            context=context,
-            render_facts=render_facts,
-            response=response,
-            used_renderer=used_renderer,
-        )
-
-    # ── context assembly ────────────────────────────────────────────────
-
-    def _render_facts(self, chains: list[GlyphReasoningChain]) -> str:
-        """Trimmed deduped fact list — what the renderer actually sees."""
-        seen: set[str] = set()
-        facts: list[str] = []
-        for chain in chains:
-            for hop in chain.hops:
-                # Filter Ada's own past responses and duplicate query thoughts.
-                if hop.result.thought.speaker == "outgoing":
-                    continue
-                content = hop.result.thought.content
-                if content in seen:
-                    continue
-                seen.add(content)
-                facts.append(f"- {content}")
-        return "\n".join(facts) if facts else "(no memories)"
-
-    def _build_context(self, query: str, chains: list[GlyphReasoningChain]) -> str:
-        lines = [f"Query: {query!r}", ""]
-        if not chains:
-            lines.append("(substrate found no relevant memories)")
-            return "\n".join(lines)
-        lines.append(f"Substrate recalled {len(chains)} chain(s):")
-        for i, chain in enumerate(chains, 1):
-            tag = ""
-            if chain.pathway_name:
-                tag += f" via pathway:{chain.pathway_name}"
-            if chain.pattern_boost > 0:
-                tag += f" +{chain.pattern_boost:.2f}"
-            lines.append(f"  chain {i}  conf={chain.confidence:.2f}{tag}")
-            for j, hop in enumerate(chain.hops, 1):
-                content = hop.result.thought.content
-                top_layers = sorted(
-                    hop.matching_layers.items(), key=lambda kv: -kv[1]
-                )[:3]
-                layer_str = ", ".join(f"{k}:{v:.2f}" for k, v in top_layers)
-                lines.append(f"    hop {j}: {content!r}")
-                if layer_str:
-                    lines.append(f"            layers ─ {layer_str}")
-        return "\n".join(lines)
-
-
-# ── LLM renderer factory ─────────────────────────────────────────────────
 
 def build_llm_renderer(
     model: str | None = None,
@@ -190,12 +36,12 @@ def build_llm_renderer(
     The substrate works without it — the renderer is just the surface form.
     """
     if not os.environ.get("ANTHROPIC_API_KEY"):
-        logger.info("No ANTHROPIC_API_KEY — generator will return substrate context only.")
+        logger.info("No ANTHROPIC_API_KEY — answers will return substrate facts directly.")
         return None
     try:
         import anthropic  # noqa: F401
     except ImportError:
-        logger.info("anthropic SDK not installed — generator will return substrate context only.")
+        logger.info("anthropic SDK not installed — answers will return substrate facts directly.")
         return None
 
     import anthropic as _a
@@ -216,68 +62,5 @@ def build_llm_renderer(
             }],
         )
         return resp.content[0].text.strip()
-
-    return _render
-
-
-def build_qwen_renderer(
-    model_path: str = "/tmp/qwen3-0.6b",
-    system: str = DEFAULT_SYSTEM,
-    max_tokens: int = 120,
-) -> Optional[Renderer]:
-    """Return a local Qwen3-backed renderer, or None if transformers isn't here.
-
-    Uses HuggingFace transformers with the model's chat template. Thinking
-    mode disabled for speed. Loads on first call, then reuses.
-    """
-    try:
-        from transformers import AutoTokenizer, AutoModelForCausalLM
-    except ImportError:
-        logger.info("transformers not installed — Qwen renderer unavailable.")
-        return None
-
-    import os.path
-    if not os.path.exists(model_path):
-        logger.info("Model path %s not found — Qwen renderer unavailable.", model_path)
-        return None
-
-    state: dict = {"tok": None, "model": None}
-
-    def _load() -> None:
-        if state["model"] is not None:
-            return
-        state["tok"] = AutoTokenizer.from_pretrained(model_path)
-        state["model"] = AutoModelForCausalLM.from_pretrained(model_path, dtype="float32")
-
-    def _render(context: str, query: str) -> str:
-        _load()
-        tok, model = state["tok"], state["model"]
-        user_msg = (
-            f"Use these facts to answer the question. If the facts don't "
-            f"contain the answer, say \"I don't know.\"\n\n"
-            f"Facts:\n{context}\n\nQuestion: {query}"
-        )
-        messages = [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user_msg},
-        ]
-        text = tok.apply_chat_template(
-            messages,
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-        )
-        inputs = tok(text, return_tensors="pt")
-        out = model.generate(
-            **inputs,
-            max_new_tokens=max_tokens,
-            do_sample=False,
-            pad_token_id=tok.eos_token_id,
-        )
-        gen = tok.decode(
-            out[0][inputs.input_ids.shape[1]:],
-            skip_special_tokens=True,
-        )
-        return gen.strip()
 
     return _render

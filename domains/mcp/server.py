@@ -2,23 +2,21 @@
 MCP Server — Ada's substrate exposed as deterministic skills.
 
 Cognitive surfaces:
-  think(input)        — pure associative recall, returns what activates
+  think(input)        — broad recall, returns what matches
   ask(question)       — targeted retrieval, one fact + confidence
   tell(text[,key])    — absorb a fact (optional versioning)
   tell_raw(facts[,key]) — absorb a pre-structured universal-schema fact (no LLM)
 
-Deterministic HDC skills (no LLM in the path):
-  recall(query)       — associative search, top-k matches + similarity
+Deterministic skills (no LLM in the path):
+  recall(query)       — lexical search, top-k matches + similarity
   history(key)        — full version chain for a versioned key
-  drift(key)          — how a key's representation shifted over time
-  predict(key[,steps]) — beam-search projection + trend statistics
   stats()             — substrate vital signs
 
 Access management:
   create_token(...)   — mint an API token for this MCP server
 
-This is the tool surface the Claude Agent SDK drives: Claude decides WHAT to
-do (chat, ingest, project); these tools guarantee HOW (deterministic HDC).
+This is the tool surface an LLM drives: the model decides WHAT to do
+(chat, ingest, query); these tools guarantee HOW (deterministic scans).
 """
 
 import json
@@ -136,9 +134,9 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
             Tool(
                 name="recall",
                 description=(
-                    "Deterministic associative search over Ada's substrate "
-                    "(pure HDC cosine, no LLM). Returns the top matching "
-                    "thoughts with similarity scores and their versioned key."
+                    "Deterministic lexical search over Ada's substrate "
+                    "(no LLM). Returns the top matching thoughts with "
+                    "similarity scores and their versioned key."
                 ),
                 inputSchema={
                     "type": "object",
@@ -162,40 +160,10 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
                 },
             ),
             Tool(
-                name="drift",
-                description=(
-                    "How the substrate's representation of a versioned key has "
-                    "shifted over time: consecutive cosine similarities, "
-                    "first-to-last similarity, and overall drift rate."
-                ),
-                inputSchema={
-                    "type": "object",
-                    "properties": {"key": {"type": "string"}},
-                    "required": ["key"],
-                },
-            ),
-            Tool(
-                name="predict",
-                description=(
-                    "Project a versioned key forward via beam search over its "
-                    "temporal deltas. Returns confidence plus trend statistics "
-                    "(autocorrelation, drift rate, periodicity). Needs >= 2 "
-                    "versions of the key."
-                ),
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        "key": {"type": "string"},
-                        "steps": {"type": "integer", "default": 1},
-                    },
-                    "required": ["key"],
-                },
-            ),
-            Tool(
                 name="stats",
                 description=(
                     "Substrate vital signs: total thoughts, versioned keys, "
-                    "multi-version keys, and foundation primitives loaded."
+                    "multi-version keys, and per-layer slot fill."
                 ),
                 inputSchema={"type": "object", "properties": {}},
             ),
@@ -238,10 +206,6 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
             return _handle_recall(brain, args)
         if name == "history":
             return _handle_history(brain, args)
-        if name == "drift":
-            return _handle_drift(brain, args)
-        if name == "predict":
-            return _handle_predict(brain, args)
         if name == "stats":
             return _handle_stats(brain, args)
         if name == "create_token":
@@ -267,8 +231,6 @@ def _handle_think(brain, args: dict) -> CallToolResult:
                 {"content": t.content, "similarity": round(s, 3)}
                 for t, s in zip(act.thoughts, act.similarities)
             ],
-            "pathway": act.pathway,
-            "pattern_boost": round(act.pattern_boost, 3),
         })
     except Exception as e:
         logger.error("think failed: %s", e, exc_info=True)
@@ -385,71 +347,9 @@ def _handle_history(brain, args: dict) -> CallToolResult:
         return _err(str(e))
 
 
-def _handle_drift(brain, args: dict) -> CallToolResult:
-    key = args.get("key", "")
-    if not key:
-        return _err("Missing 'key' parameter")
-    try:
-        return _ok(brain._cognitive.thought_space.drift(key))
-    except Exception as e:
-        logger.error("drift failed: %s", e, exc_info=True)
-        return _err(str(e))
-
-
-def _handle_predict(brain, args: dict) -> CallToolResult:
-    key = args.get("key", "")
-    steps = int(args.get("steps", 1))
-    if not key:
-        return _err("Missing 'key' parameter")
-    try:
-        space = brain._cognitive.thought_space
-        hist = space.history(key)
-        if len(hist) < 2:
-            return _ok({
-                "key": key,
-                "versions": len(hist),
-                "prediction": None,
-                "reason": "need >= 2 versions to project",
-            })
-        from ada.temporal.predictor import BeamSearchPredictor
-
-        glyphs = [h.glyph for h in hist]
-        result = BeamSearchPredictor(beam_width=5).predict(
-            glyphs, time_intervals=steps, hierarchy_level="cortex"
-        )
-        top = result.predictions[0]
-        trends = result.trends
-        drift = space.drift(key)
-        return _ok({
-            "key": key,
-            "versions": len(hist),
-            "steps": steps,
-            "confidence": round(float(top.confidence), 3),
-            "trends": {
-                "autocorrelation": round(float(trends.autocorrelation), 3),
-                "drift_rate": round(float(trends.drift_rate), 3),
-                "periodicity": trends.periodicity,
-            },
-            "drift_rate": round(float(drift.get("drift_rate") or 0.0), 3),
-        })
-    except Exception as e:
-        logger.error("predict failed: %s", e, exc_info=True)
-        return _err(str(e))
-
-
 def _handle_stats(brain, args: dict) -> CallToolResult:
     try:
-        space = brain._cognitive.thought_space
-        by_key = space._history_by_key
-        foundation = sum(
-            1 for t in space._thoughts.values() if t.metadata.get("foundation")
-        )
-        return _ok({
-            "thoughts": space.count,
-            "versioned_keys": len(by_key),
-            "multi_version_keys": sum(1 for v in by_key.values() if len(v) > 1),
-            "foundation_primitives": foundation,
-        })
+        return _ok(brain._cognitive.thought_space.stats())
     except Exception as e:
         logger.error("stats failed: %s", e, exc_info=True)
         return _err(str(e))
@@ -517,11 +417,8 @@ def _get_surface(brain):
         return _surface_cache[id(brain)]
     from ada.cognitive.generate import build_llm_renderer
     from ada.cognitive.surface import CognitiveSurface
-    space = brain._cognitive.thought_space
-    cognitive = brain._cognitive._glyph_loop
     surface = CognitiveSurface(
-        space=space,
-        cognitive=cognitive,
+        space=brain._cognitive.thought_space,
         renderer=build_llm_renderer(),
     )
     _surface_cache[id(brain)] = surface

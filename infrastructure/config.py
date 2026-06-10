@@ -3,7 +3,7 @@ Ada configuration.
 
 All configuration is read from environment variables / .env with sensible
 defaults. Storage is SQLite by default; setting DATABASE_URL to a Postgres URL
-switches the runtime to the pgvector backend (see resolved_storage_backend).
+switches the runtime to the Postgres backend (see resolved_storage_backend).
 """
 
 from functools import lru_cache
@@ -20,11 +20,11 @@ class Settings(BaseSettings):
     host: str = Field(default="0.0.0.0", description="Server host")
     port: int = Field(default=8002, description="Server port")
 
-    # Database — SQLite by default; a postgres:// URL enables pgvector.
+    # Database — SQLite by default; a postgres:// URL enables Postgres.
     database_url: Optional[str] = Field(
         default=None,
         description="DB URL. Unset → SQLite at ~/.ada/ada.db. "
-                    "postgresql://… → pgvector backend.",
+                    "postgresql://… → Postgres backend.",
     )
 
     # Dev flags
@@ -45,15 +45,11 @@ class Settings(BaseSettings):
 
     @property
     def resolved_storage_backend(self) -> str:
-        # pgvector when pointed at a persistent Postgres; SQLite otherwise.
+        # postgres when pointed at a persistent Postgres; SQLite otherwise.
         url = self.resolved_database_url.lower()
         if "postgres" in url:
-            return "pgvector"
+            return "postgres"
         return "sqlite"
-
-    @property
-    def resolved_max_vector_dimension(self) -> int:
-        return 65536  # No practical limit for SQLite JSON storage
 
     # JWT (for token auth)
     jwt_secret_key: Optional[str] = Field(default=None)

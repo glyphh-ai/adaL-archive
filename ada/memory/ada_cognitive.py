@@ -1,9 +1,9 @@
 """
-AdaCognitive — Ada's cognitive infrastructure as a single SDK class.
+AdaCognitive — Ada's cognitive infrastructure as a single class.
 
-Any model imports this to get memory, dreaming, routing, and confidence
-gating. The model brings domain-specific recall (encoder, intent,
-exemplars). Ada brings the cognitive loop.
+Owns the thought space (memory), a lightweight input router, and the
+conversation window. A consumer calls ``process()`` and gets back a
+gate (DONE/ASK), grounded facts, and a ready-to-stream LLM prompt.
 
 Usage:
     from ada.memory import AdaCognitive
@@ -19,14 +19,11 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
+from enum import Enum
 
-from ada.memory.thought_space import ThoughtGlyphSpace
-from ada.memory.glyph_cognitive import GlyphCognitiveLoop
-from ada.memory.glyph_dream import GlyphDreamLoop, Insight
-from ada.memory.cognitive_glyph import CognitiveGlyph, Action, CognitiveState
 from ada.memory.ada_conversation import Conversation
+from ada.memory.thought_space import ThoughtSpace
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +33,55 @@ logger = logging.getLogger(__name__)
 ADA_SYSTEM_PROMPT = """\
 You are Ada. 1 sentence max. Use ONLY facts given. Never guess.
 "my" = user's things. "your" = user's things."""
+
+
+# ── Input classification ─────────────────────────────────────────────────────
+
+class Action(Enum):
+    """What kind of input is this? Deterministic surface classification."""
+    RECALL = "recall"          # a question — look it up
+    STORE = "store"            # a statement — remember it
+    FEEL = "feel"              # emotional expression
+    CONTRADICT = "contradict"  # a correction of something Ada said
+    WONDER = "wonder"          # open-ended / unclear
+
+
+@dataclass
+class CognitiveState:
+    """Classification of one input."""
+    action: Action
+    text: str
+
+
+_QUESTION_WORDS = re.compile(
+    r"^(what|who|whom|whose|where|when|why|how|which|is|are|was|were|do|does|"
+    r"did|can|could|will|would|should|tell me|remind me)\b", re.I)
+_CONTRADICTION = re.compile(
+    r"\b(no,|that's wrong|that is wrong|incorrect|actually,|not true|you're wrong)\b", re.I)
+_FEELING = re.compile(
+    r"\b(i feel|i'm (so )?(happy|sad|angry|excited|tired|frustrated|anxious)|"
+    r"this (sucks|is great|is awful))\b", re.I)
+
+
+def classify(text: str) -> CognitiveState:
+    """Rule-based surface classification — transparent and deterministic."""
+    t = text.strip()
+    if _CONTRADICTION.search(t):
+        return CognitiveState(Action.CONTRADICT, t)
+    if _FEELING.search(t):
+        return CognitiveState(Action.FEEL, t)
+    if t.endswith("?") or _QUESTION_WORDS.match(t):
+        return CognitiveState(Action.RECALL, t)
+    if len(t.split()) >= 3:
+        return CognitiveState(Action.STORE, t)
+    return CognitiveState(Action.WONDER, t)
+
+
+class _Router:
+    """Adapter exposing classify() under the legacy .process() name."""
+
+    def process(self, text: str) -> CognitiveState:
+        return classify(text)
 
 
 # ── Result dataclass ─────────────────────────────────────────────────────────
@@ -63,68 +109,51 @@ def _split_sentences(text: str) -> list[str]:
 # ── AdaCognitive ─────────────────────────────────────────────────────────────
 
 class AdaCognitive:
-    """Ada's cognitive infrastructure. One class, any model imports it.
-
-    Owns: ThoughtGlyphSpace, GlyphCognitiveLoop, GlyphDreamLoop,
-          CognitiveGlyph, Conversation.
+    """Ada's cognitive infrastructure: memory + routing + conversation.
 
     Args:
         system_prompt: LLM system prompt.
-        recall_threshold: Minimum similarity for DONE gate.
-        thought_space: Pre-built ThoughtGlyphSpace (or creates one).
-        localized_interval: DreamLoop localized cycle interval (seconds).
-        deep_interval: DreamLoop deep cycle interval (seconds).
+        recall_threshold: Minimum similarity for the DONE gate.
+        thought_space: Pre-built ThoughtSpace (or creates one).
         max_conversation_turns: Number of turns to keep in context.
     """
 
     def __init__(
         self,
         system_prompt: str = ADA_SYSTEM_PROMPT,
-        recall_threshold: float = 0.35,
-        thought_space: ThoughtGlyphSpace | None = None,
-        localized_interval: float = 3.0,
-        deep_interval: float = 30.0,
+        recall_threshold: float = 0.25,
+        thought_space: ThoughtSpace | None = None,
         max_conversation_turns: int = 3,
+        **_compat,
     ) -> None:
+        # **_compat swallows legacy dream-loop args (localized_interval, …).
         self._recall_threshold = recall_threshold
         self._system_prompt = system_prompt
-
-        # Core components
-        self._space = thought_space or ThoughtGlyphSpace(with_foundation=True)
-        self._glyph_loop = GlyphCognitiveLoop(self._space)
-        self._cognitive = CognitiveGlyph(thought_space=self._space)
+        self._space = thought_space or ThoughtSpace()
+        self._router = _Router()
         self._conversation = Conversation(
             system_prompt=system_prompt,
             max_turns=max_conversation_turns,
         )
 
-        # Dream loop (created lazily or on start_dreaming)
-        self._localized_interval = localized_interval
-        self._deep_interval = deep_interval
-        self._dream: GlyphDreamLoop | None = None
-
     # ── Properties ────────────────────────────────────────────────────────
 
     @property
-    def thought_space(self) -> ThoughtGlyphSpace:
+    def thought_space(self) -> ThoughtSpace:
         return self._space
 
     @property
-    def cognitive(self) -> CognitiveGlyph:
-        return self._cognitive
+    def cognitive(self) -> _Router:
+        return self._router
 
     @property
     def conversation(self) -> Conversation:
         return self._conversation
 
-    @property
-    def glyph_loop(self) -> GlyphCognitiveLoop:
-        return self._glyph_loop
-
     # ── Core API ──────────────────────────────────────────────────────────
 
     def absorb(self, text: str, speaker: str = "incoming"):
-        """Absorb input sentence by sentence as thought glyphs.
+        """Absorb input sentence by sentence.
 
         Returns the last StoredThought (or None if nothing absorbed).
         """
@@ -138,38 +167,15 @@ class AdaCognitive:
         return last
 
     def process(self, text: str) -> CognitiveResult:
-        """Route + absorb + recall + gate + build prompt.
-
-        Full pipeline: cognitive routing determines the action, then
-        the confidence gate determines DONE/ASK, and finally the
-        LLM prompt is built with the right context.
-
-        Args:
-            text: User input.
-
-        Returns:
-            CognitiveResult with state, gate, facts, and prompt.
-        """
-        state = self._cognitive.process(text)
+        """Classify + absorb + recall + gate + build prompt."""
+        state = classify(text)
         self.absorb(text)
 
-        # Recall with confidence gate
         gate, facts = self.recall(text)
-
-        # Override gate for non-RECALL actions
-        if state.action == Action.CONTRADICT:
-            gate, facts = self.recall(text)
-        elif state.action != Action.RECALL:
+        if state.action not in (Action.RECALL, Action.CONTRADICT):
             gate, facts = "ASK", []
 
         prompt = self.build_prompt(text, state, gate, facts)
-
-        # Nudge dream loop
-        if self._dream is not None:
-            self._dream.notify_absorb()
-            if not self._dream._running and self._space.count > 0:
-                self._dream.start()
-
         return CognitiveResult(state=state, gate=gate, facts=facts, prompt=prompt)
 
     def recall(
@@ -203,12 +209,7 @@ class AdaCognitive:
         gate: str = "ASK",
         facts: list[tuple[str, str, float]] | None = None,
     ) -> str:
-        """Build minimal LLM prompt from cognitive state + recall.
-
-        DONE: "Facts: X. Y. Z. -> answer in 1 sentence"
-        ASK:  "-> say I don't know"
-        STORE/FEEL/etc: "-> acknowledge in 1 sentence"
-        """
+        """Build minimal LLM prompt from cognitive state + recall."""
         if state.action == Action.RECALL:
             if gate == "DONE" and facts:
                 fact_lines = "\n".join(f"- {content}" for content, _, _ in facts[:3])
@@ -225,8 +226,6 @@ class AdaCognitive:
                 injection = f"User corrected you. You remember:\n{fact_lines}"
             else:
                 injection = "User corrected you. Say: OK."
-        elif state.action == Action.WONDER:
-            injection = "Ask a follow-up."
         else:
             injection = "Respond briefly."
 
@@ -237,50 +236,9 @@ class AdaCognitive:
         self._conversation.add_turn(user_text, response)
         self.absorb(response, speaker="outgoing")
 
-    # ── Dream API ─────────────────────────────────────────────────────────
-
-    def _ensure_dream(self) -> GlyphDreamLoop:
-        if self._dream is None:
-            self._dream = GlyphDreamLoop(
-                self._glyph_loop,
-                localized_interval=self._localized_interval,
-                deep_interval=self._deep_interval,
-            )
-            self._dream.set_cognitive(self._cognitive)
-        return self._dream
-
-    def start_dreaming(self) -> None:
-        self._ensure_dream().start()
-
-    def stop_dreaming(self) -> None:
-        if self._dream is not None:
-            self._dream.stop()
-
-    def drain_insights(self) -> list[Insight]:
-        if self._dream is None:
-            return []
-        return self._dream.drain_insights()
-
-    def dream_stats(self) -> dict:
-        if self._dream is None:
-            return {}
-        return self._dream.stats
-
-    @property
-    def is_dreaming(self) -> bool:
-        return self._dream is not None and self._dream.is_running
-
     # ── Lifecycle ─────────────────────────────────────────────────────────
-
-    def save(self, path: str | None = None) -> None:
-        """Save persistent state to disk."""
-        if path and self._glyph_loop is not None:
-            self._glyph_loop.save(path)
 
     def reset(self) -> None:
         """Clear all memory and conversation state."""
-        if self._dream is not None:
-            self._dream.stop()
-            self._dream = None
         self._space.clear()
         self._conversation.clear()

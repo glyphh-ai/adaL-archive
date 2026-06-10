@@ -26,7 +26,6 @@ classifiers = [
 
 # Core dependencies — SQLite only, no Postgres/Docker needed.
 dependencies = [
-    "numpy>=1.24.0",
     "pyyaml>=6.0",
     "httpx>=0.24.0",
     "pyjwt[crypto]>=2.8.0",
@@ -45,21 +44,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# LLM backends — Ada's voice (Qwen3-1.5B local inference)
-mlx = [
-    "mlx>=0.18.0",
-    "mlx-lm>=0.20.0",
-    "huggingface-hub>=0.20.0",
-]
-llm = [
-    "llama-cpp-python>=0.3.0",
-    "huggingface-hub>=0.20.0",
-]
-audio = [
-    "librosa>=0.10.0",
-    "soundfile>=0.12.0",
-    "opensmile>=2.5.0",
-]
 telemetry = [
     "prometheus-client>=0.17.0",
     "opentelemetry-api>=1.20.0",

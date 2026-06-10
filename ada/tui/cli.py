@@ -292,14 +292,12 @@ def _print_status(brain) -> None:
         print(f"  {D}Brain not loaded yet{R}")
         return
 
-    caps = brain.capabilities
-    obs = brain.observations
     llm = brain.llm
+    stats = brain.cognitive.thought_space.stats()
 
     print(f"\n  {BOLD}Brain{R}")
-    print(f"  {D}Capabilities:{R}  {len(caps)} loaded")
-    print(f"  {D}Observations:{R}  {obs.count} total, {obs.llm_fallback_count} LLM fallbacks")
-    print(f"  {D}Thoughts:{R}      {brain.cognitive.thought_space.count}")
+    print(f"  {D}Thoughts:{R}       {stats['count']}")
+    print(f"  {D}Versioned keys:{R} {stats['versioned_keys']}")
 
     if llm.available:
         print(f"  {D}LLM:{R}           {G}online{R} ({llm.usage.calls} calls, {llm.usage.input_tokens + llm.usage.output_tokens} tokens)")
@@ -370,9 +368,6 @@ def _load_ada_env() -> None:
         # Map vault keys to env vars
         _VAULT_TO_ENV = {
             "anthropic_api_key": "ANTHROPIC_API_KEY",
-            "pipedream_client_id": "PIPEDREAM_CLIENT_ID",
-            "pipedream_client_secret": "PIPEDREAM_CLIENT_SECRET",
-            "pipedream_project_id": "PIPEDREAM_PROJECT_ID",
         }
         for vault_key, env_key in _VAULT_TO_ENV.items():
             val = vault.get(vault_key)
@@ -499,89 +494,6 @@ def _setup_model() -> None:
     os.environ["ADA_MODEL"] = model_id
     print(f"  {G}Model set to {model_id}{R}")
     print(f"  {D}Restart Ada to activate.{R}\n")
-
-
-def _setup_pipedream() -> None:
-    """Set up Pipedream Connect credentials."""
-    from domains.brain.skills.vault import get_vault
-
-    vault = get_vault()
-
-    print(f"\n  {P}{BOLD}Pipedream Connect{R}")
-    print(f"  {D}This connects Ada to 3,000+ APIs.{R}")
-    print(f"  {D}Get your project credentials at:{R} {B}https://pipedream.com/connect{R}\n")
-
-    if vault.has("pipedream_project_id"):
-        print(f"  {D}Already configured. Enter new values to update, or press Enter to keep.{R}\n")
-
-    try:
-        client_id = input(f"  {P}Client ID{D}>{R} ").strip()
-        client_secret = input(f"  {P}Client Secret{D}>{R} ").strip()
-        project_id = input(f"  {P}Project ID{D}>{R} ").strip()
-    except (EOFError, KeyboardInterrupt):
-        print()
-        return
-
-    if not all([client_id, client_secret, project_id]):
-        if vault.has("pipedream_project_id"):
-            print(f"  {D}Keeping existing config.{R}\n")
-            return
-        print(f"  {PINK}All three values required.{R}\n")
-        return
-
-    # Store encrypted in vault
-    vault.set("pipedream_client_id", client_id)
-    vault.set("pipedream_client_secret", client_secret)
-    vault.set("pipedream_project_id", project_id)
-
-    print(f"  {G}Pipedream credentials encrypted and saved.{R}")
-    print(f"  {D}Now run{R} connect slack {D}to authenticate your first app.{R}\n")
-
-
-def _connect_app(app_slug: str) -> None:
-    """Generate a Pipedream Connect URL for the user to authenticate an app."""
-    from domains.brain.skills.pipedream_connect import PipedreamConnect
-
-    pd = PipedreamConnect()
-    if not pd.configured:
-        print(f"\n  {PINK}Pipedream not configured.{R} Run: {W}setup pipedream{R}\n")
-        return
-
-    url = pd.get_connect_url(app_slug)
-    if url:
-        print(f"\n  {D}Open this URL to connect {B}{app_slug}{D}:{R}")
-        print(f"  {W}{url}{R}")
-        print(f"\n  {D}After authenticating, {app_slug} is ready to use.{R}\n")
-
-        # Try to open in browser
-        try:
-            import webbrowser
-            webbrowser.open(url)
-            print(f"  {D}(Opened in your browser){R}\n")
-        except Exception:
-            pass
-    else:
-        print(f"\n  {PINK}Failed to generate connect URL.{R}\n")
-
-
-def _list_connected_apps() -> None:
-    """List apps the user has connected via Pipedream."""
-    from domains.brain.skills.pipedream_connect import PipedreamConnect
-
-    pd = PipedreamConnect()
-    if not pd.configured:
-        print(f"\n  {PINK}Pipedream not configured.{R} Run: {W}setup pipedream{R}\n")
-        return
-
-    apps = pd.list_connected_apps()
-    if apps:
-        print(f"\n  {BOLD}Connected apps{R}")
-        for app in apps:
-            name = app.get("name", app.get("app_slug", "unknown"))
-            print(f"  {G}●{R} {name}")
-        print()
-    else:
-        print(f"\n  {D}No apps connected yet.{R} Run: {W}connect slack{R}\n")
 
 
 def _setup_claude_code(port: int) -> None:
