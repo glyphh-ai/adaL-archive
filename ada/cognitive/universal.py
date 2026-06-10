@@ -58,6 +58,25 @@ _ENRICHER_SYSTEM = (
     "values of this fixed universal schema. Use ONLY the roles listed. "
     "Leave a role's value blank/null if the fact doesn't mention it. "
     "Do not invent roles. Return strict JSON only.\n\n"
+    "RULES:\n"
+    "1. The entity layer describes exactly ONE entity: the primary "
+    "subject the fact is about (usually the person/agent). It is a "
+    "single JSON object, never a list. When a fact mentions a second "
+    "entity (a pet, a possession, an employer), the second entity goes "
+    "in relational.object — e.g. 'X owns a parrot' → entity.name=X, "
+    "relational={subject: X, predicate: owns, object: parrot}. This "
+    "holds regardless of sentence order: 'A parrot lives with X' is "
+    "still about X owning a parrot.\n"
+    "2. spatial.location = where the subject is or lives NOW. "
+    "spatial.origin = where the subject is from, was born, or grew up. "
+    "Never put a born-in/grew-up-in/from place in spatial.location.\n"
+    "3. Values must be concrete terms from the fact. Never emit "
+    "deictic or generic placeholders ('home', 'here', 'there', "
+    "'this place') as a value — resolve to the concrete value or "
+    "leave the role blank.\n"
+    "4. Attribute values (age, color, height) describe the primary "
+    "subject and go in their dedicated roles (temporal.age, "
+    "perceptual.color, quantitative.magnitude + quantitative.unit).\n\n"
     "SCHEMA:\n" +
     "\n".join(f"  {layer}: {', '.join(roles)}"
               for layer, roles in UNIVERSAL_SCHEMA.items())
@@ -65,13 +84,18 @@ _ENRICHER_SYSTEM = (
 
 
 class UniversalEnricher:
-    """One LLM call per fact, cached. Maps free text into the fixed schema."""
+    """One LLM call per fact, cached. Maps free text into the fixed schema.
+
+    ``usage`` accumulates measured token counts across calls so build
+    cost is reported from real API usage, never estimated.
+    """
 
     def __init__(self, model: str = "claude-haiku-4-5-20251001"):
         import anthropic
         self._client = anthropic.Anthropic()
         self._model = model
         self._cache: dict[str, dict] = {}
+        self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0}
 
     def enrich(self, text: str) -> dict[str, dict[str, str]]:
         key = hashlib.sha256(text.encode()).hexdigest()
@@ -94,6 +118,9 @@ class UniversalEnricher:
                 system=_ENRICHER_SYSTEM,
                 messages=[{"role": "user", "content": prompt}],
             )
+            self.usage["calls"] += 1
+            self.usage["input_tokens"] += resp.usage.input_tokens
+            self.usage["output_tokens"] += resp.usage.output_tokens
             raw = resp.content[0].text.strip()
             raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw).strip()
             mapped = json.loads(raw)

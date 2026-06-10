@@ -478,9 +478,13 @@ def _sanitize_universal(facts: dict[str, dict[str, str]]) -> dict[str, dict[str,
     from ada.cognitive.universal import UNIVERSAL_SCHEMA
 
     clean: dict[str, dict[str, str]] = {}
-    for layer, roles in (facts or {}).items():
+    if not isinstance(facts, dict):
+        return clean
+    for layer, roles in facts.items():
         if layer not in UNIVERSAL_SCHEMA:
             continue
+        if not isinstance(roles, dict):
+            continue  # malformed layer (e.g. LLM emitted a list) — drop it
         kept = {}
         for role, value in (roles or {}).items():
             if role not in UNIVERSAL_SCHEMA[layer]:
