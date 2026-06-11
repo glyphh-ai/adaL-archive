@@ -267,6 +267,7 @@ def _handle_tell_raw(brain, args: dict) -> CallToolResult:
         stored = space.tell_raw(facts=facts, key=key, text=text, speaker="curriculum")
         if stored is None:
             return _ok({"told": False, "reason": "duplicate or empty"})
+        brain._persist_queue.append(stored)  # durable via background worker
         return _ok({
             "told": True,
             "thought_id": stored.thought_id,
@@ -289,6 +290,7 @@ def _handle_tell(brain, args: dict) -> CallToolResult:
         stored = space.absorb(text, key=key)
         if stored is None:
             return _ok({"told": False, "reason": "duplicate"})
+        brain._persist_queue.append(stored)  # durable via background worker
         return _ok({
             "told": True,
             "thought_id": stored.thought_id,
