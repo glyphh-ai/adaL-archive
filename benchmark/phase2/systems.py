@@ -234,6 +234,13 @@ commentary. If the question asks for information not in the schema,
 output exactly: REFUSE"""
 
 
+# LLM-generated queries can be pathological (e.g. an unconstrained
+# self-join over 4M rows is a multi-trillion-row cartesian product).
+# Production systems running model-generated queries need a hard query
+# timeout; exceeding it is an honest failure ("I don't know").
+ENGINE_TIMEOUT_S = 15.0
+
+
 class EAVSystem:
     name = "eav_sql"
 
@@ -241,13 +248,23 @@ class EAVSystem:
         self.llm = llm
         self.db = sqlite3.connect(":memory:", check_same_thread=False)
         self._db_lock = threading.Lock()
+        self._deadline = float("inf")
+        # Abort any statement still running past the deadline (armed
+        # only around answer-time queries; ingest runs unarmed).
+        self.db.set_progress_handler(
+            lambda: 1 if time.time() > self._deadline else 0, 100_000)
         self.db.execute(
             "CREATE TABLE facts (person TEXT, layer TEXT, role TEXT, "
             "value TEXT, key TEXT, version INTEGER, is_current INTEGER)")
         self.ingest_errors = 0
 
     def ingest(self, facts, keys, extractions) -> None:
+        # Batched loading — row-at-a-time INSERTs took 87 minutes at 1M
+        # facts, which misrepresents how anyone would actually load an
+        # EAV table. Rows are accumulated, superseded versions are
+        # resolved in memory, then executemany() writes once.
         latest: dict[str, int] = {}
+        staged: list[tuple] = []  # (person, layer, role, value, key, version)
         for fact, key, mapped in zip(facts, keys, extractions):
             person = _person_of(mapped)
             if not person or not isinstance(mapped, dict):
@@ -255,20 +272,23 @@ class EAVSystem:
                 continue
             version = latest.get(key, 0) + 1
             latest[key] = version
-            with self._db_lock:
-                if version > 1:
-                    self.db.execute(
-                        "UPDATE facts SET is_current=0 WHERE key=?", (key,))
-                for layer, roles in mapped.items():
-                    if not isinstance(roles, dict):
+            for layer, roles in mapped.items():
+                if not isinstance(roles, dict):
+                    continue
+                for role, v in roles.items():
+                    if v is None or not str(v).strip():
                         continue
-                    for role, v in roles.items():
-                        if v is None or not str(v).strip():
-                            continue
-                        self.db.execute(
-                            "INSERT INTO facts VALUES (?,?,?,?,?,?,1)",
-                            (person, layer, role, _norm(v), key, version))
-        self.db.commit()
+                    staged.append((person, layer, role, _norm(v), key, version))
+        # is_current is known before inserting: final version per key.
+        rows = [(p, l, r, v, k, ver, 1 if ver == latest[k] else 0)
+                for p, l, r, v, k, ver in staged]
+        with self._db_lock:
+            self.db.executemany(
+                "INSERT INTO facts VALUES (?,?,?,?,?,?,?)", rows)
+            self.db.execute(
+                "CREATE INDEX idx_facts_lrv ON facts(layer, role, value)")
+            self.db.execute("CREATE INDEX idx_facts_person ON facts(person)")
+            self.db.commit()
 
     def answer(self, question: str) -> str:
         raw = self.llm.ask(_EAV_TRANSLATOR, f"Question: {question}", 300)
@@ -281,7 +301,11 @@ class EAVSystem:
             else:
                 try:
                     with self._db_lock:
-                        rows = self.db.execute(sql).fetchall()
+                        self._deadline = time.time() + ENGINE_TIMEOUT_S
+                        try:
+                            rows = self.db.execute(sql).fetchall()
+                        finally:
+                            self._deadline = float("inf")
                     return self._format(rows)
                 except Exception as e:
                     err = str(e)
@@ -385,6 +409,9 @@ class GraphSystem:
         self.llm = llm
         self._db = kuzu.Database(workdir)
         self.conn = kuzu.Connection(self._db)
+        # Same runaway-query protection as the SQL engine.
+        if hasattr(self.conn, "set_query_timeout"):
+            self.conn.set_query_timeout(int(ENGINE_TIMEOUT_S * 1000))
         self._cypher_lock = threading.Lock()
         for stmt in _GRAPH_DDL.strip().splitlines():
             self.conn.execute(stmt)
@@ -465,6 +492,97 @@ class GraphSystem:
                     return True
             return False  # unmappable predicate — schema-design miss
         return False
+
+    def ingest_bulk(self, facts, keys, extractions, workdir: str) -> None:
+        """Bulk ingestion via CSV COPY — per-row CREATE is hours at 1M
+        facts; COPY is how a graph DB would actually be loaded."""
+        import csv
+        from collections import defaultdict
+        from pathlib import Path
+
+        persons: set[str] = set()
+        values: dict[str, set[str]] = defaultdict(set)
+        rels: dict[str, list] = defaultdict(list)
+        loc_chain: dict[str, list] = defaultdict(list)
+
+        for fact, key, mapped in zip(facts, keys, extractions):
+            person = _person_of(mapped)
+            if not person or not isinstance(mapped, dict):
+                self.ingest_errors += 1
+                continue
+            persons.add(person)
+            ok = False
+            for layer, roles in mapped.items():
+                if not isinstance(roles, dict):
+                    continue
+                for role, v in roles.items():
+                    if v is None or not str(v).strip():
+                        continue
+                    v = _norm(v)
+                    if layer == "temporal" and role == "age" and v.isdigit():
+                        rels["_age"].append((person, int(v))); ok = True
+                    elif (layer == "quantitative" and role == "magnitude"
+                          and v.isdigit()):
+                        rels["_height"].append((person, int(v))); ok = True
+                    elif layer == "spatial" and role == "location":
+                        values["City"].add(v)
+                        loc_chain[key].append((person, v)); ok = True
+                    elif layer == "spatial" and role == "origin":
+                        values["City"].add(v)
+                        rels["ORIGIN_FROM"].append((person, v)); ok = True
+                    elif layer == "perceptual" and role == "color":
+                        values["Color"].add(v)
+                        rels["LIKES_COLOR"].append((person, v)); ok = True
+                    elif layer == "relational" and role == "object":
+                        pred = _norm((mapped.get("relational") or {})
+                                     .get("predicate") or "")
+                        for rx, rel, table in _PRED_TO_REL:
+                            if rx.search(pred):
+                                values[table].add(v)
+                                rels[rel].append((person, v)); ok = True
+                                break
+            if not ok:
+                self.ingest_errors += 1
+
+        # LIVES_IN with current flag from version order.
+        lives = []
+        for chain in loc_chain.values():
+            for i, (person, city) in enumerate(chain):
+                lives.append((person, city, i == len(chain) - 1))
+
+        wd = Path(workdir)
+        ages = dict(rels.pop("_age", []))
+        heights = dict(rels.pop("_height", []))
+        with open(wd / "person.csv", "w", newline="") as fh:
+            w = csv.writer(fh)
+            for p in sorted(persons):
+                w.writerow([p, ages.get(p, ""), heights.get(p, "")])
+        self.conn.execute(f"COPY Person FROM '{wd}/person.csv' (header=false)")
+        rel_table = {"ORIGIN_FROM": "City", "WORKS_AS": "Job",
+                     "ENJOYS": "Hobby", "HAS_PET": "Pet",
+                     "LIKES_COLOR": "Color"}
+        for table, vals in values.items():
+            path = wd / f"{table}.csv"
+            with open(path, "w", newline="") as fh:
+                w = csv.writer(fh)
+                for v in sorted(vals):
+                    w.writerow([v])
+            self.conn.execute(f"COPY {table} FROM '{path}' (header=false)")
+        with open(wd / "lives_in.csv", "w", newline="") as fh:
+            w = csv.writer(fh)
+            for person, city, cur in lives:
+                w.writerow([person, city, str(cur).lower()])
+        self.conn.execute(f"COPY LIVES_IN FROM '{wd}/lives_in.csv' (header=false)")
+        for rel, pairs in rels.items():
+            path = wd / f"{rel.lower()}.csv"
+            with open(path, "w", newline="") as fh:
+                w = csv.writer(fh)
+                seen = set()
+                for pair in pairs:
+                    if pair not in seen:
+                        seen.add(pair)
+                        w.writerow(list(pair))
+            self.conn.execute(f"COPY {rel} FROM '{path}' (header=false)")
 
     def answer(self, question: str) -> str:
         raw = self.llm.ask(_GRAPH_TRANSLATOR, f"Question: {question}", 300)

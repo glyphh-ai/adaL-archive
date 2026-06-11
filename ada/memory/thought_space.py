@@ -132,6 +132,8 @@ class ThoughtSpace:
         self._absorbed_texts: set[str] = set()  # dedup
         # key → version chain, chronological. Powers history().
         self._history_by_key: dict[str, list[StoredThought]] = {}
+        # entity_profiles() cache — invalidated on every write.
+        self._profiles_cache: dict[str, dict[str, set[str]]] | None = None
 
     @property
     def count(self) -> int:
@@ -248,6 +250,7 @@ class ThoughtSpace:
         self._absorbed_texts.add(text.strip().lower())
         if key is not None:
             self._history_by_key.setdefault(key, []).append(stored)
+        self._profiles_cache = None
         logger.debug("Stored %s: %s", thought_id, text[:50])
         return stored
 
@@ -342,7 +345,14 @@ class ThoughtSpace:
     # value, so "blue" matches whether one fact or three said it).
 
     def entity_profiles(self) -> dict[str, dict[str, set[str]]]:
-        """entity name -> {'layer.role': {values}} over current facts."""
+        """entity name -> {'layer.role': {values}} over current facts.
+
+        Built once and cached; every write invalidates. O(N) rebuild,
+        O(1) reuse — at 1M facts the rebuild is the cost of the first
+        entity query after a write, not of every query.
+        """
+        if self._profiles_cache is not None:
+            return self._profiles_cache
         profiles: dict[str, dict[str, set[str]]] = {}
         for t in self._current_thoughts():
             u = t.universal
@@ -355,6 +365,7 @@ class ThoughtSpace:
                     prof.setdefault(f"{layer}.{role}", set()).add(
                         str(v).strip().lower()
                     )
+        self._profiles_cache = profiles
         return profiles
 
     def entities_where(self, conditions: dict) -> list[str]:
@@ -534,6 +545,7 @@ class ThoughtSpace:
         self._thoughts.clear()
         self._absorbed_texts.clear()
         self._history_by_key.clear()
+        self._profiles_cache = None
 
     def stats(self) -> dict:
         layer_fill: Counter = Counter()

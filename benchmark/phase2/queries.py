@@ -77,7 +77,13 @@ def _counts(corpus: Phase2Corpus, fact_type: str) -> Counter:
     return c
 
 
-def build_queries(corpus: Phase2Corpus, seed: int, n_target: int = 60) -> list[Query]:
+def build_queries(corpus: Phase2Corpus, seed: int, n_target: int = 60,
+                  count_intersections_over: int | None = None) -> list[Query]:
+    """count_intersections_over: at large scale, a non-empty intersection
+    cohort can be hundreds of names — comparing name lists measures
+    answer-formatting, not architecture. Above this threshold the
+    question becomes 'How many ...?' (kind=number) instead of
+    'Who ...?'. None (Phase 2 default) keeps name-list questions."""
     rng = random.Random(seed * 104729 + 7)
     qs: list[Query] = []
     persons = corpus.persons
@@ -135,30 +141,61 @@ def build_queries(corpus: Phase2Corpus, seed: int, n_target: int = 60) -> list[Q
             names = [q for q in persons
                      if corpus.current[q]["location"].lower() == city.lower()
                      and corpus.current[q]["job"].lower() == job.lower()]
-            qs.append(Query(
-                shape="intersect", kind="names",
-                question=f"Who lives in {city} and works as a {job}?",
-                expected=names,
-                meta={"city": city, "job": job},
-            ))
+            if (count_intersections_over is not None
+                    and len(names) > count_intersections_over):
+                qs.append(Query(
+                    shape="intersect", kind="number",
+                    question=(f"How many people live in {city} and "
+                              f"work as a {job}?"),
+                    expected=len(names),
+                    meta={"city": city, "job": job},
+                ))
+            else:
+                qs.append(Query(
+                    shape="intersect", kind="names",
+                    question=f"Who lives in {city} and works as a {job}?",
+                    expected=names,
+                    meta={"city": city, "job": job},
+                ))
         else:
-            # near-certain empty: random combo, verified empty against truth
-            for _ in range(20):
-                city = rng.choice(list(_counts(corpus, "location")))
-                job = rng.choice(list(_counts(corpus, "job")))
-                hobby = rng.choice(list(_counts(corpus, "hobby")))
-                names = [q for q in persons
-                         if corpus.current[q]["location"].lower() == city
-                         and corpus.current[q]["job"].lower() == job
-                         and corpus.current[q]["hobby"].lower() == hobby]
-                if not names:
+            # VERIFIED-empty intersection. At small N a random 3-way combo
+            # is usually empty; at 125K persons it has an expected cohort
+            # of ~20, so escalate to a 4th condition (pet) until a combo
+            # is verified empty against ground truth. Never emit an
+            # "empty" question whose true answer is non-empty.
+            combo = None
+            for level in (3, 4, 5):  # escalate conditions until truly empty
+                for _ in range(60):
+                    city = rng.choice(list(_counts(corpus, "location")))
+                    job = rng.choice(list(_counts(corpus, "job")))
+                    hobby = rng.choice(list(_counts(corpus, "hobby")))
+                    pet = rng.choice(list(_counts(corpus, "pet"))) if level >= 4 else None
+                    color = rng.choice(list(_counts(corpus, "color"))) if level >= 5 else None
+                    names = [q for q in persons
+                             if corpus.current[q]["location"].lower() == city
+                             and corpus.current[q]["job"].lower() == job
+                             and corpus.current[q]["hobby"].lower() == hobby
+                             and (pet is None or corpus.current[q]["pet"].lower() == pet)
+                             and (color is None or corpus.current[q]["color"].lower() == color)]
+                    if not names:
+                        combo = (city, job, hobby, pet, color)
+                        break
+                if combo:
                     break
+            assert combo, "could not construct a verified-empty intersection"
+            city, job, hobby, pet, color = combo
+            parts = [f"lives in {city}", f"works as a {job}", f"enjoys {hobby}"]
+            if pet is not None:
+                parts.append(f"has a pet {pet}")
+            if color is not None:
+                parts.append(f"has {color} as their favorite color")
+            question = "Who " + ", ".join(parts[:-1]) + f", and {parts[-1]}?"
             qs.append(Query(
                 shape="intersect", kind="none",
-                question=(f"Who lives in {city}, works as a {job}, "
-                          f"and enjoys {hobby}?"),
+                question=question,
                 expected=[],
-                meta={"city": city, "job": job, "hobby": hobby},
+                meta={"city": city, "job": job, "hobby": hobby,
+                      "pet": pet, "color": color},
             ))
 
     # ── negation + comparison 10% ─────────────────────────────────────

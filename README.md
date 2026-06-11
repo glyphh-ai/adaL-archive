@@ -1,17 +1,23 @@
 # Ada
 
-**A structured memory substrate that gives an LLM persistent,
-queryable memory beyond any context window.**
+**Schema-on-write memory for LLMs.** Facts in prose, answers exact,
+beliefs versioned, refusals honest.
 
-Ada maps facts into a fixed universal schema and answers *compositional*
-queries over them — aggregation, distribution, multi-role intersection,
-versioned history — in milliseconds, with full provenance, on corpora far
+Ada is a universal fact table, deliberately not a graph: an LLM maps
+each fact into one fixed schema at write time, and reads are exact,
+deterministic scans — aggregation, distribution, multi-condition
+intersection, versioned history — with full provenance, on corpora far
 larger than any prompt can hold. It runs on-device (SQLite, zero setup)
 or against Postgres for scale, and exposes itself to any LLM over MCP.
 
-This README is about **running and using** Ada. The empirical case for the
-architecture is being rebuilt from scratch in `benchmark/` (see
-`benchmark/PROTOCOL.md` for the pre-registered protocol).
+Measured (pre-registered protocol, raw logs in `benchmark/`): matches
+or beats a hand-schema'd graph database on NL query accuracy from 1K to
+1M facts with **zero per-domain schema design** (100.0% at 1M facts,
+no degradation with scale), beats text-to-SQL over a generic EAV store
+by ~20 points, and beats embedding RAG by 30+ (RAG decays to ~24% at 1M
+facts; Ada doesn't). 1M facts ingest in ~9 seconds. See
+`benchmark/PROTOCOL.md` and the phase reports for every number,
+including the ones we lost.
 
 ---
 

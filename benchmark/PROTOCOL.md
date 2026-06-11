@@ -133,3 +133,18 @@ result.
   Outcome recorded in `phase2/REPORT.md`: §5 win condition NOT met
   (statistical tie with Kùzu on accuracy, lost cost/latency
   tie-breakers), kill condition not fired (EAV −21.6 points).
+- **§7-3 (2026-06-10, before Phase 3):** Phase 3 ingests ground-truth
+  structured rows instead of LLM extractions. Reason: extraction
+  quality/cost are per-fact properties already measured (Phase 1) and
+  exercised end-to-end (Phase 2); re-buying them at 1M facts (~$1,000)
+  adds no information. RAG still embeds raw sentences. Seeds at the
+  top tiers reduced to 3 (100K) and 2 (1M), compute-bounded.
+- **§7-4 (2026-06-10, after Phase 3 v1, before v2):** v1's
+  "guaranteed-empty" intersection questions were NOT empty at the
+  100K/1M tiers (a random 3-way combo has an expected cohort of ~21 at
+  125K persons; the generator gave up and mislabeled). Systems that
+  answered with the actually-existing people were scored wrong —
+  contamination AGAINST the systems. Fix: conditions escalate (3→5-way)
+  until verified empty. Also: EAV ingestion batched + indexed
+  (row-at-a-time INSERTs took 87 min at 1M, misrepresenting EAV).
+  100K and 1M tiers re-run as v2; 1K/10K tiers unaffected (verified).
