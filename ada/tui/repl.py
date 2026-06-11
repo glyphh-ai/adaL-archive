@@ -12,7 +12,7 @@ private in-memory space, clearly labeled, where nothing persists.
 
 Commands:
 
-    write <text>        — absorb a fact ('write key=foo text' for versioned)
+    tell <text>         — absorb a fact ('tell key=foo text' for versioned)
     ask <question>      — targeted retrieval, refuses with 'I don't know'
     think <input>       — broad recall, returns matches
     count <l.r>=<v> ... — structured count (ALL conditions must hold)
@@ -163,8 +163,8 @@ def connect(url: str):
 # ── Command helpers ───────────────────────────────────────────────────
 
 HELP = """  commands:
-    write <text>            — absorb a fact (durable, shared)
-    write key=K <text>      — absorb as next version of K
+    tell <text>             — absorb a fact (durable, shared)
+    tell key=K <text>       — absorb as next version of K
     ask <question>          — targeted retrieval (refuses 'I don't know')
     think <input>           — broad recall
     count <l.r>=<v> ...     — count entities matching ALL conditions
@@ -304,14 +304,15 @@ def run_repl(url: str, banner: bool = True) -> None:
             print(f"  {C}{r['answer']}{R}")
             continue
 
-        if raw.startswith("write "):
-            body = raw[len("write "):].strip()
+        if raw.startswith("tell ") or raw.startswith("write "):
+            _, _, body = raw.partition(" ")
+            body = body.strip()
             key = None
             if body.startswith("key="):
                 head, _, body = body.partition(" ")
                 key = head[len("key="):]
             if not body:
-                print(f"  {D}usage: write [key=K] <text>{R}")
+                print(f"  {D}usage: tell [key=K] <text>{R}")
                 continue
             r = _call(backend, "tell", {"text": body, **({"key": key} if key else {})})
             if _show_error(r):
