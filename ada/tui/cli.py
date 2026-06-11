@@ -54,7 +54,8 @@ class _BrailleSpinner:
         self._running = False
         self._thread = None
         # Grab a direct handle to the terminal — survives logging shenanigans
-        import io, os
+        import io
+        import os
         self._tty = io.TextIOWrapper(
             io.FileIO(os.dup(sys.stderr.fileno()), mode="w"),
             encoding="utf-8",
@@ -330,7 +331,6 @@ def _print_setup(port: int) -> None:
 
 def _get_ada_home() -> str:
     """~/.ada/ — Ada's config directory."""
-    import os
     from pathlib import Path
     home = Path.home() / ".ada"
     home.mkdir(exist_ok=True)
@@ -485,7 +485,7 @@ def _setup_model() -> None:
     lines = []
     if os.path.exists(env_path):
         with open(env_path) as f:
-            lines = [l for l in f.readlines() if not l.strip().startswith("ADA_MODEL=")]
+            lines = [ln for ln in f.readlines() if not ln.strip().startswith("ADA_MODEL=")]
 
     lines.append(f"ADA_MODEL={model_id}\n")
     with open(env_path, "w") as f:

@@ -11,7 +11,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, List, Optional, Type, TypeVar
+from typing import Callable, List, Optional, Type, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +256,7 @@ def circuit_breaker(breaker: CircuitBreaker):
                 result = await func(*args, **kwargs)
                 breaker.record_success()
                 return result
-            except Exception as e:
+            except Exception:
                 breaker.record_failure()
                 raise
         

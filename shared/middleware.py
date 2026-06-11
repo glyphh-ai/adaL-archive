@@ -54,7 +54,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         # Log request (skip health checks to reduce noise)
         if not request.url.path.startswith("/health"):
             logger.info(
-                f"request completed",
+                "request completed",
                 extra={
                     "correlation_id": correlation_id,
                     "method": request.method,

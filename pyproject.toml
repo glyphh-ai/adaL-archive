@@ -78,3 +78,14 @@ include = ["ada*", "domains*", "api*", "infrastructure*", "shared*", "scripts*"]
 "ada.intent" = ["data/*.json", "data/*.jsonl", "data/packs/*.json"]
 "ada.state" = ["data/*.json", "data/packs/*.json"]
 "ada.memory" = ["lessons/*.jsonl", "foundation/*.yaml", "foundation/*.pkl.gz"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# App wiring imports after app/Base creation are intentional.
+"ada/server.py" = ["E402"]
+"domains/models/db_models.py" = ["E402"]
