@@ -228,5 +228,4 @@ scripts/               ada_repl.py and the 77-fact hard test
 
 ## License
 
-See [`LICENSE`](LICENSE) — Glyphh AI Community License. Copyright © 2026
-Glyphh AI LLC.
+Apache-2.0 — see [`LICENSE`](LICENSE). Copyright © 2026 Glyphh AI LLC.

@@ -17,22 +17,11 @@ launch.*
   boot warning
 - ☑ Paper, protocol, all phase reports + raw logs committed
 
-## ☐ DECISION: license (BLOCKER)
+## ☑ License: Apache-2.0 (resolved 2026-06-11)
 
-`LICENSE-APACHE-2.0.draft` is staged. **Do not swap it in without
-patent counsel**: the current Glyphh AI Community License cites
-*Patent Pending App. No. 63/969,729*, and Apache-2.0 §3 grants
-licensees a patent license to claims that read on the contributed
-code. Options:
-- Apache-2.0 (recommended for the open-core strategy) — accepts the
-  grant for this codebase
-- BUSL-1.1 (source-available, converts to Apache later) — if Ada
-  itself is the revenue line
-- Confirm whether 63/969,729's claims even read on the post-HDC
-  codebase (the vectors the application likely covers were removed)
-
-Also update: `pyproject.toml` classifier + `license` field, README
-license section, paper footer.
+Swapped from the Glyphh AI Community License. Patent App. 63/969,729
+confirmed by Chris as no longer viable and unrelated to the post-HDC
+codebase. LICENSE + NOTICE + pyproject classifier + README updated.
 
 ## ☐ DECISION: name
 
