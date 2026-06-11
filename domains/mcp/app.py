@@ -8,6 +8,7 @@ Transport selection:
 - Default / text/event-stream → SSE transport (Claude Code, CLI agents)
 """
 
+import json
 import logging
 import re
 from typing import Callable, Optional, Tuple
@@ -18,6 +19,48 @@ logger = logging.getLogger(__name__)
 
 # Single MCP path — no org/model in the URL
 _MCP_PATH_RE = re.compile(r"^/mcp(/.*)?$")
+
+ADA_ORG_ID = "ada"
+
+# Tools that mutate state require write permission; everything else read.
+_WRITE_TOOLS = {"tell", "tell_raw", "create_token", "token_revoke"}
+
+
+async def _read_body(receive: Receive) -> tuple[bytes, Receive]:
+    """Buffer the request body and return a replaying receive callable."""
+    chunks: list[dict] = []
+    body = b""
+    while True:
+        message = await receive()
+        chunks.append(message)
+        if message["type"] != "http.request":
+            break
+        body += message.get("body", b"")
+        if not message.get("more_body"):
+            break
+
+    sent = {"i": 0}
+
+    async def replay() -> dict:
+        if sent["i"] < len(chunks):
+            msg = chunks[sent["i"]]
+            sent["i"] += 1
+            return msg
+        return await receive()
+
+    return body, replay
+
+
+async def _deny(send: Send, status: int, message: str) -> None:
+    payload = json.dumps({
+        "jsonrpc": "2.0", "id": None,
+        "error": {"code": -32001 if status == 401 else -32002,
+                  "message": message},
+    }).encode()
+    await send({"type": "http.response.start", "status": status,
+                "headers": [(b"content-type", b"application/json"),
+                            (b"www-authenticate", b"Bearer")]})
+    await send({"type": "http.response.body", "body": payload})
 
 
 def _wants_json(scope: Scope) -> bool:
@@ -39,9 +82,56 @@ class MCPRoutingMiddleware:
         self,
         app: ASGIApp,
         mcp_app_getter: Callable[[], Optional[Tuple]],
+        auth_getter: Callable[[], Optional[object]] = lambda: None,
+        auth_required: bool = False,
     ):
         self.app = app
         self._mcp_app_getter = mcp_app_getter
+        self._auth_getter = auth_getter
+        self._auth_required = auth_required
+
+    def _bearer(self, scope: Scope) -> Optional[str]:
+        for key, value in scope.get("headers", []):
+            if key == b"authorization":
+                v = value.decode("latin-1")
+                return v[7:] if v.lower().startswith("bearer ") else v
+        return None
+
+    async def _authorize(self, scope: Scope, receive: Receive,
+                         send: Send) -> Optional[Receive]:
+        """Enforce token auth. Returns a (replaying) receive on success,
+        None after having sent a 401/403 denial."""
+        token = self._bearer(scope)
+        if not token:
+            await _deny(send, 401, "Authentication required: pass "
+                        "'Authorization: Bearer <token>' (mint one with "
+                        "`ada token create`)")
+            return None
+
+        auth = self._auth_getter()
+        try:
+            user = await auth.validate_token(token)
+        except Exception:
+            await _deny(send, 401, "Invalid, expired, or revoked token")
+            return None
+
+        body, replay = await _read_body(receive)
+        tool = None
+        try:
+            parsed = json.loads(body or b"{}")
+            if parsed.get("method") == "tools/call":
+                tool = (parsed.get("params") or {}).get("name")
+        except Exception:
+            pass  # non-JSON bodies fall through as read-level requests
+
+        needs_write = tool in _WRITE_TOOLS
+        allowed = (user.can_write(ADA_ORG_ID) if needs_write
+                   else user.can_read(ADA_ORG_ID) or user.can_write(ADA_ORG_ID))
+        if not allowed:
+            await _deny(send, 403, f"Token lacks "
+                        f"{'write' if needs_write else 'read'} permission")
+            return None
+        return replay
 
     def _get_origin(self, scope: Scope) -> Optional[str]:
         for key, value in scope.get("headers", []):
@@ -63,6 +153,12 @@ class MCPRoutingMiddleware:
 
                 managers = self._mcp_app_getter()
                 if managers is not None:
+                    if self._auth_required and scope["type"] == "http":
+                        replay = await self._authorize(scope, receive, send)
+                        if replay is None:
+                            return
+                        receive = replay
+
                     json_manager, sse_manager = managers
                     manager = json_manager if _wants_json(scope) else sse_manager
 

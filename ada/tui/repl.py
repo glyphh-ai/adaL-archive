@@ -20,6 +20,7 @@ Commands:
     find <l.r>=<v> ...  — entities matching ALL conditions
     history <key>       — version chain for a stable key
     stats               — substrate vital signs
+    token create|list|revoke — manage API tokens (when auth is enabled)
     aurora              — load the 77-fact demo corpus
     quit                — exit
 
@@ -65,6 +66,9 @@ class ServerBackend:
             "accept": "application/json, text/event-stream",
             "content-type": "application/json",
         }
+        token = os.environ.get("ADA_TOKEN")
+        if token:
+            self._headers["authorization"] = f"Bearer {token}"
         r = self._rpc("initialize", {
             "protocolVersion": "2024-11-05", "capabilities": {},
             "clientInfo": {"name": "ada-repl", "version": "0.7"},
@@ -172,6 +176,9 @@ HELP = """  commands:
     find <l.r>=<v> ...      — entities matching ALL conditions
     history <key>           — version chain
     stats                   — substrate vital signs
+    token create [name]     — mint an API token (shown once)
+    token list              — list tokens (prefixes only)
+    token revoke <id|prefix>— revoke a token immediately
     aurora                  — load the 77-fact demo corpus
     help / ?                — this help
     quit / exit             — leave
@@ -263,6 +270,33 @@ def run_repl(url: str, banner: bool = True) -> None:
                 r = _call(backend, "tell", {"text": text, **({"key": key} if key else {})})
                 n += bool(r.get("told"))
             print(f"  {D}loaded {n}/{len(SESSION_1)} Aurora facts.{R}")
+            continue
+
+        if raw == "token" or raw.startswith("token "):
+            parts = raw.split()
+            sub = parts[1] if len(parts) > 1 else "list"
+            if sub == "create":
+                name = parts[2] if len(parts) > 2 else "repl-token"
+                r = _call(backend, "create_token", {"name": name})
+                if not _show_error(r):
+                    print(f"  {C}{r.get('token')}{R}")
+                    print(f"  {D}id {r.get('id')} · perms "
+                          f"{','.join(r.get('permissions', []))} · "
+                          f"shown ONCE — store it now{R}")
+            elif sub == "revoke" and len(parts) > 2:
+                r = _call(backend, "token_revoke", {"token": parts[2]})
+                if not _show_error(r):
+                    print(f"  {D}revoked: {', '.join(r.get('revoked', []))}{R}")
+            else:
+                r = _call(backend, "token_list", {})
+                if not _show_error(r):
+                    toks = r.get("tokens", [])
+                    if not toks:
+                        print(f"  {D}no tokens{R}")
+                    for t in toks:
+                        print(f"  {D}{t['prefix']:<14} {t['name']:<16} "
+                              f"{','.join(t['permissions']):<12} {t['status']}"
+                              f"{' · expires ' + t['expires_at'] if t['expires_at'] else ''}{R}")
             continue
 
         if raw.startswith("history "):

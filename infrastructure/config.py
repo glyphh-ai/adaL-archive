@@ -9,7 +9,7 @@ switches the runtime to the Postgres backend (see resolved_storage_backend).
 from functools import lru_cache
 from typing import List, Optional
 
-from pydantic import Field, field_validator
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -25,6 +25,12 @@ class Settings(BaseSettings):
         default=None,
         description="DB URL. Unset → SQLite at ~/.ada/ada.db. "
                     "postgresql://… → Postgres backend.",
+    )
+
+    # Auth — when true, /mcp requires a Bearer token (ada token create).
+    auth_required: bool = Field(
+        default=False, description="Require tokens on /mcp",
+        validation_alias=AliasChoices("ADA_AUTH_REQUIRED", "AUTH_REQUIRED"),
     )
 
     # Dev flags

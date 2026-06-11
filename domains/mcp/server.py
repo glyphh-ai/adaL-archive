@@ -201,6 +201,27 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
                 inputSchema={"type": "object", "properties": {}},
             ),
             Tool(
+                name="token_list",
+                description=(
+                    "List API tokens for this server (prefix, name, "
+                    "permissions, status, expiry). Never returns raw tokens."
+                ),
+                inputSchema={"type": "object", "properties": {}},
+            ),
+            Tool(
+                name="token_revoke",
+                description=(
+                    "Revoke an API token by id or prefix. Revocation is "
+                    "immediate and permanent."
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {"token": {"type": "string",
+                                             "description": "token id or prefix"}},
+                    "required": ["token"],
+                },
+            ),
+            Tool(
                 name="create_token",
                 description=(
                     "Mint an API token for accessing this MCP server. The raw "
@@ -245,6 +266,10 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
             return _handle_stats(brain, args)
         if name == "create_token":
             return await _handle_create_token(brain, args)
+        if name == "token_list":
+            return await _handle_token_list(brain, args)
+        if name == "token_revoke":
+            return await _handle_token_revoke(brain, args)
         return _err(f"Unknown tool: {name}")
 
     return app
@@ -416,6 +441,54 @@ def _handle_stats(brain, args: dict) -> CallToolResult:
         return _ok(brain._cognitive.thought_space.stats())
     except Exception as e:
         logger.error("stats failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+async def _handle_token_list(brain, args: dict) -> CallToolResult:
+    from sqlalchemy import select
+    from domains.models.db_models import Token
+    session_factory = getattr(brain, "_session_factory", None)
+    if session_factory is None:
+        return _err("No database session available")
+    try:
+        async with session_factory() as session:
+            rows = (await session.execute(
+                select(Token).order_by(Token.created_at))).scalars().all()
+        return _ok({"tokens": [
+            {"id": str(t.id), "prefix": t.token_prefix, "name": t.name,
+             "permissions": t.permissions, "status": t.status,
+             "expires_at": t.expires_at.isoformat() if t.expires_at else None}
+            for t in rows]})
+    except Exception as e:
+        logger.error("token_list failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+async def _handle_token_revoke(brain, args: dict) -> CallToolResult:
+    from datetime import datetime
+    from sqlalchemy import or_, select, cast, String
+    from domains.models.db_models import Token
+    needle = (args.get("token") or "").strip()
+    if not needle:
+        return _err("Missing 'token' (id or prefix)")
+    session_factory = getattr(brain, "_session_factory", None)
+    if session_factory is None:
+        return _err("No database session available")
+    try:
+        async with session_factory() as session:
+            rows = (await session.execute(select(Token).where(or_(
+                cast(Token.id, String) == needle,
+                Token.token_prefix == needle[:12],
+            )))).scalars().all()
+            if not rows:
+                return _err(f"No token matching {needle!r}")
+            for t in rows:
+                t.status = "revoked"
+                t.revoked_at = datetime.utcnow()
+            await session.commit()
+        return _ok({"revoked": [str(t.id) for t in rows]})
+    except Exception as e:
+        logger.error("token_revoke failed: %s", e, exc_info=True)
         return _err(str(e))
 
 

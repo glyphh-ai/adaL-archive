@@ -98,9 +98,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from domains.mcp.app import create_mcp_session_managers
 
     auth_service = AuthService()
+    app.state.auth_service = auth_service
     json_manager, sse_manager = create_mcp_session_managers(brain, auth_service)
     app.state.mcp_session_managers = (json_manager, sse_manager)
-    logger.info("MCP endpoint online at /mcp")
+    if settings.auth_required:
+        logger.info("MCP endpoint online at /mcp (token auth REQUIRED)")
+    else:
+        logger.warning("MCP endpoint online at /mcp with auth DISABLED — "
+                       "set ADA_AUTH_REQUIRED=true for any non-local deployment")
 
     # ── Start background persistence worker ─────────────────────────────
     import asyncio
@@ -239,4 +244,9 @@ app.include_router(tokens_router)
 # MCP SDK's Streamable HTTP handler. Single endpoint, no org/model.
 from domains.mcp.app import MCPRoutingMiddleware
 
-app.add_middleware(MCPRoutingMiddleware, mcp_app_getter=lambda: getattr(app.state, "mcp_session_managers", None))
+app.add_middleware(
+    MCPRoutingMiddleware,
+    mcp_app_getter=lambda: getattr(app.state, "mcp_session_managers", None),
+    auth_getter=lambda: getattr(app.state, "auth_service", None),
+    auth_required=settings.auth_required,
+)

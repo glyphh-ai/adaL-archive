@@ -150,12 +150,18 @@ ada setup claude            # auto-configure Claude Code
 ada setup                   # print config snippets for Claude Desktop / Cursor / any MCP client
 ```
 
-For authenticated access, mint a token:
+### Authentication
+
+Set `ADA_AUTH_REQUIRED=true` and every `/mcp` request needs
+`Authorization: Bearer <token>`. Write tools (`tell`, `tell_raw`,
+token management) require write permission; the rest need read.
+Bootstrap the first token locally (direct DB), then manage tokens from
+the REPL or over MCP:
 
 ```bash
-ada token create --name my-client --permissions read,write
-ada token list
-ada token revoke <id-or-prefix>
+ada token create --name my-client --permissions read,write   # bootstrap (shown once)
+ada                       # in the REPL: token create | token list | token revoke <id>
+ADA_TOKEN=ada_... ada     # REPL authenticates with this token
 ```
 
 ### HTTP endpoints
@@ -181,6 +187,7 @@ encrypted in `~/.ada/vault` (`ada setup key`).
 | `DATABASE_URL` | SQLite at `~/.ada/ada.db` | `postgresql://…` switches to the Postgres backend |
 | `HOST` | `0.0.0.0` | Server bind address |
 | `PORT` | `8002` | Server port |
+| `ADA_AUTH_REQUIRED` | `false` | Require Bearer tokens on `/mcp` (set `true` for any non-local deployment) |
 | `JWT_SECRET_KEY` | — | JWT validation secret (token auth) |
 | `ENABLE_DOCS` | `false` | Enable `/docs` and `/redoc` |
 

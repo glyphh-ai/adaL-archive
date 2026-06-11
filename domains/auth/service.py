@@ -92,8 +92,11 @@ class AuthService:
         try:
             from infrastructure.database import async_session_maker
             async with async_session_maker() as session:
-                self._session = session
-                return await self._validate_db_token(token)
+                try:
+                    self._session = session
+                    return await self._validate_db_token(token)
+                finally:
+                    self._session = None  # never cache a closed session
         except Exception as e:
             logger.error(f"Token validation failed: {e}")
             raise AuthenticationException("Invalid or expired token")
