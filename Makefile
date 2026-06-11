@@ -26,7 +26,7 @@ dev: ## Run the server with hot-reload (reads ./.env)
 serve: ## Run the server (no reload), via the ada CLI
 	$(BIN)/ada serve -p $(PORT)
 
-repl: ## Launch the interactive Ada shell
+repl: ## Admin REPL against the server (auto-starts one if needed)
 	$(BIN)/ada
 
 test: ## Run the test suite

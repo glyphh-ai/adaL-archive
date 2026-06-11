@@ -750,6 +750,8 @@ def main() -> None:
     _load_ada_env()
 
     if not args:
+        _admin_repl(host, port)
+    elif args[0] == "chat":
         _shell(host, port)
     elif args[0] == "serve":
         _load_ada_env()  # also for headless
@@ -770,8 +772,45 @@ def main() -> None:
         _print_help()
     else:
         print(f"Unknown command: {args[0]}")
-        print("Usage: ada [serve|setup|token|help]")
+        print("Usage: ada [chat|serve|setup|token|help]")
         sys.exit(1)
+
+
+def _admin_repl(host: str, port: int) -> None:
+    """The default `ada` experience: the admin REPL against the server,
+    auto-starting one in-process when none is reachable."""
+    import httpx
+
+    probe_host = "localhost" if host == "0.0.0.0" else host
+    url = f"http://{probe_host}:{port}/mcp"
+    health = f"http://{probe_host}:{port}/health"
+    up = False
+    try:
+        up = httpx.get(health, timeout=2.0).status_code == 200
+    except Exception:
+        pass
+
+    if not up:
+        import logging
+        for name in ["ada", "domains", "infrastructure", "shared", "api", "mcp"]:
+            logging.getLogger(name).setLevel(logging.CRITICAL)
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logging.root.addHandler(logging.NullHandler())
+
+        print(f"  {D}No server at {url} — starting one...{R}", end="", flush=True)
+        _start_server_background(host, port)
+        if _wait_for_server(probe_host, port):
+            print(f"\r  {G}● Online{R}                                  ")
+        else:
+            print(f"\r  {PINK}● Failed to start{R}")
+            if _server_error:
+                print(f"  {PINK}{_server_error}{R}")
+            print(f"  {D}Try: ada serve (to see full error output){R}")
+            return
+
+    from ada.tui.repl import run_repl
+    run_repl(url)
 
 
 if __name__ == "__main__":
