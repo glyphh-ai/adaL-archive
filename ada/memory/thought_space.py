@@ -467,6 +467,10 @@ class ThoughtSpace:
         for stored in self._thoughts.values():
             if stored.speaker in exclude_speakers:
                 continue  # derived utterances don't ground answers
+            if stored.content.strip().endswith("?"):
+                continue  # questions are requests, not facts — they
+                          # never ground an answer (also neutralizes
+                          # legacy stored-question pollution)
             if stored.content.strip().lower().rstrip("?.! ") == q_norm:
                 continue  # don't recall the question itself
 

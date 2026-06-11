@@ -86,8 +86,47 @@ class CognitiveSurface:
 
         Refuses with low confidence rather than inventing — the
         no-hallucinations property comes from this discipline.
+
+        Two-hop retrieval: when the direct match is weak, entities from
+        the best hop-1 facts expand the query and recall runs again
+        ("who are my children?" → hop-1 surfaces the brandi facts →
+        hop-2 finds "brandi has two children ..."). This widens what
+        the renderer SEES; it never widens what may be CLAIMED — every
+        answer still grounds in stated facts only.
         """
         results = self.space.recall(question, top_k=top_chains, exclude_speakers=("ada",))
+
+        # ── hop 2: entity-expanded recall ─────────────────────────────
+        # Bridge entities come from hop-1 facts' entity-bearing slots
+        # only (entity.name, relational subject/object/possessor), and
+        # the hop-2 query is FOCUSED: question content + bridge names.
+        # A wordy expansion dilutes its own match.
+        if results:
+            from ada.memory.thought_space import _tokenize
+            q_content = _tokenize(question)
+            bridges: list[str] = []
+            seen = set(q_content)
+            for r in results[:2]:
+                u = r.thought.universal
+                names = [(u.get("entity") or {}).get("name")]
+                rel = u.get("relational") or {}
+                names += [rel.get(k) for k in ("subject", "object", "possessor")]
+                for name in names:
+                    if not name:
+                        continue
+                    for tok in _tokenize(str(name)):
+                        if tok not in seen:
+                            bridges.append(tok)
+                            seen.add(tok)
+            if bridges:
+                hop2 = self.space.recall(
+                    " ".join(q_content + bridges[:4]),
+                    top_k=top_chains, exclude_speakers=("ada",))
+                known = {r.thought.thought_id for r in results}
+                results = sorted(
+                    results + [r for r in hop2 if r.thought.thought_id not in known],
+                    key=lambda r: r.global_similarity, reverse=True)[:top_chains]
+
         if not results:
             return Answer(question=question, refused=True, rendered="I don't know.")
 
