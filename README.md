@@ -15,9 +15,10 @@ or beats a hand-schema'd graph database on NL query accuracy from 1K to
 1M facts with **zero per-domain schema design** (100.0% at 1M facts,
 no degradation with scale), beats text-to-SQL over a generic EAV store
 by ~20 points, and beats embedding RAG by 30+ (RAG decays to ~24% at 1M
-facts; Ada doesn't). 1M facts ingest in ~9 seconds. See
-`benchmark/PROTOCOL.md` and the phase reports for every number,
-including the ones we lost.
+facts; Ada doesn't). 1M facts ingest in ~9 seconds. The full argument
+is the paper: [`paper.md`](paper.md). Every number traces to
+`benchmark/PROTOCOL.md` and the phase reports — including the ones we
+lost.
 
 ---
 
