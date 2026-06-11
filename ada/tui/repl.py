@@ -193,6 +193,18 @@ def _parse_conditions(body: str) -> dict | None:
     return conditions or None
 
 
+def _call(backend, tool: str, args: dict) -> dict:
+    """Backend call wrapped in the braille spinner (server round-trips
+    can take a second when the LLM renderer is involved)."""
+    from ada.tui.cli import _BrailleSpinner
+    spinner = _BrailleSpinner()
+    spinner.start()
+    try:
+        return backend.call(tool, args)
+    finally:
+        spinner.stop()
+
+
 def _show_error(result: dict) -> bool:
     if "error" in result:
         print(f"  {PINK}{result['error']}{R}")
@@ -210,15 +222,16 @@ def main() -> None:
     run_repl(args.url)
 
 
-def run_repl(url: str) -> None:
+def run_repl(url: str, banner: bool = True) -> None:
     backend = connect(url)
 
-    for i, line in enumerate(_BANNER):
-        print(f"  {_GRAD[min(i, len(_GRAD)-1)]}\033[1m{line}{R}")
-    mode = (f"connected: {url}" if isinstance(backend, ServerBackend)
-            else backend.label)
-    print(f"  {D}schema-on-write memory · {mode}{R}")
-    print(f"  {D}type 'help' for commands, 'quit' to exit{R}\n")
+    if banner:
+        for i, line in enumerate(_BANNER):
+            print(f"  {_GRAD[min(i, len(_BANNER)-1)]}\033[1m{line}{R}")
+        mode = (f"connected: {url}" if isinstance(backend, ServerBackend)
+                else backend.label)
+        print(f"  {D}schema-on-write memory · {mode}{R}")
+        print(f"  {D}type 'help' for commands, 'quit' to exit{R}\n")
 
     while True:
         try:
@@ -235,7 +248,7 @@ def run_repl(url: str) -> None:
             continue
 
         if raw == "stats":
-            r = backend.call("stats", {})
+            r = _call(backend, "stats", {})
             if _show_error(r):
                 continue
             for k, v in r.items():
@@ -247,14 +260,14 @@ def run_repl(url: str) -> None:
             from hard_test import SESSION_1
             n = 0
             for text, key in SESSION_1:
-                r = backend.call("tell", {"text": text, **({"key": key} if key else {})})
+                r = _call(backend, "tell", {"text": text, **({"key": key} if key else {})})
                 n += bool(r.get("told"))
             print(f"  {D}loaded {n}/{len(SESSION_1)} Aurora facts.{R}")
             continue
 
         if raw.startswith("history "):
             key = raw[len("history "):].strip()
-            r = backend.call("history", {"key": key})
+            r = _call(backend, "history", {"key": key})
             if _show_error(r):
                 continue
             if not r.get("versions"):
@@ -271,7 +284,7 @@ def run_repl(url: str) -> None:
                 print(f"  {D}usage: {cmd} layer.role=value [layer.role=value ...]{R}")
                 continue
             op = "count" if cmd == "count" else "who"
-            r = backend.call("query", {"op": op, "conditions": conditions})
+            r = _call(backend, "query", {"op": op, "conditions": conditions})
             if _show_error(r):
                 continue
             print(f"  {C}{r['answer']}{R}")
@@ -285,7 +298,7 @@ def run_repl(url: str) -> None:
             q = {"op": "top", "slot": parts[0]}
             if len(parts) > 1:
                 q["predicate_contains"] = parts[1]
-            r = backend.call("query", q)
+            r = _call(backend, "query", q)
             if _show_error(r):
                 continue
             print(f"  {C}{r['answer']}{R}")
@@ -300,7 +313,7 @@ def run_repl(url: str) -> None:
             if not body:
                 print(f"  {D}usage: write [key=K] <text>{R}")
                 continue
-            r = backend.call("tell", {"text": body, **({"key": key} if key else {})})
+            r = _call(backend, "tell", {"text": body, **({"key": key} if key else {})})
             if _show_error(r):
                 continue
             if not r.get("told"):
@@ -313,7 +326,7 @@ def run_repl(url: str) -> None:
             continue
 
         if raw.startswith("think "):
-            r = backend.call("think", {"input": raw[len("think "):].strip(), "top_k": 6})
+            r = _call(backend, "think", {"input": raw[len("think "):].strip(), "top_k": 6})
             if _show_error(r):
                 continue
             hits = r.get("activated", [])
@@ -326,7 +339,7 @@ def run_repl(url: str) -> None:
 
         # `ask ...` or bare question
         q = raw[len("ask "):].strip() if raw.startswith("ask ") else raw
-        r = backend.call("ask", {"question": q})
+        r = _call(backend, "ask", {"question": q})
         if _show_error(r):
             continue
         print(f"  {C}{r.get('answer')}{R}")

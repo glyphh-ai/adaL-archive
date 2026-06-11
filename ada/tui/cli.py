@@ -89,7 +89,7 @@ def _print_config(host: str, port: int) -> None:
     has_key = bool(os.environ.get("ANTHROPIC_API_KEY"))
 
     print(f"  {D}MCP{R}    http://{display_host}:{port}/mcp")
-    print(f"  {D}Tool{R}   think(input)")
+    print(f"  {D}Tools{R}  think · ask · tell · query · history · stats")
     print(f"  {D}LLM{R}    {model}")
     if has_key:
         print(f"  {D}Key{R}    {G}●{R} set")
@@ -778,8 +778,12 @@ def main() -> None:
 
 def _admin_repl(host: str, port: int) -> None:
     """The default `ada` experience: the admin REPL against the server,
-    auto-starting one in-process when none is reachable."""
+    auto-starting one in-process when none is reachable. Boot look and
+    feel match the original shell: banner, ● Online, config panel."""
     import httpx
+    from ada import __version__
+
+    _print_banner(__version__)
 
     probe_host = "localhost" if host == "0.0.0.0" else host
     url = f"http://{probe_host}:{port}/mcp"
@@ -790,7 +794,9 @@ def _admin_repl(host: str, port: int) -> None:
     except Exception:
         pass
 
-    if not up:
+    if up:
+        print(f"  {G}● Online{R}   ")
+    else:
         import logging
         for name in ["ada", "domains", "infrastructure", "shared", "api", "mcp"]:
             logging.getLogger(name).setLevel(logging.CRITICAL)
@@ -798,19 +804,23 @@ def _admin_repl(host: str, port: int) -> None:
             logging.root.removeHandler(handler)
         logging.root.addHandler(logging.NullHandler())
 
-        print(f"  {D}No server at {url} — starting one...{R}", end="", flush=True)
+        print(f"  {D}Starting...{R}", end="", flush=True)
         _start_server_background(host, port)
         if _wait_for_server(probe_host, port):
-            print(f"\r  {G}● Online{R}                                  ")
+            print(f"\r  {G}● Online{R}   ")
         else:
-            print(f"\r  {PINK}● Failed to start{R}")
+            print(f"\r  {PINK}● Failed to start{R}   ")
             if _server_error:
                 print(f"  {PINK}{_server_error}{R}")
             print(f"  {D}Try: ada serve (to see full error output){R}")
             return
 
+    _print_config(host, port)
+    print(f"  {D}Type{R} help {D}for commands,{R} setup {D}to connect an LLM{R}")
+    print()
+
     from ada.tui.repl import run_repl
-    run_repl(url)
+    run_repl(url, banner=False)
 
 
 if __name__ == "__main__":
