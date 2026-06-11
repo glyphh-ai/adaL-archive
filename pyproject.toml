@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "glyphh-ada"
-version = "0.2.0"
+version = "0.7.0"
 description = "Ada — schema-on-write memory for LLMs. Facts in prose, answers exact, beliefs versioned, refusals honest."
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 authors = [
-    {name = "Chris Timmerman", email = "timmetim@gmail.com"},
+    {name = "Glyphh AI LLC", email = "support@glyphh.ai"},
+    {name = "Chris Timmerman", email = "chris.timmerman@glyphh.ai"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
