@@ -488,12 +488,15 @@ class ThoughtSpace:
 
             matched: dict[str, float] = {}
 
-            # 1. Token overlap (set cosine).
-            overlap = q_tokens & all_tokens
-            token_sim = (
-                len(overlap) / ((len(q_tokens) * len(all_tokens)) ** 0.5)
-                if all_tokens else 0.0
-            )
+            # 1. Token overlap (set cosine). Slot values may only help a
+            # match, never dilute it: score against content tokens and
+            # content+slot tokens, keep the better.
+            def _set_cosine(target: set) -> float:
+                if not target:
+                    return 0.0
+                return len(q_tokens & target) / (
+                    (len(q_tokens) * len(target)) ** 0.5)
+            token_sim = max(_set_cosine(t_tokens), _set_cosine(all_tokens))
             if token_sim:
                 matched["tokens"] = token_sim
 

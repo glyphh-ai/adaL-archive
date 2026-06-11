@@ -71,8 +71,10 @@ class ThoughtProcess:
         # ── 3. RESPOND ───────────────────────────────────────────
         response = await self._formulate_response(thought, input_text)
 
-        # Absorb the interaction
-        self._cognitive.absorb(input_text)
+        # Absorb the interaction — statements only. Questions are
+        # requests for facts, not facts; storing them pollutes recall.
+        if thought.cognitive_state not in ("RECALL", "WONDER"):
+            self._cognitive.absorb(input_text)
         if response:
             self._cognitive.absorb(response, speaker="ada")
 
