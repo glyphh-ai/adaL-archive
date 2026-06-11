@@ -3,9 +3,9 @@ requires = ["setuptools>=69.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ada"
+name = "glyphh-ada"
 version = "0.2.0"
-description = "A self-evolving cognitive brain for LLMs"
+description = "Ada — schema-on-write memory for LLMs. Facts in prose, answers exact, beliefs versioned, refusals honest."
 readme = "README.md"
 license = {file = "LICENSE"}
 requires-python = ">=3.10"

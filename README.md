@@ -1,7 +1,11 @@
 # Ada
 
-**Schema-on-write memory for LLMs.** Facts in prose, answers exact,
-beliefs versioned, refusals honest.
+**Schema-on-write memory for LLMs**, by [Glyphh AI](https://glyphh.ai).
+Facts in prose, answers exact, beliefs versioned, refusals honest.
+
+```bash
+pip install glyphh-ada        # imports as `ada`
+```
 
 Ada is a universal fact table, deliberately not a graph: an LLM maps
 each fact into one fixed schema at write time, and reads are exact,

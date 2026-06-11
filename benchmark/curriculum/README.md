@@ -11,7 +11,7 @@ conducted against these artifacts, and the audit's claims should remain
 checkable. **Nothing in the current runtime, paper, or benchmarks
 depends on this directory.** The paper-era benchmark and teach scripts
 were removed (they targeted deleted modules and a discredited
-methodology); see git history if you need them.
+methodology).
 
 The current, maintained benchmark suite is `benchmark/phase{1,2,3}/`
 with `benchmark/PROTOCOL.md`.
