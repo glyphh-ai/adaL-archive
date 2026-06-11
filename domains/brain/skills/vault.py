@@ -104,7 +104,10 @@ class Vault:
 
             self._data = json.loads(payload.decode("utf-8"))
         except Exception as e:
-            logger.warning(f"Failed to load vault: {e}")
+            # Legacy or foreign-key vault — unreadable, not fatal. Recorded
+            # so `ada setup key` can tell the user to recreate it.
+            self.load_error = str(e)
+            logger.debug(f"Vault unreadable (legacy format or wrong machine key): {e}")
             self._data = {}
 
     def _save(self) -> None:

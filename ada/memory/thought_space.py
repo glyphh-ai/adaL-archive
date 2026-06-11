@@ -432,6 +432,7 @@ class ThoughtSpace:
         top_k: int = 5,
         min_similarity: float = 0.05,
         speaker: str = "incoming",
+        exclude_speakers: tuple = (),
     ) -> list[RecallResult]:
         """Deterministic lexical search over all stored facts.
 
@@ -464,6 +465,8 @@ class ThoughtSpace:
 
         results: list[RecallResult] = []
         for stored in self._thoughts.values():
+            if stored.speaker in exclude_speakers:
+                continue  # derived utterances don't ground answers
             if stored.content.strip().lower().rstrip("?.! ") == q_norm:
                 continue  # don't recall the question itself
 

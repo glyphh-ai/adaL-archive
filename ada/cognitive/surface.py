@@ -72,7 +72,7 @@ class CognitiveSurface:
 
     def think(self, input_text: str, top_k: int = 10) -> Activation:
         """What does this input surface? No filtering for 'the answer'."""
-        results = self.space.recall(input_text, top_k=top_k)
+        results = self.space.recall(input_text, top_k=top_k, exclude_speakers=("ada",))
         return Activation(
             input=input_text,
             thoughts=[r.thought for r in results],
@@ -87,7 +87,7 @@ class CognitiveSurface:
         Refuses with low confidence rather than inventing — the
         no-hallucinations property comes from this discipline.
         """
-        results = self.space.recall(question, top_k=top_chains)
+        results = self.space.recall(question, top_k=top_chains, exclude_speakers=("ada",))
         if not results:
             return Answer(question=question, refused=True, rendered="I don't know.")
 

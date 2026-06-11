@@ -189,7 +189,8 @@ class AdaCognitive:
             (gate, facts) where gate is "DONE" or "ASK" and facts
             is a list of (content, speaker, similarity) tuples.
         """
-        results = self._space.recall(text, top_k=top_k, speaker="incoming")
+        results = self._space.recall(text, top_k=top_k, speaker="incoming",
+                             exclude_speakers=("ada",))
 
         if not results or results[0].global_similarity < self._recall_threshold:
             return "ASK", []
