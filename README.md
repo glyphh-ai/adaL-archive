@@ -59,27 +59,30 @@ make dev            # server with hot-reload on http://localhost:8002
 Other targets: `make repl` (interactive shell), `make serve` (no reload),
 `make test`, `make fmt`, `make clean`. Run `make` alone to list them.
 
-### The interactive REPL
+### The interactive REPL — the admin interface
+
+The REPL is an **MCP client of the running server**: every command is a
+tool call, so the REPL, Claude, and every other client share one
+SQL-backed memory. Writes are write-through durable (the `tell`
+response reports `durable: true`). With no server running it offers a
+clearly-labeled offline sandbox instead.
 
 ```bash
-make repl           # or, after install:  ada
+make dev            # start the server
+make repl           # connect (or: ada / ADA_URL=http://host:8002/mcp)
 ```
 
 ```
-  ada> aurora                        # load the 77-fact demo corpus
-  ada> ask what hull does aurora use?
-  → trimaran                         (grounded in: "The Aurora boat uses a trimaran hull design.")
-  ada> tell key=chris.location Chris just moved to Brooklyn.
-  absorbed v2 ✓
-  ada> history chris.location
-  v1: San Francisco  →  v2: Brooklyn
-  ada> count perceptual.color=blue
-  3 facts with perceptual.color=blue
-  ada> top spatial.location
-     12  austin
-      4  galveston bay
-  ada> stats
-  thoughts: 77   versioned keys: 12
+  ada> write key=carol.location Carol lives in Austin.
+  absorbed v1: carol.location@...#v1
+  ada> write key=carol.location Carol lives in Denver.
+  absorbed v2: carol.location@...#v2
+  ada> count spatial.location=denver
+  3                                  # current belief — Carol's Austin era excluded
+  ada> history carol.location
+  v1: Carol lives in Austin.  →  v2: Carol lives in Denver.
+  ada> top relational.object work    # distribution, predicate-filtered
+  engineer (12), designer (9), ...
 ```
 
 Type `help` in the shell for the full command list.
@@ -133,6 +136,7 @@ any MCP client at `http://localhost:8002/mcp`.
 | `tell(text, key?)` | Natural-language ingestion. With `key`, becomes a new version of that key. |
 | `tell_raw(facts, key?)` | Programmatic ingestion of a universal-schema slot fill. **No LLM in the path.** |
 | `recall(query, top_k)` | Deterministic lexical search. Top matches + similarity + versioned key. |
+| `query(op, ...)` | One structured operation from the closed op set: count / who / top / lookup / prev / count_not / compare. Exact, no LLM. |
 | `history(key)` | Full version chain for a key, chronological. |
 | `stats()` | Substrate vital signs: thoughts, versioned keys, per-layer slot fill. |
 | `create_token(...)` | Mint an API token for this MCP server (returned once). |

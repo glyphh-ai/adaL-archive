@@ -216,6 +216,36 @@ class HeuristicEnricher:
         clean = text.strip()
         return _try_facts(clean) or _try_queries(clean) or StructuredFact(text=clean)
 
+    # predicate -> (layer, role) for projecting the parsed triple into
+    # universal-schema slots, so offline `tell` still feeds the
+    # structured queries (narrow coverage, same slots the LLM uses).
+    _PRED_SLOT = {
+        "age": ("temporal", "age"),
+        "residence": ("spatial", "location"),
+        "favorite_color": ("perceptual", "color"),
+    }
+
+    def universal(self, text: str) -> dict[str, dict[str, str]]:
+        sf = self.enrich(text)
+        if not sf.is_structured() or not sf.object:
+            return {}
+        mapped: dict[str, dict[str, str]] = {}
+        if sf.subject:
+            mapped["entity"] = {"name": sf.subject}
+        layer_role = self._PRED_SLOT.get(sf.predicate)
+        if layer_role:
+            layer, role = layer_role
+            mapped.setdefault(layer, {})[role] = sf.object
+            if sf.subject:
+                mapped["relational"] = {"subject": sf.subject,
+                                        "predicate": sf.predicate}
+        else:
+            mapped["relational"] = {
+                "subject": sf.subject, "predicate": sf.predicate,
+                "object": sf.object,
+            }
+        return mapped
+
 
 # ── Haiku enricher (online) ──────────────────────────────────────────
 

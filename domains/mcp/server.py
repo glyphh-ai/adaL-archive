@@ -160,6 +160,39 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
                 },
             ),
             Tool(
+                name="query",
+                description=(
+                    "Run ONE structured query operation against the "
+                    "substrate — the closed op set: lookup / prev / count / "
+                    "count_not / top / who / compare. Exact, deterministic, "
+                    "no LLM. Conditions are {'layer.role': value} (value may "
+                    "be a list when one slot must hold several values). "
+                    "Examples: {\"op\":\"count\",\"conditions\":"
+                    "{\"spatial.location\":\"boston\"}} · "
+                    "{\"op\":\"top\",\"slot\":\"relational.object\","
+                    "\"predicate_contains\":\"work\"} · "
+                    "{\"op\":\"who\",\"conditions\":{\"perceptual.color\":"
+                    "\"blue\",\"relational.object\":[\"engineer\",\"chess\"]}}"
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "op": {"type": "string",
+                               "enum": ["lookup", "prev", "count", "count_not",
+                                        "top", "who", "compare"]},
+                        "person": {"type": "string"},
+                        "slot": {"type": "string"},
+                        "conditions": {"type": "object"},
+                        "value": {"type": "string"},
+                        "a": {"type": "string"},
+                        "b": {"type": "string"},
+                        "k": {"type": "integer", "default": 5},
+                        "predicate_contains": {"type": "string"},
+                    },
+                    "required": ["op"],
+                },
+            ),
+            Tool(
                 name="stats",
                 description=(
                     "Substrate vital signs: total thoughts, versioned keys, "
@@ -199,13 +232,15 @@ def create_mcp_server(brain: Any, auth_service: AuthService) -> Server:
         if name == "ask":
             return _handle_ask(brain, args)
         if name == "tell":
-            return _handle_tell(brain, args)
+            return await _handle_tell(brain, args)
         if name == "tell_raw":
-            return _handle_tell_raw(brain, args)
+            return await _handle_tell_raw(brain, args)
         if name == "recall":
             return _handle_recall(brain, args)
         if name == "history":
             return _handle_history(brain, args)
+        if name == "query":
+            return _handle_query(brain, args)
         if name == "stats":
             return _handle_stats(brain, args)
         if name == "create_token":
@@ -256,7 +291,20 @@ def _handle_ask(brain, args: dict) -> CallToolResult:
         return _err(str(e))
 
 
-def _handle_tell_raw(brain, args: dict) -> CallToolResult:
+async def _persist_now(brain, stored) -> bool:
+    """Write-through: persist synchronously; fall back to the background
+    queue on failure so the fact is retried rather than lost."""
+    try:
+        from ada.memory.thought_persistence import save_thought
+        await save_thought(brain._session_factory, stored)
+        return True
+    except Exception:
+        logger.warning("write-through failed; queued for retry", exc_info=True)
+        brain._persist_queue.append(stored)
+        return False
+
+
+async def _handle_tell_raw(brain, args: dict) -> CallToolResult:
     facts = args.get("facts") or {}
     key = args.get("key")
     text = args.get("text")
@@ -267,9 +315,10 @@ def _handle_tell_raw(brain, args: dict) -> CallToolResult:
         stored = space.tell_raw(facts=facts, key=key, text=text, speaker="curriculum")
         if stored is None:
             return _ok({"told": False, "reason": "duplicate or empty"})
-        brain._persist_queue.append(stored)  # durable via background worker
+        durable = await _persist_now(brain, stored)
         return _ok({
             "told": True,
+            "durable": durable,
             "thought_id": stored.thought_id,
             "version": stored.metadata.get("_version"),
             "key": stored.metadata.get("_key"),
@@ -280,7 +329,7 @@ def _handle_tell_raw(brain, args: dict) -> CallToolResult:
         return _err(str(e))
 
 
-def _handle_tell(brain, args: dict) -> CallToolResult:
+async def _handle_tell(brain, args: dict) -> CallToolResult:
     text = args.get("text", "")
     key = args.get("key")
     if not text:
@@ -290,15 +339,28 @@ def _handle_tell(brain, args: dict) -> CallToolResult:
         stored = space.absorb(text, key=key)
         if stored is None:
             return _ok({"told": False, "reason": "duplicate"})
-        brain._persist_queue.append(stored)  # durable via background worker
+        durable = await _persist_now(brain, stored)
         return _ok({
             "told": True,
+            "durable": durable,
             "thought_id": stored.thought_id,
             "version": stored.metadata.get("_version"),
             "key": stored.metadata.get("_key"),
         })
     except Exception as e:
         logger.error("tell failed: %s", e, exc_info=True)
+        return _err(str(e))
+
+
+def _handle_query(brain, args: dict) -> CallToolResult:
+    from ada.cognitive.ops import execute_op
+    try:
+        answer = execute_op(brain._cognitive.thought_space, args)
+        return _ok({"op": args.get("op"), "answer": answer})
+    except (ValueError, KeyError) as e:
+        return _err(f"bad query op: {e}")
+    except Exception as e:
+        logger.error("query failed: %s", e, exc_info=True)
         return _err(str(e))
 
 
