@@ -7,7 +7,7 @@ name = "glyphh-ada"
 version = "0.7.0"
 description = "Ada — schema-on-write memory for LLMs. Facts in prose, answers exact, beliefs versioned, refusals honest."
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [
     {name = "Glyphh AI LLC", email = "support@glyphh.ai"},
@@ -16,7 +16,6 @@ authors = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
